@@ -5,8 +5,9 @@ import { prisma } from "@/lib/prisma"
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   const session = await getServerSession(authOptions)
   if (!session?.user?.isSuperAdmin) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -16,9 +17,9 @@ export async function PUT(
   const { planId, maxUsers, maxApiCalls, maxAiTokens, endsAt, status } = body
 
   const license = await prisma.license.upsert({
-    where: { organizationId: params.id },
+    where: { organizationId: id },
     create: {
-      organizationId: params.id,
+      organizationId: id,
       planId,
       maxUsers: maxUsers ?? 5,
       maxApiCalls: maxApiCalls ?? 10000,

@@ -5,8 +5,9 @@ import { prisma } from "@/lib/prisma"
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   const session = await getServerSession(authOptions)
   if (!session?.user?.isSuperAdmin) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -15,7 +16,7 @@ export async function PATCH(
   const body = await request.json()
 
   const plan = await prisma.subscriptionPlan.update({
-    where: { id: params.id },
+    where: { id },
     data: body,
   })
 
@@ -24,14 +25,15 @@ export async function PATCH(
 
 export async function DELETE(
   _request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   const session = await getServerSession(authOptions)
   if (!session?.user?.isSuperAdmin) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const inUse = await prisma.license.count({ where: { planId: params.id } })
+  const inUse = await prisma.license.count({ where: { planId: id } })
   if (inUse > 0) {
     return NextResponse.json(
       { error: "Plan is in use by active licenses and cannot be deleted." },
@@ -39,7 +41,7 @@ export async function DELETE(
     )
   }
 
-  await prisma.subscriptionPlan.delete({ where: { id: params.id } })
+  await prisma.subscriptionPlan.delete({ where: { id } })
 
   return NextResponse.json({ success: true })
 }

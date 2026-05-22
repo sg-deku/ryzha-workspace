@@ -10,12 +10,13 @@ import { formatDate, formatNumber } from "@/lib/utils"
 import { LicenseEditor } from "./license-editor"
 import { UsageChart } from "./usage-chart"
 
-export default async function TenantDetailPage({ params }: { params: { id: string } }) {
+export default async function TenantDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   const session = await getServerSession(authOptions)
   if (!session?.user?.isSuperAdmin) redirect("/login")
 
   const org = await prisma.organization.findUnique({
-    where: { id: params.id },
+    where: { id },
     include: {
       users: {
         include: {
@@ -86,7 +87,7 @@ export default async function TenantDetailPage({ params }: { params: { id: strin
               )}
             </div>
 
-            <LicenseEditor orgId={org.id} license={org.license as any} plans={plans} />
+            <LicenseEditor orgId={org.id} orgStatus={org.status} license={org.license as any} plans={plans} />
           </TabsContent>
 
           <TabsContent value="users" className="pt-4">

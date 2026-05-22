@@ -24,13 +24,15 @@ interface License {
 
 interface LicenseEditorProps {
   orgId: string
+  orgStatus: string
   license: License | null
   plans: Plan[]
 }
 
-export function LicenseEditor({ orgId, license, plans }: LicenseEditorProps) {
+export function LicenseEditor({ orgId, orgStatus: initialOrgStatus, license, plans }: LicenseEditorProps) {
   const router = useRouter()
   const [saving, setSaving] = useState(false)
+  const [orgStatus, setOrgStatus] = useState(initialOrgStatus)
   const [planId, setPlanId] = useState(license?.planId ?? "")
   const [maxUsers, setMaxUsers] = useState(license?.maxUsers ?? 5)
   const [maxApiCalls, setMaxApiCalls] = useState(license?.maxApiCalls ?? 10000)
@@ -40,11 +42,23 @@ export function LicenseEditor({ orgId, license, plans }: LicenseEditorProps) {
   async function handleSave() {
     if (!planId) return
     setSaving(true)
+    
+    // Update Organization Status
+    if (orgStatus !== initialOrgStatus) {
+      await fetch(`/api/tenants/${orgId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: orgStatus }),
+      })
+    }
+
+    // Update License limits
     await fetch(`/api/tenants/${orgId}/license`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ planId, maxUsers, maxApiCalls, maxAiTokens, status }),
     })
+    
     setSaving(false)
     router.refresh()
   }
@@ -56,6 +70,21 @@ export function LicenseEditor({ orgId, license, plans }: LicenseEditorProps) {
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-2">
+            <Label>Organization Status</Label>
+            <Select value={orgStatus} onValueChange={setOrgStatus}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="PENDING">Pending</SelectItem>
+                <SelectItem value="ACTIVE">Active</SelectItem>
+                <SelectItem value="SUSPENDED">Suspended</SelectItem>
+                <SelectItem value="REJECTED">Rejected</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
           <div className="space-y-2">
             <Label>Subscription Plan</Label>
             <Select value={planId} onValueChange={setPlanId}>
