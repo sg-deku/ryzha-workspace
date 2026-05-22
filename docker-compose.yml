@@ -7,7 +7,7 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: ryzha
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
@@ -17,10 +17,12 @@ services:
     ports:
       - "6379:6379"
 
-  app:
+  ryzha:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        APP_NAME: ryzha
     restart: always
     ports:
       - "3000:3000"
@@ -34,6 +36,24 @@ services:
       ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY:-}"
       GOOGLE_API_KEY: "${GOOGLE_API_KEY:-}"
       GEMINI_API_KEY: "${GEMINI_API_KEY:-}"
+    depends_on:
+      - db
+      - redis
+
+  admin:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        APP_NAME: admin
+    restart: always
+    ports:
+      - "3001:3000"
+    environment:
+      DATABASE_URL: "postgresql://postgres:postgres@db:5432/ryzha?schema=public"
+      REDIS_URL: "redis://redis:6379"
+      NEXTAUTH_URL: "http://localhost:3001"
+      NEXTAUTH_SECRET: "your-secret-here"
     depends_on:
       - db
       - redis

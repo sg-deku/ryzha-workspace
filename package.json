@@ -17,7 +17,14 @@
     "db:migrate:deploy": "npm run migrate:deploy --workspace=packages/database",
     "db:studio": "npm run studio --workspace=packages/database"
   },
+  "packageManager": "npm@11.14.1",
+  "dependencies": {
+    "nodemailer": "^8.0.7",
+    "react": "18.2.0",
+    "react-dom": "18.2.0"
+  },
   "devDependencies": {
+    "@types/nodemailer": "^8.0.0",
     "turbo": "^2.0.0"
   }
 }
