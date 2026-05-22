@@ -1,0 +1,190 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Grayscale base – sober, neutral */
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    
+    /* Primary – slate blue (professional, calm) */
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+    
+    /* Secondary – soft gray for subtle elements */
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    
+    /* Muted – for backgrounds of secondary sections */
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    
+    /* Accent – for highlights and interactive elements */
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    
+    /* Borders – subtle separation */
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
+    
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 224.3 76.3% 48%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-muted/20 text-foreground;  /* Light gray page background */
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+@layer components {
+  .card-default {
+    @apply rounded-lg border bg-card text-card-foreground shadow-sm;
+  }
+  .card-elevated {
+    @apply rounded-lg border bg-card text-card-foreground shadow-md;
+  }
+}
+
+@layer utilities {
+  .bg-grid-pattern {
+    background-image: radial-gradient(circle at 1px 1px, rgba(0,0,0,0.05) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+  .dark .bg-grid-pattern {
+    background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,0.05) 1px, transparent 1px);
+  }
+
+  .animate-fade-in {
+    animation: fade-in 0.5s ease-out forwards;
+  }
+
+  .animate-fade-up {
+    animation: fade-up 0.5s ease-out forwards;
+  }
+
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .logo-mask {
+    mask-image: url('/logo.png?v=2');
+    mask-size: contain;
+    mask-repeat: no-repeat;
+    mask-position: center;
+    -webkit-mask-image: url('/logo.png?v=2');
+    -webkit-mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+  }
+}
+
+@layer base {
+  .theme-warm-earth {
+    --background: 40 43% 98%;
+    --foreground: 210 23% 9%;
+    --card: 40 43% 98%;
+    --card-foreground: 210 23% 9%;
+    --popover: 40 43% 98%;
+    --popover-foreground: 210 23% 9%;
+    --primary: 33 62% 60%;
+    --primary-foreground: 40 43% 98%;
+    --secondary: 210 23% 9%;
+    --secondary-foreground: 40 43% 98%;
+    --muted: 40 20% 90%;
+    --muted-foreground: 210 10% 40%;
+    --border: 210 23% 85%;
+    --input: 210 23% 85%;
+    --ring: 33 62% 60%;
+  }
+
+  .theme-new-authority {
+    --background: 0 0% 7%;
+    --foreground: 0 0% 100%;
+    --card: 0 0% 7%;
+    --card-foreground: 0 0% 100%;
+    --popover: 0 0% 7%;
+    --popover-foreground: 0 0% 100%;
+    --primary: 19 100% 50%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 15%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 70%;
+    --border: 0 0% 20%;
+    --input: 0 0% 20%;
+    --ring: 19 100% 50%;
+  }
+
+  .theme-deep-amethyst {
+    --background: 252 38% 8%;
+    --foreground: 254 55% 93%;
+    --card: 252 38% 8%;
+    --card-foreground: 254 55% 93%;
+    --popover: 252 38% 8%;
+    --popover-foreground: 254 55% 93%;
+    --primary: 330 100% 50%;
+    --primary-foreground: 254 55% 93%;
+    --secondary: 252 30% 15%;
+    --secondary-foreground: 254 55% 93%;
+    --muted: 252 30% 15%;
+    --muted-foreground: 254 30% 70%;
+    --border: 252 30% 20%;
+    --input: 252 30% 20%;
+    --ring: 330 100% 50%;
+  }
+
+  .theme-radioactive {
+    --background: 100 7% 92%;
+    --foreground: 208 19% 17%;
+    --card: 100 7% 92%;
+    --card-foreground: 208 19% 17%;
+    --popover: 100 7% 92%;
+    --popover-foreground: 208 19% 17%;
+    --primary: 72 100% 50%;
+    --primary-foreground: 208 19% 17%;
+    --secondary: 208 19% 17%;
+    --secondary-foreground: 100 7% 92%;
+    --muted: 100 10% 85%;
+    --muted-foreground: 208 10% 40%;
+    --border: 100 10% 80%;
+    --input: 100 10% 80%;
+    --ring: 72 100% 50%;
+  }
+}

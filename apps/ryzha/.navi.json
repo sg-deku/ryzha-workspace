@@ -1,0 +1,19 @@
+{
+  "projectName": "ryzha",
+  "projectType": "Custom",
+  "quickStack": "None",
+  "frontendLanguage": "typescript",
+  "frontendFramework": "Next.js",
+  "cssFramework": "Tailwind CSS",
+  "uiLibrary": "ShadCN UI",
+  "stateManagement": "None",
+  "buildTool": "Vite",
+  "animationLibrary": "None",
+  "backendLanguage": "Node.js",
+  "backendFramework": "Express.js",
+  "database": "PostgreSQL",
+  "orm": "Prisma",
+  "features": [],
+  "deployTarget": "Vercel",
+  "license": "MIT"
+}

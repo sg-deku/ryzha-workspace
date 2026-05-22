@@ -1,0 +1,23 @@
+{
+  "name": "ryzha-workspace",
+  "version": "0.0.1",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo run dev",
+    "dev:app": "npm run dev --workspace=apps/ryzha",
+    "dev:admin": "npm run dev --workspace=apps/admin",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "db:generate": "npm run generate --workspace=packages/database",
+    "db:migrate": "npm run migrate --workspace=packages/database",
+    "db:migrate:deploy": "npm run migrate:deploy --workspace=packages/database",
+    "db:studio": "npm run studio --workspace=packages/database"
+  },
+  "devDependencies": {
+    "turbo": "^2.0.0"
+  }
+}

@@ -1,0 +1,15 @@
+node_modules/
+dist/
+out/
+build/
+.env
+.env.local
+.env.production
+*.log
+.DS_Store
+coverage/
+uploads/
+!uploads/.gitkeep
+prisma/*.db
+.next
+.zencoder/mcp.local.json
