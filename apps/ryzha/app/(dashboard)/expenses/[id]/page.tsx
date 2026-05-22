@@ -12,7 +12,8 @@ import { Button } from "@/components/ui/button"
 
 export const dynamic = "force-dynamic";
 
-export default async function ExpenseDetailsPage({ params }: { params: { id: string } }) {
+export default async function ExpenseDetailsPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   const session = await getServerSession(authOptions)
   
   if (!session?.user?.organizationId) {
@@ -21,7 +22,7 @@ export default async function ExpenseDetailsPage({ params }: { params: { id: str
 
   const expense = await prisma.expense.findUnique({
     where: {
-      id: params.id,
+      id,
       organizationId: session.user.organizationId,
     },
     include: {

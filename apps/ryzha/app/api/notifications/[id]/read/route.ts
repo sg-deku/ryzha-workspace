@@ -7,14 +7,15 @@ export const dynamic = "force-dynamic";
 
 export async function PUT(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   const session = await getServerSession(authOptions)
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
   const notification = await prisma.notification.update({
     where: { 
-      id: params.id,
+      id,
       organizationId: session.user.organizationId 
     },
     data: { read: true }

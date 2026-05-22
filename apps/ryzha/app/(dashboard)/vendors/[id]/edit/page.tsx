@@ -4,13 +4,14 @@ import { prisma } from "@/lib/prisma"
 import { notFound, redirect } from "next/navigation"
 import VendorForm from "../../vendor-form"
 
-export default async function EditVendorPage({ params }: { params: { id: string } }) {
+export default async function EditVendorPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   const session = await getServerSession(authOptions)
   if (!session) redirect("/login")
 
   const vendor = await prisma.vendor.findUnique({
     where: {
-      id: params.id,
+      id,
       organizationId: session.user.organizationId
     }
   })

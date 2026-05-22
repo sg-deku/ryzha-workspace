@@ -1,23 +1,55 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from "sonner"
-import { Building2, Save, Globe, Landmark } from "lucide-react"
+import { Building2, Save, Landmark } from "lucide-react"
 
-export default function OrganizationSettingsPage() {
+export default function OrganizationSettingsPage({ organization }: { organization: any }) {
+  const router = useRouter()
   const [loading, setLoading] = useState(false)
 
-  const handleSave = () => {
+  // Form State
+  const [name, setName] = useState(organization?.name || "")
+  const [legalName, setLegalName] = useState(organization?.legalName || "")
+  const [taxId, setTaxId] = useState(organization?.taxId || "")
+  const [currency, setCurrency] = useState(organization?.currency || "USD")
+  const [defaultTaxRate, setDefaultTaxRate] = useState(organization?.defaultTaxRate || 0)
+  const [fiscalYearStart, setFiscalYearStart] = useState(organization?.financialSettings?.fiscalYearStart || "January")
+
+  const handleSave = async () => {
     setLoading(true)
-    setTimeout(() => {
+    try {
+      const response = await fetch("/api/settings/organization", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name,
+          legalName,
+          taxId,
+          currency,
+          defaultTaxRate: Number(defaultTaxRate),
+          fiscalYearStart
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to save organization settings")
+      }
+
       toast.success("Organization settings updated")
+      router.refresh()
+    } catch (error) {
+      toast.error("Failed to update settings")
+      console.error(error)
+    } finally {
       setLoading(false)
-    }, 1000)
+    }
   }
 
   return (
@@ -39,19 +71,19 @@ export default function OrganizationSettingsPage() {
           <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <Label htmlFor="name">Organization Name</Label>
-              <Input id="name" defaultValue="Acme Inc" />
+              <Input id="name" value={name} onChange={(e) => setName(e.target.value)} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="legal-name">Legal Entity Name</Label>
-              <Input id="legal-name" defaultValue="Acme Incorporated" />
+              <Input id="legal-name" value={legalName} onChange={(e) => setLegalName(e.target.value)} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="tax-id">Tax ID / VAT Number</Label>
-              <Input id="tax-id" defaultValue="12-3456789" />
+              <Input id="tax-id" value={taxId} onChange={(e) => setTaxId(e.target.value)} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="currency">Base Currency</Label>
-              <Select defaultValue="USD">
+              <Select value={currency} onValueChange={setCurrency}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select currency" />
                 </SelectTrigger>
@@ -82,18 +114,27 @@ export default function OrganizationSettingsPage() {
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="default-tax">Default Tax Rate (%)</Label>
-              <Input id="default-tax" type="number" defaultValue="0" />
+              <Input id="default-tax" type="number" value={defaultTaxRate} onChange={(e) => setDefaultTaxRate(e.target.value)} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="fiscal-year">Fiscal Year Start</Label>
-              <Select defaultValue="january">
+              <Select value={fiscalYearStart} onValueChange={setFiscalYearStart}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select month" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="january">January</SelectItem>
-                  <SelectItem value="april">April</SelectItem>
-                  <SelectItem value="october">October</SelectItem>
+                  <SelectItem value="January">January</SelectItem>
+                  <SelectItem value="February">February</SelectItem>
+                  <SelectItem value="March">March</SelectItem>
+                  <SelectItem value="April">April</SelectItem>
+                  <SelectItem value="May">May</SelectItem>
+                  <SelectItem value="June">June</SelectItem>
+                  <SelectItem value="July">July</SelectItem>
+                  <SelectItem value="August">August</SelectItem>
+                  <SelectItem value="September">September</SelectItem>
+                  <SelectItem value="October">October</SelectItem>
+                  <SelectItem value="November">November</SelectItem>
+                  <SelectItem value="December">December</SelectItem>
                 </SelectContent>
               </Select>
             </div>

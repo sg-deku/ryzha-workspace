@@ -6,7 +6,8 @@ import { hasPermission } from "@/lib/permissions"
 
 export const dynamic = "force-dynamic";
 
-export async function PUT(req: Request, { params }: { params: { id: string } }) {
+export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -20,7 +21,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
     await prisma.userOrganization.update({
       where: {
         userId_organizationId: {
-          userId: params.id,
+          userId: id,
           organizationId: session.user.organizationId
         }
       },
@@ -31,7 +32,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
 
     if (status) {
       await prisma.user.update({
-        where: { id: params.id },
+        where: { id },
         data: { status }
       })
     }
@@ -43,7 +44,8 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
   }
 }
 
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -52,12 +54,10 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
-    // Prevent deleting self
-    if (params.id === session.user.id) {
+    if (id === session.user.id) {
       return NextResponse.json({ error: "Cannot delete yourself" }, { status: 400 })
     }
 
-    // Check if last admin
     const adminRole = await prisma.role.findFirst({
       where: { 
         organizationId: session.user.organizationId,
@@ -76,7 +76,7 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
       const targetUser = await prisma.userOrganization.findUnique({
         where: {
           userId_organizationId: {
-            userId: params.id,
+            userId: id,
             organizationId: session.user.organizationId
           }
         }
@@ -90,7 +90,7 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
     await prisma.userOrganization.delete({
       where: {
         userId_organizationId: {
-          userId: params.id,
+          userId: id,
           organizationId: session.user.organizationId
         }
       }

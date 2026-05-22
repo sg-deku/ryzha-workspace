@@ -4,13 +4,14 @@ import { prisma } from "@/lib/prisma"
 import { notFound, redirect } from "next/navigation"
 import VendorInvoiceForm from "../../vendor-invoice-form"
 
-export default async function EditVendorInvoicePage({ params }: { params: { id: string } }) {
+export default async function EditVendorInvoicePage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   const session = await getServerSession(authOptions)
   if (!session) redirect("/login")
 
   const vendorInvoice = await prisma.vendorInvoice.findUnique({
     where: {
-      id: params.id,
+      id,
       organizationId: session.user.organizationId
     },
     include: {
@@ -20,9 +21,8 @@ export default async function EditVendorInvoicePage({ params }: { params: { id: 
 
   if (!vendorInvoice) notFound()
 
-  // Only PENDING invoices should be editable (Assuming PENDING is equivalent to DRAFT)
   if (vendorInvoice.status !== "PENDING") {
-    redirect(`/vendor-invoices/${params.id}`)
+    redirect(`/vendor-invoices/${id}`)
   }
 
   const initialData = {

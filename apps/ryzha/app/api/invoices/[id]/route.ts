@@ -3,7 +3,8 @@ import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { NextResponse } from "next/server"
 
-export async function PUT(req: Request, { params }: { params: { id: string } }) {
+export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   try {
     const session = await getServerSession(authOptions)
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -21,10 +22,9 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
       total
     } = await req.json()
 
-    // Verify it exists and is in DRAFT status
     const existing = await prisma.invoice.findUnique({
       where: {
-        id: params.id,
+        id,
         organizationId: session.user.organizationId
       }
     })
@@ -39,10 +39,10 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
 
     const updated = await prisma.$transaction([
       prisma.invoiceLineItem.deleteMany({
-        where: { invoiceId: params.id }
+        where: { invoiceId: id }
       }),
       prisma.invoice.update({
-        where: { id: params.id },
+        where: { id },
         data: {
           invoiceNumber,
           issueDate: new Date(issueDate),

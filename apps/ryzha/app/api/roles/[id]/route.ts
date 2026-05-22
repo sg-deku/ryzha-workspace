@@ -6,7 +6,8 @@ import { hasPermission } from "@/lib/permissions"
 
 export const dynamic = "force-dynamic";
 
-export async function PUT(req: Request, { params }: { params: { id: string } }) {
+export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -17,15 +18,15 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
 
     const { name, description, permissionIds } = await req.json()
 
-    const role = await prisma.role.findUnique({ where: { id: params.id } })
+    const role = await prisma.role.findUnique({ where: { id } })
     if (!role || (role.isSystem && role.organizationId === null)) {
       return NextResponse.json({ error: "Cannot edit system roles" }, { status: 400 })
     }
 
     await prisma.$transaction([
-      prisma.rolePermission.deleteMany({ where: { roleId: params.id } }),
+      prisma.rolePermission.deleteMany({ where: { roleId: id } }),
       prisma.role.update({
-        where: { id: params.id },
+        where: { id },
         data: {
           name,
           description,
@@ -45,7 +46,8 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
   }
 }
 
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -54,21 +56,20 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
-    const role = await prisma.role.findUnique({ where: { id: params.id } })
+    const role = await prisma.role.findUnique({ where: { id } })
     if (!role || role.isSystem) {
       return NextResponse.json({ error: "Cannot delete system roles" }, { status: 400 })
     }
 
-    // Check if users are assigned
     const userCount = await prisma.userOrganization.count({
-      where: { roleId: params.id }
+      where: { roleId: id }
     })
 
     if (userCount > 0) {
       return NextResponse.json({ error: "Cannot delete role with assigned users" }, { status: 400 })
     }
 
-    await prisma.role.delete({ where: { id: params.id } })
+    await prisma.role.delete({ where: { id } })
 
     return NextResponse.json({ message: "Role deleted successfully" })
   } catch (error: any) {

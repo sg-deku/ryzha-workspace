@@ -7,12 +7,13 @@ import { Badge } from "@/components/ui/badge"
 
 export const dynamic = "force-dynamic"
 
-export default async function TransactionPage({ params }: { params: { id: string } }) {
+export default async function TransactionPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   const session = await getServerSession(authOptions)
   if (!session) return notFound()
 
   const transaction = await prisma.transaction.findUnique({
-    where: { id: params.id, organizationId: session.user.organizationId }
+    where: { id, organizationId: session.user.organizationId }
   })
 
   if (!transaction) return notFound()

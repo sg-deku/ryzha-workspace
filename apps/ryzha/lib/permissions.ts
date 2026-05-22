@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma"
 
 export async function hasPermission(permissionName: string) {
   const session = await getServerSession(authOptions)
-  if (!session?.user) return false
+  if (!session?.user || !session.user.organizationId) return false
 
   const userOrg = await prisma.userOrganization.findUnique({
     where: {

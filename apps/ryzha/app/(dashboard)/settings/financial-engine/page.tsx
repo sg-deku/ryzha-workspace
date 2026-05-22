@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 
 export default async function FinancialEnginePage() {
   const session = await getServerSession(authOptions)
-  if (!session) redirect("/login")
+  if (!session?.user?.organizationId) redirect("/login")
 
   const settings = await prisma.financialSettings.findUnique({
     where: { organizationId: session.user.organizationId },

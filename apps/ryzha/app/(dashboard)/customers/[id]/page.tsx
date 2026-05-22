@@ -11,13 +11,14 @@ import { Badge } from "@/components/ui/badge"
 
 export const dynamic = "force-dynamic";
 
-export default async function CustomerDetailsPage({ params }: { params: { id: string } }) {
+export default async function CustomerDetailsPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   const session = await getServerSession(authOptions)
   if (!session?.user) redirect("/login")
 
   const customer = await prisma.customer.findUnique({
     where: { 
-      id: params.id,
+      id,
       organizationId: session.user.organizationId 
     },
     include: {

@@ -3,17 +3,17 @@ import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { NextResponse } from "next/server"
 
-export async function PUT(req: Request, { params }: { params: { id: string } }) {
+export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   try {
     const session = await getServerSession(authOptions)
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
     const { customerId, orderNumber, lineItems } = await req.json()
 
-    // Verify it exists and is in DRAFT status
     const existing = await prisma.salesOrder.findUnique({
       where: {
-        id: params.id,
+        id,
         organizationId: session.user.organizationId
       }
     })
@@ -28,13 +28,12 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
 
     const amount = lineItems.reduce((sum: number, item: any) => sum + (Number(item.quantity) * Number(item.unitPrice)), 0)
 
-    // Delete existing line items and recreate to handle additions/deletions easily
     const updated = await prisma.$transaction([
       prisma.salesOrderLine.deleteMany({
-        where: { salesOrderId: params.id }
+        where: { salesOrderId: id }
       }),
       prisma.salesOrder.update({
-        where: { id: params.id },
+        where: { id },
         data: {
           customerId,
           orderNumber,

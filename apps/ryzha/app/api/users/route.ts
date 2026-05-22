@@ -53,6 +53,25 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing fields" }, { status: 400 })
     }
 
+    // Check organization user quota
+    const [orgUsersCount, license] = await Promise.all([
+      prisma.userOrganization.count({
+        where: { organizationId: session.user.organizationId }
+      }),
+      prisma.license.findUnique({
+        where: { organizationId: session.user.organizationId }
+      })
+    ])
+
+    const maxUsers = license?.maxUsers ?? 5 // Default fallback if no license
+
+    if (orgUsersCount >= maxUsers) {
+      return NextResponse.json(
+        { error: `User limit reached. Your plan allows a maximum of ${maxUsers} users.` },
+        { status: 403 }
+      )
+    }
+
     // Check if user already exists
     let user = await prisma.user.findUnique({ where: { email } })
 

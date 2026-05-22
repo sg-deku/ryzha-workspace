@@ -4,13 +4,14 @@ import { prisma } from "@/lib/prisma"
 import { notFound, redirect } from "next/navigation"
 import SalesOrderForm from "../../sales-order-form"
 
-export default async function EditSalesOrderPage({ params }: { params: { id: string } }) {
+export default async function EditSalesOrderPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   const session = await getServerSession(authOptions)
   if (!session) redirect("/login")
 
   const salesOrder = await prisma.salesOrder.findUnique({
     where: {
-      id: params.id,
+      id,
       organizationId: session.user.organizationId
     },
     include: {
@@ -20,9 +21,8 @@ export default async function EditSalesOrderPage({ params }: { params: { id: str
 
   if (!salesOrder) notFound()
 
-  // Only DRAFT orders should be editable
   if (salesOrder.status !== "DRAFT") {
-    redirect(`/sales-orders/${params.id}`)
+    redirect(`/sales-orders/${id}`)
   }
 
   const initialData = {

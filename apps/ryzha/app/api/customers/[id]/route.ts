@@ -5,7 +5,8 @@ import { NextResponse } from "next/server"
 
 export const dynamic = "force-dynamic"
 
-export async function PUT(req: Request, { params }: { params: { id: string } }) {
+export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   const session = await getServerSession(authOptions)
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
@@ -15,7 +16,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
 
     const updated = await prisma.customer.update({
       where: {
-        id: params.id,
+        id,
         organizationId: session.user.organizationId
       },
       data: {
@@ -34,14 +35,15 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
   }
 }
 
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   const session = await getServerSession(authOptions)
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
   try {
     const customer = await prisma.customer.findUnique({
       where: {
-        id: params.id,
+        id,
         organizationId: session.user.organizationId
       }
     })

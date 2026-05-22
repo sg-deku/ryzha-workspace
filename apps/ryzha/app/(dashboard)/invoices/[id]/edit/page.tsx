@@ -4,13 +4,14 @@ import { prisma } from "@/lib/prisma"
 import { notFound, redirect } from "next/navigation"
 import { InvoiceForm } from "@/components/invoices/invoice-form"
 
-export default async function EditInvoicePage({ params }: { params: { id: string } }) {
+export default async function EditInvoicePage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   const session = await getServerSession(authOptions)
   if (!session) redirect("/login")
 
   const invoice = await prisma.invoice.findUnique({
     where: {
-      id: params.id,
+      id,
       organizationId: session.user.organizationId
     },
     include: {
@@ -21,7 +22,7 @@ export default async function EditInvoicePage({ params }: { params: { id: string
   if (!invoice) notFound()
 
   if (invoice.status !== "DRAFT") {
-    redirect(`/invoices/${params.id}`)
+    redirect(`/invoices/${id}`)
   }
 
   const initialData = {
