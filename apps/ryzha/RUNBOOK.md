@@ -32,32 +32,42 @@ Orchestrator (lib/agents/orchestrator.ts)
 
 ### Required Environment Variables
 
-Add all of these to your `.env` file and `docker-compose.yml`:
+Add all of these to the root `.env` file. Docker Compose reads from it automatically.
 
 ```env
 # Database & Auth
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/ryzha
+DATABASE_URL=postgresql://postgres:postgres@localhost:5433/ryzha?schema=public
 REDIS_URL=redis://localhost:6379
 NEXTAUTH_URL=http://localhost:3000
 NEXTAUTH_SECRET=your-secret-here
 
+# Email — Brevo REST API
+# Get API key: https://app.brevo.com/settings/keys/api
+# Sender must be verified in Brevo → Senders & IPs → Senders
+BREVO_API_KEY=xkeysib-...
+SMTP_FROM=your-verified-email@example.com
+SMTP_FROM_NAME=Ryzha
+
 # Stripe (required for real payment trigger)
 STRIPE_SECRET_KEY=sk_live_...          # or sk_test_... for testing
 STRIPE_WEBHOOK_SECRET=whsec_...        # from Stripe Dashboard → Webhooks
-
-# AI Provider (pick one)
-GROQ_API_KEY=gsk_...                   # Free: console.groq.com
-OPENAI_API_KEY=sk-...                  # Paid: platform.openai.com
-ANTHROPIC_API_KEY=sk-ant-...           # Paid: console.anthropic.com
-
-# Notifications (optional)
-ELEVENLABS_API_KEY=...                 # Voice summaries
-TWILIO_ACCOUNT_SID=...
-TWILIO_AUTH_TOKEN=...
-TWILIO_PHONE_NUMBER=+1...
 ```
 
-### Required Settings (in-app)
+### AI Provider (set by admin at org approval, not in .env)
+
+The AI provider, model, and API key for each tenant are configured in the **admin portal** when approving an organisation. They are stored in `FinancialSettings` per org.
+
+Supported providers and their default models:
+
+| Provider | Default Model | Notes |
+|----------|--------------|-------|
+| Groq | `llama-3.3-70b-versatile` | Free tier available: console.groq.com |
+| OpenAI | `gpt-4o-mini` | platform.openai.com |
+| Anthropic | `claude-3-5-haiku-20241022` | console.anthropic.com |
+| Google Gemini | `gemini-1.5-flash` | aistudio.google.com |
+| Ollama | `llama3` | Local — no API key needed |
+
+### Required Settings (in-app, after admin approval)
 
 Go to **Settings → Financial Engine** after first login and configure:
 
@@ -65,13 +75,9 @@ Go to **Settings → Financial Engine** after first login and configure:
 |-----|-------|-------|
 | General | Bank Balance | Your current balance (e.g. `50000`) |
 | General | Avg Monthly Expenses | Your monthly burn (e.g. `8000`) |
-| AI Config | AI Provider | `groq` (or `openai`) |
-| AI Config | AI Model | `llama-3.3-70b-versatile` (Groq) or `gpt-4o-mini` (OpenAI) |
-| AI Config | API Key | Paste your key here |
 | Revenue | Deferral Period | `12` months (for annual subscriptions) |
 | Audit | Require Audit Seal | `true` |
 | FP&A | Target Monthly Revenue | Your MRR goal |
-| Voice & SMS | Enable Voice Summary | optional |
 
 ---
 
