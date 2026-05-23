@@ -3,5 +3,5 @@
   "framework": "nextjs",
   "installCommand": "cd ../.. && npm install",
   "buildCommand": "cd ../.. && npx turbo run build --filter=ryzha",
-  "outputDirectory": "apps/ryzha/.next"
+  "outputDirectory": ".next"
 }
