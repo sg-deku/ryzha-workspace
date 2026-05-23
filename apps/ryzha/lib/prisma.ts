@@ -1,15 +1,17 @@
 import { PrismaClient } from '@ryzha/database'
-import { PrismaPg } from '@prisma/adapter-pg'
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
 }
 
 function createPrismaClient() {
-  const connectionString = process.env.DATABASE_URL!
-  const adapter = new PrismaPg({ connectionString, max: 1 })
+  const url = process.env.DATABASE_URL ?? ""
+  const pooledUrl = url.includes("?")
+    ? `${url}&connection_limit=1&pool_timeout=0`
+    : `${url}?connection_limit=1&pool_timeout=0`
+
   return new PrismaClient({
-    adapter,
+    datasources: { db: { url: pooledUrl } },
     log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
   })
 }
