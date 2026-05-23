@@ -14,16 +14,26 @@ export default async function AuditLogsPage() {
 
   const logs = await prisma.auditLog.findMany({
     orderBy: { createdAt: "desc" },
-    take: 100, // Fetch the latest 100 logs for the admin view
+    take: 100,
+    select: {
+      id: true,
+      action: true,
+      entityType: true,
+      entityId: true,
+      actorId: true,
+      details: true,
+      createdAt: true,
+    },
   })
 
-  // To display user names for actorIds, we can fetch all relevant users
-  const actorIds = Array.from(new Set(logs.map(log => log.actorId).filter(Boolean) as string[]))
-  const actors = await prisma.user.findMany({
-    where: { id: { in: actorIds } },
-    select: { id: true, name: true, email: true }
-  })
-  const actorMap = Object.fromEntries(actors.map(a => [a.id, a]))
+  const actorIds = [...new Set(logs.map((l) => l.actorId).filter(Boolean) as string[])]
+  const actors = actorIds.length
+    ? await prisma.user.findMany({
+        where: { id: { in: actorIds } },
+        select: { id: true, name: true, email: true },
+      })
+    : []
+  const actorMap = Object.fromEntries(actors.map((a) => [a.id, a]))
 
   const getActionBadge = (action: string) => {
     if (action.includes("CREATE") || action.includes("INVITE")) return <Badge variant="success" className="bg-green-500/10 text-green-500 border-green-500/20">{action}</Badge>

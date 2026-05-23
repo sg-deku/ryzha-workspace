@@ -14,17 +14,18 @@ export default async function UsersPage() {
   if (!session?.user?.isSuperAdmin) redirect("/login")
 
   const users = await prisma.user.findMany({
-    where: {
-      isSuperAdmin: false
-    },
-    include: {
+    where: { isSuperAdmin: false },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      status: true,
+      createdAt: true,
       organizations: {
-        include: {
-          organization: {
-            select: { id: true, name: true, slug: true }
-          }
-        }
-      }
+        select: {
+          organization: { select: { id: true, name: true } },
+        },
+      },
     },
     orderBy: { createdAt: "desc" },
   })

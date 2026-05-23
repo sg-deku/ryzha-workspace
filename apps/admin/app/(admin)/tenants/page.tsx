@@ -18,11 +18,18 @@ export default async function TenantsPage() {
   const since30d = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
 
   const tenants = await prisma.organization.findMany({
-    include: {
-      users: true,
-      license: { include: { plan: true } },
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      status: true,
+      plan: true,
+      createdAt: true,
+      _count: { select: { users: true } },
+      license: { select: { plan: { select: { name: true } } } },
       usageMetrics: {
         where: { date: { gte: since30d } },
+        select: { apiCalls: true },
       },
       aiUsageLogs: {
         where: { createdAt: { gte: since30d } },
@@ -79,7 +86,7 @@ export default async function TenantsPage() {
                     <td className="px-4 py-3 text-muted-foreground">
                       {org.license?.plan?.name ?? org.plan}
                     </td>
-                    <td className="px-4 py-3 text-right">{org.users.length}</td>
+                    <td className="px-4 py-3 text-right">{org._count.users}</td>
                     <td className="px-4 py-3 text-right">{formatNumber(apiCalls)}</td>
                     <td className="px-4 py-3 text-right">{formatNumber(aiTokens)}</td>
                     <td className="px-4 py-3 text-muted-foreground">{formatDate(org.createdAt)}</td>

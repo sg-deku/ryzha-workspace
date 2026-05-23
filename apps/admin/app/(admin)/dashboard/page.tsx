@@ -14,30 +14,30 @@ export default async function DashboardPage() {
   if (!session?.user?.isSuperAdmin) redirect("/login")
 
   const [
-    totalOrgs,
-    activeOrgs,
-    pendingOrgs,
-    suspendedOrgs,
+    orgCounts,
     totalUsers,
     apiCallsAgg,
     aiTokensAgg,
   ] = await Promise.all([
-    prisma.organization.count(),
-    prisma.organization.count({ where: { status: "ACTIVE" } }),
-    prisma.organization.count({ where: { status: "PENDING" } }),
-    prisma.organization.count({ where: { status: "SUSPENDED" } }),
-    prisma.user.count(),
+    prisma.organization.groupBy({
+      by: ["status"],
+      _count: { _all: true },
+    }),
+    prisma.user.count({ where: { isSuperAdmin: false } }),
     prisma.usageMetrics.aggregate({ _sum: { apiCalls: true } }),
-    prisma.usageMetrics.aggregate({ _sum: { aiTokensUsed: true } }),
+    prisma.aIUsageLog.aggregate({ _sum: { totalTokens: true } }),
   ])
 
+  const countByStatus = Object.fromEntries(orgCounts.map((r) => [r.status, r._count._all]))
+  const totalOrgs = orgCounts.reduce((s, r) => s + r._count._all, 0)
+
   const kpis = [
-    { title: "Total Tenants", value: totalOrgs, icon: Building2, description: `${activeOrgs} active` },
-    { title: "Pending Approval", value: pendingOrgs, icon: Clock, description: "Awaiting review" },
-    { title: "Suspended", value: suspendedOrgs, icon: Ban, description: "Currently suspended" },
+    { title: "Total Tenants", value: totalOrgs, icon: Building2, description: `${countByStatus["ACTIVE"] ?? 0} active` },
+    { title: "Pending Approval", value: countByStatus["PENDING"] ?? 0, icon: Clock, description: "Awaiting review" },
+    { title: "Suspended", value: countByStatus["SUSPENDED"] ?? 0, icon: Ban, description: "Currently suspended" },
     { title: "Total Users", value: totalUsers, icon: Users, description: "Across all tenants" },
     { title: "Total API Calls", value: apiCallsAgg._sum.apiCalls ?? 0, icon: Activity, description: "All time" },
-    { title: "Total AI Tokens", value: aiTokensAgg._sum.aiTokensUsed ?? 0, icon: Zap, description: "All time" },
+    { title: "Total AI Tokens", value: aiTokensAgg._sum.totalTokens ?? 0, icon: Zap, description: "All time" },
   ]
 
   return (

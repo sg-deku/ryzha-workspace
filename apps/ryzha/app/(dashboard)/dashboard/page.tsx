@@ -10,13 +10,6 @@ export default async function DashboardPage() {
   const session = await getServerSession(authOptions)
   if (!session?.user) redirect("/login")
 
-  const org = await prisma.organization.findUnique({
-    where: { id: session.user.organizationId },
-    select: { onboardingCompleted: true }
-  })
-
-  if (!org?.onboardingCompleted) redirect("/onboarding")
-
   const [pendingPurchases, overdueSales] = await Promise.all([
     prisma.purchaseOrder.count({
       where: { organizationId: session.user.organizationId, status: "PENDING_APPROVAL" }
