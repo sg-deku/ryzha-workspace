@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Loader2, Plus, Trash2, FileSignature, Info } from "lucide-react"
+import { Loader2, Plus, Trash2, FileSignature, Info, Edit } from "lucide-react"
 import { toast } from "sonner"
 
 interface Contract {
@@ -25,6 +25,7 @@ export default function ContractsPage() {
   const [loading, setLoading] = useState(true)
   const [open, setOpen] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
   const [form, setForm] = useState({
     stripePaymentIntentId: "",
     customerEmail: "",
@@ -51,24 +52,45 @@ export default function ContractsPage() {
     e.preventDefault()
     setSubmitting(true)
     try {
+      const method = editingId ? "PATCH" : "POST"
       const res = await fetch("/api/contracts", {
-        method: "POST",
+        method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          ...(editingId && { id: editingId }),
           ...form,
           amount: parseFloat(form.amount),
         }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
-      toast.success("Contract created successfully")
+      toast.success(editingId ? "Contract updated" : "Contract created successfully")
       setOpen(false)
+      setEditingId(null)
       setForm({ stripePaymentIntentId: "", customerEmail: "", amount: "" })
       fetchContracts()
     } catch (err: any) {
       toast.error(err.message)
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  const handleEdit = (c: Contract) => {
+    setEditingId(c.id)
+    setForm({
+      stripePaymentIntentId: c.stripePaymentIntentId,
+      customerEmail: c.customerEmail,
+      amount: c.amount.toString(),
+    })
+    setOpen(true)
+  }
+
+  const handleOpenChange = (isOpen: boolean) => {
+    setOpen(isOpen)
+    if (!isOpen) {
+      setEditingId(null)
+      setForm({ stripePaymentIntentId: "", customerEmail: "", amount: "" })
     }
   }
 
@@ -97,16 +119,14 @@ export default function ContractsPage() {
             Signed contracts linked to Stripe payments. Required by the Auditor Agent.
           </p>
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              New Contract
-            </Button>
-          </DialogTrigger>
+        <Button onClick={() => setOpen(true)}>
+          <Plus className="mr-2 h-4 w-4" />
+          New Contract
+        </Button>
+        <Dialog open={open} onOpenChange={handleOpenChange}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Create Signed Contract</DialogTitle>
+              <DialogTitle>{editingId ? "Edit Contract" : "Create Signed Contract"}</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4 pt-2">
               <div className="space-y-2">
@@ -147,23 +167,12 @@ export default function ContractsPage() {
               </div>
               <Button type="submit" className="w-full" disabled={submitting}>
                 {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileSignature className="mr-2 h-4 w-4" />}
-                Create Contract
+                {editingId ? "Save Changes" : "Create Contract"}
               </Button>
             </form>
           </DialogContent>
         </Dialog>
       </div>
-
-      <Card className="border-blue-200 bg-blue-50 dark:bg-blue-900/10 dark:border-blue-800">
-        <CardContent className="pt-4 flex gap-3">
-          <Info className="h-4 w-4 text-blue-600 mt-0.5 shrink-0" />
-          <p className="text-sm text-blue-800 dark:text-blue-300">
-            The <strong>Auditor Agent</strong> looks up a signed contract matching the Stripe Payment Intent ID before
-            verifying a transaction. Create one here before running Workflow Studio or receiving a real Stripe webhook.
-            For manual triggers, the system auto-creates a mock contract — no action needed.
-          </p>
-        </CardContent>
-      </Card>
 
       <Card>
         <CardHeader>
@@ -208,7 +217,15 @@ export default function ContractsPage() {
                     <TableCell className="text-muted-foreground text-sm">
                       {new Date(c.signedAt).toLocaleDateString()}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="flex justify-end space-x-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleEdit(c)}
+                        className="text-muted-foreground hover:text-foreground"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
                       <Button
                         variant="ghost"
                         size="icon"

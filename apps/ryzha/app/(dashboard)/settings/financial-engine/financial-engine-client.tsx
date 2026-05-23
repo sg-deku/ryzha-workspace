@@ -16,7 +16,7 @@ import { Separator } from "@/components/ui/separator"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
-import { BarChart2, Zap, MessageSquare, FileSearch, Bot, RefreshCw } from "lucide-react"
+import { BarChart2, Zap, MessageSquare, FileSearch, Bot, RefreshCw, Eye, EyeOff } from "lucide-react"
 
 const financialSettingsSchema = z.object({
   baseCurrency: z.string().min(1),
@@ -94,6 +94,7 @@ export default function FinancialEngineClient({ initialData }: { initialData: an
   const [isLoading, setIsLoading] = useState(false)
   const [aiUsage, setAiUsage] = useState<AIUsageData | null>(null)
   const [usageLoading, setUsageLoading] = useState(false)
+  const [showApiPwd, setShowApiPwd] = useState(false)
 
   const fetchUsage = useCallback(async () => {
     setUsageLoading(true)
@@ -142,9 +143,9 @@ export default function FinancialEngineClient({ initialData }: { initialData: an
       voiceScriptTemplate: "Karina, a {{amount}} credit has been reconciled under ASC 606. This improves our net income for the quarter and extends our cash runway by {{runwayDays}} days, moving our 'Zero Cash Date' to {{zeroCashDate}}. We are currently {{percentAhead}}% ahead of our financial plan.",
       enableSMS: false,
       smsRecipientNumber: "",
-      aiProvider: "openai",
-      aiModel: "gpt-4o-mini",
-      aiApiKey: "",
+      aiProvider: "groq",
+      aiModel: "llama-3.3-70b-versatile",
+      aiApiKey: "REDACTED_GROQ_KEY",
       embeddingProvider: "openai",
       embeddingModel: "text-embedding-3-small",
       emailProvider: "smtp",
@@ -192,20 +193,9 @@ export default function FinancialEngineClient({ initialData }: { initialData: an
       <Separator />
       
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        <Tabs defaultValue="general" className="w-full">
-          <TabsList className="grid w-full grid-cols-9">
-            <TabsTrigger value="general">General</TabsTrigger>
-            <TabsTrigger value="ai">AI Config</TabsTrigger>
-            <TabsTrigger value="revenue">Revenue</TabsTrigger>
-            <TabsTrigger value="audit">Audit</TabsTrigger>
-            <TabsTrigger value="fpa">FP&A</TabsTrigger>
-            <TabsTrigger value="voice-sms">Voice & SMS</TabsTrigger>
-            <TabsTrigger value="email">Email</TabsTrigger>
-            <TabsTrigger value="p2p">P2P</TabsTrigger>
-            <TabsTrigger value="o2c">O2C</TabsTrigger>
-          </TabsList>
+        <div className="columns-1 xl:columns-2 gap-6 space-y-6">
           
-          <TabsContent value="general" className="space-y-4 pt-4">
+          <div className="break-inside-avoid">
             <Card>
               <CardHeader>
                 <CardTitle>General Settings</CardTitle>
@@ -265,9 +255,8 @@ export default function FinancialEngineClient({ initialData }: { initialData: an
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
-
-          <TabsContent value="ai" className="space-y-4 pt-4">
+          </div>
+          <div className="break-inside-avoid">
             <Card>
               <CardHeader>
                 <CardTitle>AI Model Configuration</CardTitle>
@@ -317,12 +306,27 @@ export default function FinancialEngineClient({ initialData }: { initialData: an
                 
                 <div className="space-y-2">
                   <Label htmlFor="aiApiKey">API Key</Label>
-                  <Input 
-                    id="aiApiKey" 
-                    type="password"
-                    {...form.register("aiApiKey")} 
-                    placeholder="Enter your API key (leave blank to use system default)"
-                  />
+                  <div className="relative">
+                    <Input 
+                      id="aiApiKey" 
+                      type={showApiPwd ? "text" : "password"}
+                      {...form.register("aiApiKey")} 
+                      placeholder="Enter your API key (leave blank to use system default)"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                      onClick={() => setShowApiPwd(!showApiPwd)}
+                    >
+                      {showApiPwd ? (
+                        <EyeOff className="h-4 w-4 text-muted-foreground" />
+                      ) : (
+                        <Eye className="h-4 w-4 text-muted-foreground" />
+                      )}
+                    </Button>
+                  </div>
                   <p className="text-xs text-muted-foreground">
                     Not required for Ollama (local).
                   </p>
@@ -470,9 +474,9 @@ export default function FinancialEngineClient({ initialData }: { initialData: an
                 )}
               </CardContent>
             </Card>
-          </TabsContent>
+          </div>
 
-          <TabsContent value="revenue" className="space-y-4 pt-4">
+          <div className="break-inside-avoid">
             <Card>
               <CardHeader>
                 <CardTitle>Revenue Recognition Rules</CardTitle>
@@ -489,9 +493,9 @@ export default function FinancialEngineClient({ initialData }: { initialData: an
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
+          </div>
 
-          <TabsContent value="audit" className="space-y-4 pt-4">
+          <div className="break-inside-avoid">
             <Card>
               <CardHeader>
                 <CardTitle>Audit & Compliance Rules</CardTitle>
@@ -538,9 +542,9 @@ export default function FinancialEngineClient({ initialData }: { initialData: an
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
+          </div>
 
-          <TabsContent value="fpa" className="space-y-4 pt-4">
+          <div className="break-inside-avoid">
             <Card>
               <CardHeader>
                 <CardTitle>Forecasting & Planning (FP&A)</CardTitle>
@@ -566,9 +570,9 @@ export default function FinancialEngineClient({ initialData }: { initialData: an
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
+          </div>
 
-          <TabsContent value="voice-sms" className="space-y-4 pt-4">
+          <div className="break-inside-avoid">
             <Card>
               <CardHeader>
                 <CardTitle>Voice & SMS Notifications</CardTitle>
@@ -614,8 +618,8 @@ export default function FinancialEngineClient({ initialData }: { initialData: an
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
-          <TabsContent value="p2p" className="space-y-4 pt-4">
+          </div>
+          <div className="break-inside-avoid">
             <Card>
               <CardHeader>
                 <CardTitle>Approval Workflow</CardTitle>
@@ -659,9 +663,9 @@ export default function FinancialEngineClient({ initialData }: { initialData: an
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
+          </div>
 
-          <TabsContent value="o2c" className="space-y-4 pt-4">
+          <div className="break-inside-avoid">
             <Card>
               <CardHeader>
                 <CardTitle>Credit Management</CardTitle>
@@ -702,8 +706,8 @@ export default function FinancialEngineClient({ initialData }: { initialData: an
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
-        </Tabs>
+          </div>
+        </div>
 
         <div className="flex justify-end">
           <Button type="submit" disabled={isLoading}>

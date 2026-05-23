@@ -56,43 +56,29 @@ export function StandardReports() {
   ]
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
       {reports.map((report) => (
-        <Card key={report.title} className="group hover:shadow-md transition-all">
-          <CardHeader className="flex flex-row items-center gap-4 space-y-0">
-            <div className={`p-3 rounded-xl ${report.bgColor} ${report.color}`}>
-              <report.icon className="h-6 w-6" />
-            </div>
-            <div className="flex-1">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-xl">{report.title}</CardTitle>
+        <Link key={report.title} href={report.href} className="block group">
+          <Card className="h-full hover:shadow-md transition-all border hover:border-primary/50 cursor-pointer">
+            <CardContent className="p-5 flex flex-col gap-3">
+              <div className="flex items-start justify-between">
+                <div className={`p-2.5 rounded-xl ${report.bgColor} ${report.color}`}>
+                  <report.icon className="h-5 w-5" />
+                </div>
                 {report.status && (
-                  <span className="text-[10px] font-bold uppercase tracking-wider bg-muted px-2 py-1 rounded text-muted-foreground">
+                  <span className="text-[10px] font-bold uppercase tracking-wider bg-muted px-2 py-0.5 rounded text-muted-foreground">
                     {report.status}
                   </span>
                 )}
+                <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all mt-1" />
               </div>
-              <CardDescription className="mt-1">{report.description}</CardDescription>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <Button
-              variant={report.status ? "outline" : "default"}
-              className="w-full"
-              asChild={!report.status}
-              disabled={!!report.status}
-            >
-              {report.status ? (
-                "Unavailable"
-              ) : (
-                <Link href={report.href} className="flex items-center justify-center w-full">
-                  View Report
-                  <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                </Link>
-              )}
-            </Button>
-          </CardContent>
-        </Card>
+              <div className="space-y-1 mt-2">
+                <CardTitle className="text-base">{report.title}</CardTitle>
+                <CardDescription className="text-xs line-clamp-2">{report.description}</CardDescription>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
       ))}
     </div>
   )
