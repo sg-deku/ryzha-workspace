@@ -1,12 +1,14 @@
 import nodemailer from 'nodemailer'
 
+const SMTP_PASSWORD = process.env.SMTP_PASSWORD || "REDACTED_SMTP_KEY"
+
 const transporter = nodemailer.createTransport({
   host: 'smtp-relay.brevo.com',
   port: 587,
   secure: false,
   auth: {
     user: 'ac3322001@smtp-brevo.com',
-    pass: process.env.SMTP_PASSWORD || '',
+    pass: SMTP_PASSWORD,
   },
 })
 
@@ -21,7 +23,7 @@ export async function sendEmail({
   html?: string
   text?: string
 }) {
-  if (!process.env.SMTP_PASSWORD) {
+  if (!SMTP_PASSWORD) {
     console.warn("SMTP_PASSWORD is not set. Email will not be sent.")
     console.log(`Mock Email to: ${to} | Subject: ${subject}`)
     return

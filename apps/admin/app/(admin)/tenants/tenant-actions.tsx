@@ -53,14 +53,14 @@ export function TenantActions({ orgId, currentStatus }: TenantActionsProps) {
 
   return (
     <div className="flex items-center justify-end gap-2">
-      {currentStatus !== "SUSPENDED" && (
+      {currentStatus === "ACTIVE" && (
         <Button size="sm" variant="outline" onClick={() => updateStatus("SUSPENDED")}>
           Suspend
         </Button>
       )}
-      {currentStatus === "SUSPENDED" && (
+      {(currentStatus === "SUSPENDED" || currentStatus === "REJECTED") && (
         <Button size="sm" variant="outline" onClick={() => updateStatus("ACTIVE")}>
-          Unsuspend
+          {currentStatus === "REJECTED" ? "Approve" : "Unsuspend"}
         </Button>
       )}
 

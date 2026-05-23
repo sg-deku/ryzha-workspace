@@ -47,13 +47,13 @@ export function Sidebar() {
       </nav>
 
       <div className="border-t p-4">
-        <button
-          onClick={() => signOut({ callbackUrl: "/login" })}
-          className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+        <Link
+          href="/logout"
+          className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground cursor-pointer"
         >
           <LogOut className="h-4 w-4 shrink-0" />
           Sign out
-        </button>
+        </Link>
       </div>
     </aside>
   )

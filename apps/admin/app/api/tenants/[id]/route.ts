@@ -206,6 +206,10 @@ export async function DELETE(
 
       // 5. Delete Organization itself if requested
       if (deleteAll) {
+        // Redundant cleanup just to be absolutely sure no constraints fail
+        await tx.financialSettings.deleteMany({ where: { organizationId: id } })
+        await tx.p2PSettings.deleteMany({ where: { organizationId: id } })
+        await tx.o2CSettings.deleteMany({ where: { organizationId: id } })
         await tx.license.deleteMany({ where: { organizationId: id } })
         await tx.organization.delete({ where: { id } })
       }

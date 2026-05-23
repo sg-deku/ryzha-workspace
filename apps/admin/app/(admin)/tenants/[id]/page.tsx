@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { formatDate, formatNumber } from "@/lib/utils"
 import { LicenseEditor } from "./license-editor"
 import { UsageChart } from "./usage-chart"
+import { TenantActions } from "../tenant-actions"
 
 export default async function TenantDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -44,10 +45,13 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
     <>
       <Header title={org.name} />
       <div className="flex-1 p-6 space-y-6">
-        <div className="flex items-center gap-3">
-          <h2 className="text-lg font-semibold">{org.name}</h2>
-          <Badge variant={statusVariant[org.status] ?? "secondary"}>{org.status}</Badge>
-          <span className="text-sm text-muted-foreground">/{org.slug}</span>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <h2 className="text-lg font-semibold">{org.name}</h2>
+            <Badge variant={statusVariant[org.status] ?? "secondary"}>{org.status}</Badge>
+            <span className="text-sm text-muted-foreground">/{org.slug}</span>
+          </div>
+          <TenantActions orgId={org.id} currentStatus={org.status} />
         </div>
 
         <Tabs defaultValue="overview">
