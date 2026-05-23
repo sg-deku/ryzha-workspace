@@ -6,6 +6,8 @@ import { Header } from "@/components/layout/header"
 import { Badge } from "@/components/ui/badge"
 import { formatDate } from "@/lib/utils"
 
+export const dynamic = "force-dynamic"
+
 export default async function AuditLogsPage() {
   const session = await getServerSession(authOptions)
   if (!session?.user?.isSuperAdmin) redirect("/login")

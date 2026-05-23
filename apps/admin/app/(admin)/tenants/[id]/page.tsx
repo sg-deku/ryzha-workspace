@@ -11,6 +11,8 @@ import { LicenseEditor } from "./license-editor"
 import { UsageChart } from "./usage-chart"
 import { TenantActions } from "../tenant-actions"
 
+export const dynamic = "force-dynamic"
+
 export default async function TenantDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const session = await getServerSession(authOptions)

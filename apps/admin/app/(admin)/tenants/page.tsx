@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button"
 import { formatDate, formatNumber } from "@/lib/utils"
 import { TenantActions } from "./tenant-actions"
 
+export const dynamic = "force-dynamic"
+
 export default async function TenantsPage() {
   const session = await getServerSession(authOptions)
   if (!session?.user?.isSuperAdmin) redirect("/login")

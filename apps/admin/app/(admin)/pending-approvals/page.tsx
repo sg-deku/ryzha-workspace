@@ -6,6 +6,8 @@ import { Header } from "@/components/layout/header"
 import { formatDate } from "@/lib/utils"
 import { ApprovalActions } from "./approval-actions"
 
+export const dynamic = "force-dynamic"
+
 export default async function PendingApprovalsPage() {
   const session = await getServerSession(authOptions)
   if (!session?.user?.isSuperAdmin) redirect("/login")

@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge"
 import { CreatePlanDialog } from "./create-plan-dialog"
 import { PlanActions } from "./plan-actions"
 
+export const dynamic = "force-dynamic"
+
 export default async function LicensesPage() {
   const session = await getServerSession(authOptions)
   if (!session?.user?.isSuperAdmin) redirect("/login")

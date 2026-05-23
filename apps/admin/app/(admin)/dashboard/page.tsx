@@ -7,6 +7,8 @@ import { redirect } from "next/navigation"
 import { Building2, Users, Zap, Activity, Clock, Ban } from "lucide-react"
 import { formatNumber } from "@/lib/utils"
 
+export const dynamic = "force-dynamic"
+
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions)
   if (!session?.user?.isSuperAdmin) redirect("/login")

@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge"
 import { formatDate } from "@/lib/utils"
 import { UserActions } from "./user-actions"
 
+export const dynamic = "force-dynamic"
+
 export default async function UsersPage() {
   const session = await getServerSession(authOptions)
   if (!session?.user?.isSuperAdmin) redirect("/login")
