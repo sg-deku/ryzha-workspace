@@ -1,5 +1,4 @@
 {
   "version": 2,
-  "framework": "nextjs",
-  "buildCommand": "prisma generate && prisma db push --accept-data-loss && prisma db seed && next build"
+  "framework": "nextjs"
 }
