@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
+import { sendSignupThankYouEmail } from "@/lib/email"
 
 export const dynamic = "force-dynamic";
 
@@ -28,7 +29,7 @@ export async function POST(req: Request) {
         data: {
           name: organizationName,
           slug: organizationName.toLowerCase().replace(/ /g, "-") + "-" + Math.random().toString(36).substring(2, 7),
-          onboardingCompleted: true,
+          onboardingCompleted: false,
           status: "PENDING",
         }
       })
@@ -97,6 +98,10 @@ export async function POST(req: Request) {
 
       return { user, organization }
     })
+
+    sendSignupThankYouEmail(email, name).catch((err) =>
+      console.error("[signup] Failed to send thank-you email:", err)
+    )
 
     return NextResponse.json({ message: "User created successfully", userId: result.user.id }, { status: 201 })
   } catch (error: any) {
