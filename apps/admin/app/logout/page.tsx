@@ -1,20 +1,7 @@
-"use client"
+import { LogoutClient } from "./logout-client"
 
-import { useEffect } from "react"
-import { signOut } from "next-auth/react"
-import { Loader2 } from "lucide-react"
+export const dynamic = "force-dynamic"
 
 export default function LogoutPage() {
-  useEffect(() => {
-    signOut({ callbackUrl: "/login" })
-  }, [])
-
-  return (
-    <div className="flex h-screen w-full items-center justify-center bg-muted/50">
-      <div className="flex flex-col items-center gap-4">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <p className="text-lg font-medium text-muted-foreground">Logging out...</p>
-      </div>
-    </div>
-  )
+  return <LogoutClient />
 }
