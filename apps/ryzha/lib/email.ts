@@ -65,8 +65,8 @@ export function emailTemplate(bodyHtml: string): string {
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Ryzha</title>
 </head>
-<body style="margin:0;padding:0;background-color:#eff6ff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#eff6ff;padding:40px 16px;">
+<body style="margin:0;padding:0;background-color:#f3f4f6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f3f4f6;padding:40px 16px;">
     <tr>
       <td align="center">
         <table width="100%" cellpadding="0" cellspacing="0" style="max-width:580px;">
@@ -89,17 +89,17 @@ export function emailTemplate(bodyHtml: string): string {
 
           <!-- Body -->
           <tr>
-            <td style="background-color:#ffffff;padding:36px 36px 28px;border-left:1px solid #bfdbfe;border-right:1px solid #bfdbfe;">
+            <td style="background-color:#ffffff;padding:36px 36px 28px;border-left:1px solid #e5e7eb;border-right:1px solid #e5e7eb;">
               ${bodyHtml}
             </td>
           </tr>
 
           <!-- Footer -->
           <tr>
-            <td style="background-color:#eff6ff;border:1px solid #bfdbfe;border-top:none;border-radius:0 0 12px 12px;padding:24px 36px;">
-              <p style="margin:0 0 4px;font-size:14px;color:#1e40af;font-weight:600;">Thank you,</p>
-              <p style="margin:0 0 16px;font-size:14px;color:#1e40af;">Karina &amp; Sushmit</p>
-              <p style="margin:0;font-size:12px;color:#93c5fd;line-height:1.6;">
+            <td style="background-color:#f3f4f6;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 12px 12px;padding:24px 36px;">
+              <p style="margin:0 0 4px;font-size:14px;color:#374151;font-weight:600;">Thank you,</p>
+              <p style="margin:0 0 16px;font-size:14px;color:#374151;">Karina &amp; Sushmit</p>
+              <p style="margin:0;font-size:12px;color:#9ca3af;line-height:1.6;">
                 You received this email because you have an account with Ryzha.<br />
                 &copy; ${new Date().getFullYear()} Ryzha. All rights reserved.
               </p>
