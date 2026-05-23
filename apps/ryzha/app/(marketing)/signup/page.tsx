@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import { signIn } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -29,8 +30,13 @@ export default function SignupPage() {
       })
 
       if (res.ok) {
-        toast.success("Account created! Please sign in.")
-        router.push("/login")
+        const signInRes = await signIn("credentials", { email, password, redirect: false })
+        if (signInRes?.ok) {
+          router.push("/onboarding")
+        } else {
+          toast.success("Account created! Please log in.")
+          router.push("/login")
+        }
       } else {
         const data = await res.json()
         toast.error(data.error || data.message || "Something went wrong. Please try again.")

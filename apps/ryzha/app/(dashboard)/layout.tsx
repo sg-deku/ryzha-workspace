@@ -17,8 +17,8 @@ export default async function DashboardLayout({
     redirect("/login")
   }
 
-  if (session.user.orgStatus && session.user.orgStatus !== "ACTIVE") {
-    redirect("/pending-approval")
+  if (session.user.orgStatus === "SUSPENDED") {
+    redirect("/suspended")
   }
 
   const org = await prisma.organization.findUnique({
@@ -29,5 +29,9 @@ export default async function DashboardLayout({
     redirect("/onboarding")
   }
 
-  return <MainLayout>{children}</MainLayout>
+  if (session.user.orgStatus && session.user.orgStatus !== "ACTIVE") {
+    redirect("/pending-approval")
+  }
+
+  return <MainLayout session={session}>{children}</MainLayout>
 }

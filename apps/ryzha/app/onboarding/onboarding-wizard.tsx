@@ -45,9 +45,7 @@ export function OnboardingWizard() {
         body: JSON.stringify(formData)
       })
       if (res.ok) {
-        toast.success("Welcome to Ryzha!")
-        router.push("/dashboard")
-        router.refresh()
+        router.push("/thank-you")
       } else {
         toast.error("Failed to complete onboarding")
       }
