@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma"
 import { notFound, redirect } from "next/navigation"
 import SalesOrderForm from "../../sales-order-form"
 
+export const dynamic = "force-dynamic"
+
 export default async function EditSalesOrderPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const session = await getServerSession(authOptions)
