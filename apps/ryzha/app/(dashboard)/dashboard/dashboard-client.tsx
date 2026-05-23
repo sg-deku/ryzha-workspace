@@ -38,7 +38,7 @@ interface DashboardClientProps {
   overdueSales?: number
 }
 
-const PAIRED_WIDGETS = new Set(["cash_flow", "agent_log", "anomaly_alerts", "recent_transactions", "ai_usage"])
+const PAIRED_WIDGETS = new Set(["cash_flow", "agent_log", "recent_transactions", "ai_usage"])
 
 function renderWidgetContent(
   widget: WidgetConfig,

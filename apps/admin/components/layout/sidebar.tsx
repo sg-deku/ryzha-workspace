@@ -5,8 +5,10 @@ import { usePathname } from "next/navigation"
 import {
   LayoutDashboard,
   Building2,
+  Users,
   CreditCard,
   Clock,
+  Activity,
   LogOut,
 } from "lucide-react"
 import { signOut } from "next-auth/react"
@@ -15,8 +17,10 @@ import { cn } from "@/lib/utils"
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/tenants", label: "Tenants", icon: Building2 },
+  { href: "/users", label: "Users", icon: Users },
   { href: "/licenses", label: "License Plans", icon: CreditCard },
   { href: "/pending-approvals", label: "Pending Approvals", icon: Clock },
+  { href: "/audit-logs", label: "Audit Logs", icon: Activity },
 ]
 
 export function Sidebar() {

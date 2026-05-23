@@ -38,6 +38,9 @@ export function ApprovalActions({ organizationId, plans }: ApprovalActionsProps)
   const [maxAiTokens, setMaxAiTokens] = useState(String((firstPlan?.features as PlanFeatures)?.aiTokens ?? 50000))
   const [adminNotes, setAdminNotes] = useState("")
   const [billingContact, setBillingContact] = useState("")
+  const [aiProvider, setAiProvider] = useState("openai")
+  const [aiModel, setAiModel] = useState("gpt-4o-mini")
+  const [aiApiKey, setAiApiKey] = useState("")
 
   function handlePlanChange(planId: string) {
     setSelectedPlanId(planId)
@@ -66,6 +69,9 @@ export function ApprovalActions({ organizationId, plans }: ApprovalActionsProps)
         maxAiTokens: parseInt(maxAiTokens) || undefined,
         adminNotes: adminNotes || undefined,
         billingContact: billingContact || undefined,
+        aiProvider,
+        aiModel,
+        aiApiKey: aiApiKey || undefined,
       }),
     })
     setLoading(false)
@@ -142,6 +148,44 @@ export function ApprovalActions({ organizationId, plans }: ApprovalActionsProps)
                     min={0}
                   />
                 </div>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <p className="text-sm font-medium text-muted-foreground uppercase tracking-wide">AI Configuration</p>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>AI Provider</Label>
+                  <Select value={aiProvider} onValueChange={setAiProvider}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select provider" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="openai">OpenAI</SelectItem>
+                      <SelectItem value="anthropic">Anthropic</SelectItem>
+                      <SelectItem value="gemini">Google Gemini</SelectItem>
+                      <SelectItem value="groq">Groq (Llama 3)</SelectItem>
+                      <SelectItem value="ollama">Ollama (Local)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>AI Model</Label>
+                  <Input
+                    value={aiModel}
+                    onChange={(e) => setAiModel(e.target.value)}
+                    placeholder="e.g. gpt-4o-mini"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>AI API Key</Label>
+                <Input
+                  type="password"
+                  value={aiApiKey}
+                  onChange={(e) => setAiApiKey(e.target.value)}
+                  placeholder="Leave blank to use system default"
+                />
               </div>
             </div>
 

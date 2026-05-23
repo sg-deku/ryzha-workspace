@@ -256,7 +256,7 @@ export default function FinancialEngineClient({ initialData }: { initialData: an
               </CardContent>
             </Card>
           </div>
-          <div className="break-inside-avoid">
+          {/* <div className="break-inside-avoid">
             <Card>
               <CardHeader>
                 <CardTitle>AI Model Configuration</CardTitle>
@@ -474,7 +474,7 @@ export default function FinancialEngineClient({ initialData }: { initialData: an
                 )}
               </CardContent>
             </Card>
-          </div>
+          </div> */}
 
           <div className="break-inside-avoid">
             <Card>

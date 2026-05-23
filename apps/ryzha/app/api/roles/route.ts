@@ -16,6 +16,13 @@ export async function GET(req: Request) {
           { organizationId: session.user.organizationId },
           { isSystem: true, organizationId: null } // System roles
         ]
+      },
+      include: {
+        permissions: {
+          include: {
+            permission: true
+          }
+        }
       }
     })
 

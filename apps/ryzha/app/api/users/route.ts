@@ -107,6 +107,17 @@ export async function POST(req: Request) {
       }
     })
 
+    await prisma.auditLog.create({
+      data: {
+        action: "INVITE_USER",
+        entityType: "USER",
+        entityId: user.id,
+        actorId: session.user.id,
+        organizationId: session.user.organizationId,
+        details: { email, name, roleId }
+      }
+    })
+
     // Mock invite email
     console.log(`Invitation sent to ${email} for organization ${session.user.organizationId}`)
 

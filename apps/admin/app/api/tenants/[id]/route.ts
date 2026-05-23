@@ -69,6 +69,21 @@ export async function PATCH(
     }
   })
 
+  await prisma.auditLog.create({
+    data: {
+      action: "UPDATE_ORGANIZATION",
+      entityType: "ORGANIZATION",
+      entityId: id,
+      actorId: session.user.id,
+      organizationId: id,
+      details: {
+        status: status !== undefined ? status : undefined,
+        name: name !== undefined ? name : undefined,
+        approved: status === "ACTIVE" && orgBefore?.status !== "ACTIVE"
+      }
+    }
+  })
+
   if (status === "ACTIVE" && orgBefore?.status !== "ACTIVE") {
     try {
       const { sendEmail } = await import("@/lib/email")
@@ -213,6 +228,17 @@ export async function DELETE(
         await tx.license.deleteMany({ where: { organizationId: id } })
         await tx.organization.delete({ where: { id } })
       }
+
+      await tx.auditLog.create({
+        data: {
+          action: deleteAll ? "DELETE_ORGANIZATION" : "PURGE_ORGANIZATION_MODULES",
+          entityType: "ORGANIZATION",
+          entityId: id,
+          actorId: session.user.id,
+          organizationId: deleteAll ? null : id,
+          details: { deleteAll, modules }
+        }
+      })
     })
 
     return NextResponse.json({ success: true })

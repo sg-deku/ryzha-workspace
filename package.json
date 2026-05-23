@@ -15,7 +15,8 @@
     "db:generate": "npm run generate --workspace=packages/database",
     "db:migrate": "npm run migrate --workspace=packages/database",
     "db:migrate:deploy": "npm run migrate:deploy --workspace=packages/database",
-    "db:studio": "npm run studio --workspace=packages/database"
+    "db:studio": "npm run studio --workspace=packages/database",
+    "db:clear": "npx tsx scripts/clear-db.ts"
   },
   "packageManager": "npm@11.14.1",
   "dependencies": {

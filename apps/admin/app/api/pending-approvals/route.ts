@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json()
-  const { organizationId, action, defaultPlanId, maxUsers, maxApiCalls, maxAiTokens, adminNotes, billingContact } = body
+  const { organizationId, action, defaultPlanId, maxUsers, maxApiCalls, maxAiTokens, adminNotes, billingContact, aiProvider, aiModel, aiApiKey } = body
 
   if (action === "approve") {
     const defaultPlan = defaultPlanId
@@ -72,6 +72,15 @@ export async function POST(request: NextRequest) {
           },
         })
       }
+
+      await tx.financialSettings.update({
+        where: { organizationId },
+        data: {
+          ...(aiProvider !== undefined && { aiProvider }),
+          ...(aiModel !== undefined && { aiModel }),
+          ...(aiApiKey !== undefined && { aiApiKey }),
+        }
+      })
     })
 
     // Fetch the admin user of this organization to send welcome email

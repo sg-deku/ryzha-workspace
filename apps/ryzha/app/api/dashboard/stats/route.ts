@@ -101,6 +101,18 @@ export async function GET() {
 
   return NextResponse.json([
     {
+      title: "Runway",
+      value: runway > 0 ? `${runway.toFixed(1)} mo` : "—",
+      change: runway > 0 ? pctChange(runway, prevRunway) : "Set bank balance",
+      data: Array(7).fill(0).map((_, i) => Math.max(0, runway - (6 - i) * 0.1)),
+    },
+    {
+      title: "Burn Rate",
+      value: burnRate > 0 ? `${fmt(burnRate)}/mo` : "—",
+      change: pctChange(burnRate, prevExpenses || burnRate),
+      data: monthlyExpenses.map(e => e || burnRate),
+    },
+    {
       title: "MRR",
       value: fmt(currentMRR),
       change: pctChange(currentMRR, prevMRR),
@@ -123,18 +135,6 @@ export async function GET() {
       value: fmt(currentExpenses),
       change: pctChange(currentExpenses, prevExpenses),
       data: monthlyExpenses,
-    },
-    {
-      title: "Runway",
-      value: runway > 0 ? `${runway.toFixed(1)} mo` : "—",
-      change: runway > 0 ? pctChange(runway, prevRunway) : "Set bank balance",
-      data: Array(7).fill(0).map((_, i) => Math.max(0, runway - (6 - i) * 0.1)),
-    },
-    {
-      title: "Burn Rate",
-      value: burnRate > 0 ? `${fmt(burnRate)}/mo` : "—",
-      change: pctChange(burnRate, prevExpenses || burnRate),
-      data: monthlyExpenses.map(e => e || burnRate),
     },
     {
       title: "Reconciled",

@@ -51,26 +51,23 @@ export const authOptions: NextAuthOptions = {
           })
 
           if (!user) {
-            console.error(`[auth] User not found: ${credentials.email}`)
+            // Silently fail for invalid credentials to avoid spamming server logs
             return null
           }
 
           if (!user.password) {
-            console.error(`[auth] User has no password: ${credentials.email}`)
             return null
           }
           
           const isValid = await bcrypt.compare(credentials.password, user.password)
           
           if (!isValid) {
-            console.error(`[auth] Invalid password for: ${credentials.email}`)
             return null
           }
 
           const userOrg = user.organizations[0]
 
           if (!userOrg) {
-            console.error(`[auth] User has no org membership: ${credentials.email}`)
             return null
           }
 

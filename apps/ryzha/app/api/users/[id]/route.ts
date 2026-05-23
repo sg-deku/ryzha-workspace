@@ -37,6 +37,17 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       })
     }
 
+    await prisma.auditLog.create({
+      data: {
+        action: "UPDATE_USER",
+        entityType: "USER",
+        entityId: id,
+        actorId: session.user.id,
+        organizationId: session.user.organizationId,
+        details: { roleId, status }
+      }
+    })
+
     return NextResponse.json({ message: "User updated successfully" })
   } catch (error: any) {
     console.error("Update user error:", error)
@@ -93,6 +104,17 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
           userId: id,
           organizationId: session.user.organizationId
         }
+      }
+    })
+
+    await prisma.auditLog.create({
+      data: {
+        action: "REMOVE_USER",
+        entityType: "USER",
+        entityId: id,
+        actorId: session.user.id,
+        organizationId: session.user.organizationId,
+        details: { removedFromOrg: true }
       }
     })
 
