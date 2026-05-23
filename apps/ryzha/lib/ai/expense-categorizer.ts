@@ -1,5 +1,4 @@
 import OpenAI from "openai"
-import { redis } from "@/lib/redis"
 
 let openaiInstance: OpenAI | null = null
 
@@ -29,35 +28,7 @@ const categories = [
 ]
 
 export async function categorizeExpense(description: string, amount: number, organizationId?: string, vendor?: string) {
-  const cacheKey = `expense:category:${(vendor || description).toLowerCase().replace(/\s+/g, "_")}`
-  
-  try {
-    const cached = await redis.get(cacheKey)
-    if (cached) {
-      console.log(`Cache hit for ${cacheKey}`)
-      const result = JSON.parse(cached)
-      return { ...result, confidence: 1.0 } // High confidence for cached results
-    }
-  } catch (err) {
-    console.warn("Redis cache error:", err)
-  }
-
-  // Get recent corrections for few-shot learning
   let fewShotExamples = ""
-  if (organizationId) {
-    try {
-      const corrections = await redis.lrange(`corrections:org:${organizationId}`, 0, 4)
-      if (corrections.length > 0) {
-        fewShotExamples = "\nHere are some examples of how you categorized expenses for this user previously:\n"
-        corrections.forEach(c => {
-          const data = JSON.parse(c)
-          fewShotExamples += `- Description: "${data.description}" -> Category: "${data.category}", Tax Relevant: ${data.taxRelevant}\n`
-        })
-      }
-    } catch (err) {
-      console.warn("Error fetching corrections from Redis:", err)
-    }
-  }
 
   let retries = 3
   let lastError: any
@@ -82,18 +53,6 @@ Return JSON: { "category": string, "taxRelevant": boolean, "confidence": 0-1 }`
         category: result.category || "Other",
         taxRelevant: result.taxRelevant ?? false,
         confidence: result.confidence ?? 0.5 
-      }
-
-      // Cache the result if confidence is high
-      if (finalResult.confidence > 0.8) {
-        try {
-          await redis.set(cacheKey, JSON.stringify({
-            category: finalResult.category,
-            taxRelevant: finalResult.taxRelevant
-          }), "EX", 60 * 60 * 24 * 30) // Cache for 30 days
-        } catch (err) {
-          console.warn("Redis set error:", err)
-        }
       }
 
       return finalResult

@@ -183,21 +183,25 @@ export function ExpenseTable({ initialExpenses, selectedCategory, onSelectCatego
             TableRow: (props: any) => <TableRow {...props} className={cn("hover:bg-muted/30", props.className)} />,
             TableBody: TableBody,
             EmptyPlaceholder: () => (
-              <div className="py-20">
-                <EmptyState
-                  icon={CreditCard}
-                  title="No expenses found"
-                  description={search || selectedCategory
-                    ? "No expenses match your current filters. Try adjusting your search or category."
-                    : "You haven't uploaded any expenses yet. Start by importing a CSV file."
-                  }
-                  action={!search && !selectedCategory ? {
-                    label: "Upload CSV",
-                    onClick: () => window.location.href = "/expenses/upload"
-                  } : undefined}
-                  className="border-none"
-                />
-              </div>
+              <TableRow>
+                <TableCell colSpan={7}>
+                  <div className="py-20">
+                    <EmptyState
+                      icon={CreditCard}
+                      title="No expenses found"
+                      description={search || selectedCategory
+                        ? "No expenses match your current filters. Try adjusting your search or category."
+                        : "You haven't uploaded any expenses yet. Start by importing a CSV file."
+                      }
+                      action={!search && !selectedCategory ? {
+                        label: "Upload CSV",
+                        onClick: () => window.location.href = "/expenses/upload"
+                      } : undefined}
+                      className="border-none"
+                    />
+                  </div>
+                </TableCell>
+              </TableRow>
             )
           }}
         />

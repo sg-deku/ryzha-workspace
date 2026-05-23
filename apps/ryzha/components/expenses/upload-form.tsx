@@ -4,7 +4,7 @@ import { useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { useDropzone } from "react-dropzone"
 import { toast } from "sonner"
-import { Upload, FileText, CheckCircle2, AlertCircle, X, Loader2, Table as TableIcon } from "lucide-react"
+import { Upload, FileText, CheckCircle2, AlertCircle, X, Loader2, Table as TableIcon, Download } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ButtonWithLoading } from "@/components/ui/button-with-loading"
 import { Card, CardContent } from "@/components/ui/card"
@@ -117,11 +117,29 @@ export function UploadExpensesForm() {
     setMapping({ date: "", description: "", amount: "" })
   }
 
+  const downloadTemplate = () => {
+    const csvContent = "date,description,amount\n"
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement("a")
+    link.setAttribute("href", url)
+    link.setAttribute("download", "expenses_template.csv")
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
   return (
     <div className="container py-12 max-w-4xl">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight">Upload Expenses</h1>
-        <p className="text-muted-foreground">Import your bank statements or expense reports via CSV.</p>
+      <div className="mb-8 flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Upload Expenses</h1>
+          <p className="text-muted-foreground">Import your bank statements or expense reports via CSV.</p>
+        </div>
+        <Button variant="outline" onClick={downloadTemplate}>
+          <Download className="mr-2 h-4 w-4" />
+          Download Template
+        </Button>
       </div>
 
       <div className="space-y-8">
