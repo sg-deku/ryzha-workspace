@@ -29,10 +29,17 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
       },
       license: { include: { plan: true } },
       usageMetrics: { orderBy: { date: "asc" }, take: 30 },
+      aiUsageLogs: {
+        select: { totalTokens: true, promptTokens: true, completionTokens: true, createdAt: true, feature: true, model: true },
+        orderBy: { createdAt: "desc" },
+        take: 100,
+      },
     },
   })
 
   if (!org) notFound()
+
+  const totalAiTokens = org.aiUsageLogs.reduce((s, l) => s + l.totalTokens, 0)
 
   const plans = await prisma.subscriptionPlan.findMany({ where: { isActive: true } })
 
@@ -161,7 +168,7 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
                 </CardHeader>
                 <CardContent>
                   <p className="text-2xl font-bold">
-                    {formatNumber(org.usageMetrics.reduce((s, m) => s + m.aiTokensUsed, 0))}
+                    {formatNumber(totalAiTokens)}
                   </p>
                   {org.license && (
                     <p className="text-xs text-muted-foreground">Limit: {formatNumber(org.license.maxAiTokens)}</p>

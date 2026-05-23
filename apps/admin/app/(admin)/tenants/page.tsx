@@ -15,12 +15,18 @@ export default async function TenantsPage() {
   const session = await getServerSession(authOptions)
   if (!session?.user?.isSuperAdmin) redirect("/login")
 
+  const since30d = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+
   const tenants = await prisma.organization.findMany({
     include: {
       users: true,
       license: { include: { plan: true } },
       usageMetrics: {
-        where: { date: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } },
+        where: { date: { gte: since30d } },
+      },
+      aiUsageLogs: {
+        where: { createdAt: { gte: since30d } },
+        select: { totalTokens: true },
       },
     },
     orderBy: { createdAt: "desc" },
@@ -58,7 +64,7 @@ export default async function TenantsPage() {
             <tbody>
               {tenants.map((org) => {
                 const apiCalls = org.usageMetrics.reduce((s, m) => s + m.apiCalls, 0)
-                const aiTokens = org.usageMetrics.reduce((s, m) => s + m.aiTokensUsed, 0)
+                const aiTokens = org.aiUsageLogs.reduce((s, l) => s + l.totalTokens, 0)
                 return (
                   <tr key={org.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
                     <td className="px-4 py-3">
