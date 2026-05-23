@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { toast } from "sonner"
 
 interface PlanFeatures {
   maxUsers?: number
@@ -64,37 +65,59 @@ export function ApprovalActions({ organizationId, plans }: ApprovalActionsProps)
 
   async function handleApprove() {
     setLoading(true)
-    await fetch("/api/pending-approvals", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        organizationId,
-        action: "approve",
-        defaultPlanId: selectedPlanId,
-        maxUsers: parseInt(maxUsers) || undefined,
-        maxApiCalls: parseInt(maxApiCalls) || undefined,
-        maxAiTokens: parseInt(maxAiTokens) || undefined,
-        adminNotes: adminNotes || undefined,
-        billingContact: billingContact || undefined,
-        aiProvider,
-        aiModel,
-        aiApiKey: aiApiKey || undefined,
-      }),
-    })
-    setLoading(false)
-    setOpen(false)
-    router.refresh()
+    try {
+      const res = await fetch("/api/pending-approvals", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          organizationId,
+          action: "approve",
+          defaultPlanId: selectedPlanId,
+          maxUsers: parseInt(maxUsers) || undefined,
+          maxApiCalls: parseInt(maxApiCalls) || undefined,
+          maxAiTokens: parseInt(maxAiTokens) || undefined,
+          adminNotes: adminNotes || undefined,
+          billingContact: billingContact || undefined,
+          aiProvider,
+          aiModel,
+          aiApiKey: aiApiKey || undefined,
+        }),
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        toast.error(data.error || `Failed to approve (${res.status})`)
+        return
+      }
+      toast.success("Organisation approved")
+      setOpen(false)
+      router.refresh()
+    } catch (err) {
+      toast.error("Network error — please try again")
+    } finally {
+      setLoading(false)
+    }
   }
 
   async function handleReject() {
     setLoading(true)
-    await fetch("/api/pending-approvals", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ organizationId, action: "reject" }),
-    })
-    setLoading(false)
-    router.refresh()
+    try {
+      const res = await fetch("/api/pending-approvals", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ organizationId, action: "reject" }),
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        toast.error(data.error || `Failed to reject (${res.status})`)
+        return
+      }
+      toast.success("Organisation rejected")
+      router.refresh()
+    } catch (err) {
+      toast.error("Network error — please try again")
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (

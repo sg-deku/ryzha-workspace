@@ -79,6 +79,7 @@ export async function POST(request: NextRequest) {
         where: { organizationId },
         create: {
           organizationId,
+          deferredRevenueRules: ["annual", "yearly", "subscription"],
           ...(aiProvider !== undefined && { aiProvider }),
           ...(aiModel !== undefined && { aiModel }),
           ...(aiApiKey !== undefined && { aiApiKey }),
