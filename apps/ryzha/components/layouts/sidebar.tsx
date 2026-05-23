@@ -179,21 +179,9 @@ export function Sidebar() {
               collapsed={collapsed}
             />
             <SidebarItem
-              href="/settings/financial-engine"
-              icon={Brain}
-              label="Financial Engine"
-              collapsed={collapsed}
-            />
-            <SidebarItem
               href="/settings/integrations"
               icon={Globe}
               label="Integrations"
-              collapsed={collapsed}
-            />
-            <SidebarItem
-              href="/settings/reports"
-              icon={BarChart}
-              label="Report Settings"
               collapsed={collapsed}
             />
           </Authorized>

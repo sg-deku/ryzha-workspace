@@ -8,7 +8,6 @@ import { PageTransition } from "../page-transition"
 import { Search, Bell } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { useSession } from "next-auth/react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,15 +19,16 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { CommandPalette } from "@/components/ui/command-palette"
 import { FloatingAIChat } from "@/components/chat/floating-ai-chat"
+import type { Session } from "next-auth"
 
 import Link from "next/link"
 
 interface MainLayoutProps {
   children: React.ReactNode
+  session: Session | null
 }
 
-export function MainLayout({ children }: MainLayoutProps) {
-  const { data: session } = useSession()
+export function MainLayout({ children, session }: MainLayoutProps) {
   const userInitials = session?.user?.name
     ? session.user.name.split(" ").map((n) => n[0]).join("").toUpperCase()
     : "U"
@@ -81,7 +81,9 @@ export function MainLayout({ children }: MainLayoutProps) {
                   <Link href="/settings/account">Profile</Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className="text-destructive">Log out</DropdownMenuItem>
+                <DropdownMenuItem asChild className="text-destructive">
+                  <Link href="/logout" className="w-full cursor-pointer">Log out</Link>
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>

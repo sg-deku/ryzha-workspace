@@ -64,7 +64,13 @@ export function DashboardHeader() {
               </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onSelect={() => signOut({ callbackUrl: "/login" })} className="text-destructive focus:text-destructive cursor-pointer">
+            <DropdownMenuItem 
+              onSelect={(e) => {
+                e.preventDefault()
+                signOut({ callbackUrl: "/login" })
+              }} 
+              className="text-destructive focus:text-destructive cursor-pointer"
+            >
               <LogOut className="mr-2 h-4 w-4" />
               <span>Log out</span>
             </DropdownMenuItem>
