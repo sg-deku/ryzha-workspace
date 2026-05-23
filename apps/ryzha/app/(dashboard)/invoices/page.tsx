@@ -3,7 +3,7 @@ import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
 import Link from "next/link"
-import { Plus } from "lucide-react"
+import { Plus, Upload } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { InvoiceTable } from "@/components/invoices/invoice-table"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -26,12 +26,20 @@ export default async function InvoicesPage() {
           <h1 className="text-3xl font-bold tracking-tight">Invoices</h1>
           <p className="text-muted-foreground">Manage your client billing and payments.</p>
         </div>
-        <Button asChild>
-          <Link href="/invoices/new">
-            <Plus className="mr-2 h-4 w-4" />
-            Create Invoice
-          </Link>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" asChild>
+            <Link href="/invoices/upload">
+              <Upload className="mr-2 h-4 w-4" />
+              Upload CSV
+            </Link>
+          </Button>
+          <Button asChild>
+            <Link href="/invoices/new">
+              <Plus className="mr-2 h-4 w-4" />
+              Create Invoice
+            </Link>
+          </Button>
+        </div>
       </div>
 
       <Card>

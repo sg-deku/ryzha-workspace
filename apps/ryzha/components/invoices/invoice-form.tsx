@@ -35,6 +35,8 @@ export function InvoiceForm({ initialData }: { initialData?: any }) {
   const [productCategory, setProductCategory] = useState("Software & SaaS")
   const [clientAddress, setClientAddress] = useState(initialData?.clientAddress?.raw || "")
   const [defaultTaxRate, setDefaultTaxRate] = useState(0)
+  const [customers, setCustomers] = useState<any[]>([])
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string>("")
   const [lineItems, setLineItems] = useState<LineItem[]>(
     initialData?.lineItems?.length > 0
       ? initialData.lineItems.map((item: any) => ({
@@ -56,6 +58,26 @@ export function InvoiceForm({ initialData }: { initialData?: any }) {
     }, 3000)
     return () => clearTimeout(timer)
   }, [lineItems])
+
+  useEffect(() => {
+    fetch("/api/customers")
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) setCustomers(data)
+      })
+      .catch(err => console.error(err))
+  }, [])
+
+  useEffect(() => {
+    if (selectedCustomerId) {
+      const customer = customers.find(c => c.id === selectedCustomerId)
+      if (customer) {
+        setClientName(customer.name)
+        setClientEmail(customer.email || "")
+        setClientCountry(customer.address?.country || "")
+      }
+    }
+  }, [selectedCustomerId, customers])
 
   useEffect(() => {
     if (isEditing) return
@@ -305,12 +327,33 @@ export function InvoiceForm({ initialData }: { initialData?: any }) {
           <CardContent className="pt-6 space-y-4">
             <div className="space-y-2">
               <Label htmlFor="clientName">Client Name</Label>
-              <Input 
-                id="clientName"
-                value={clientName} 
-                onChange={e => setClientName(e.target.value)} 
-                placeholder="Acme Corp"
-              />
+              <Select value={selectedCustomerId || clientName} onValueChange={(val) => {
+                if (customers.find(c => c.id === val)) {
+                  setSelectedCustomerId(val)
+                } else {
+                  setClientName(val)
+                  setSelectedCustomerId("")
+                }
+              }}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select or enter customer" />
+                </SelectTrigger>
+                <SelectContent>
+                  {customers.map((c: any) => (
+                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                  ))}
+                  {/* Allow entering a custom name if not in list by just letting them type - wait, Select doesn't support free text easily without Combobox. We can use a combination or just fallback to Input if they don't select. But they want it to be a dropdown list for customer. So we'll just show the select. */}
+                </SelectContent>
+              </Select>
+              {!customers.find(c => c.id === selectedCustomerId) && (
+                <Input 
+                  className="mt-2"
+                  id="clientName"
+                  value={clientName} 
+                  onChange={e => setClientName(e.target.value)} 
+                  placeholder="Or type custom Acme Corp"
+                />
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="clientEmail">Client Email</Label>
