@@ -1,6 +1,5 @@
-import { getServerSession } from "next-auth"
+import { getSession } from "@/lib/session"
 import { redirect } from "next/navigation"
-import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { Header } from "@/components/layout/header"
 import { formatDate } from "@/lib/utils"
@@ -9,7 +8,7 @@ import { ApprovalActions } from "./approval-actions"
 export const dynamic = "force-dynamic"
 
 export default async function PendingApprovalsPage() {
-  const session = await getServerSession(authOptions)
+  const session = await getSession()
   if (!session?.user?.isSuperAdmin) redirect("/login")
 
   const pending = await prisma.organization.findMany({

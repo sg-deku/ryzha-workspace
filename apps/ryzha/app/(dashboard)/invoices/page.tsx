@@ -1,5 +1,4 @@
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
+import { getSession } from "@/lib/session"
 import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
 import Link from "next/link"
@@ -11,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 export const dynamic = 'force-dynamic'
 
 export default async function InvoicesPage() {
-  const session = await getServerSession(authOptions)
+  const session = await getSession()
   if (!session?.user) redirect("/login")
 
   const invoices = await prisma.invoice.findMany({

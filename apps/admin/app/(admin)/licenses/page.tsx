@@ -1,6 +1,5 @@
-import { getServerSession } from "next-auth"
+import { getSession } from "@/lib/session"
 import { redirect } from "next/navigation"
-import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { Header } from "@/components/layout/header"
 import { Badge } from "@/components/ui/badge"
@@ -10,7 +9,7 @@ import { PlanActions } from "./plan-actions"
 export const dynamic = "force-dynamic"
 
 export default async function LicensesPage() {
-  const session = await getServerSession(authOptions)
+  const session = await getSession()
   if (!session?.user?.isSuperAdmin) redirect("/login")
 
   const plans = await prisma.subscriptionPlan.findMany({

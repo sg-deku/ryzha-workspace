@@ -1,5 +1,4 @@
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
+import { getSession } from "@/lib/session"
 import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
 import FinancialEngineClient from "./financial-engine-client"
@@ -8,7 +7,7 @@ import FinancialEngineClient from "./financial-engine-client"
 export const dynamic = "force-dynamic";
 
 export default async function FinancialEnginePage() {
-  const session = await getServerSession(authOptions)
+  const session = await getSession()
   if (!session?.user?.organizationId) redirect("/login")
 
   const settings = await prisma.financialSettings.findUnique({

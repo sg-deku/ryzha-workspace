@@ -1,5 +1,4 @@
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
+import { getSession } from "@/lib/session"
 import { redirect } from "next/navigation"
 import { prisma } from "@/lib/prisma"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -10,7 +9,7 @@ import { CheckCircle2, AlertCircle, Clock, ArrowRight } from "lucide-react"
 export const dynamic = "force-dynamic"
 
 export default async function TransactionsPage() {
-  const session = await getServerSession(authOptions)
+  const session = await getSession()
   if (!session?.user) redirect("/login")
 
   const orgId = session.user.organizationId

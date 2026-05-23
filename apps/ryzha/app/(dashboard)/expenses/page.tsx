@@ -1,5 +1,4 @@
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
+import { getSession } from "@/lib/session"
 import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
 import { ExpensesClient } from "./expenses-client"
@@ -7,7 +6,7 @@ import { ExpensesClient } from "./expenses-client"
 export const dynamic = 'force-dynamic'
 
 export default async function ExpensesPage() {
-  const session = await getServerSession(authOptions)
+  const session = await getSession()
   if (!session?.user) redirect("/login")
 
   const expenses = await prisma.expense.findMany({

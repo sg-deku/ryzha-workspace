@@ -1,8 +1,7 @@
 import { Header } from "@/components/layout/header"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { prisma } from "@/lib/prisma"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
+import { getSession } from "@/lib/session"
 import { redirect } from "next/navigation"
 import { Building2, Users, Zap, Activity, Clock, Ban } from "lucide-react"
 import { formatNumber } from "@/lib/utils"
@@ -10,7 +9,7 @@ import { formatNumber } from "@/lib/utils"
 export const dynamic = "force-dynamic"
 
 export default async function DashboardPage() {
-  const session = await getServerSession(authOptions)
+  const session = await getSession()
   if (!session?.user?.isSuperAdmin) redirect("/login")
 
   const [

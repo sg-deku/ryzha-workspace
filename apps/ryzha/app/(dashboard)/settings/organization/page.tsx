@@ -1,13 +1,12 @@
 import OrganizationSettingsPage from "./page-client"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
+import { getSession } from "@/lib/session"
 import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
 
 export const dynamic = "force-dynamic"
 
 export default async function Page() {
-  const session = await getServerSession(authOptions)
+  const session = await getSession()
   if (!session?.user?.organizationId) redirect("/login")
 
   const org = await prisma.organization.findUnique({

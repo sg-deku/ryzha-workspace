@@ -1,13 +1,12 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
+import { getSession } from "@/lib/session"
 import { ArrowRight, BarChart3, ShieldCheck, Zap, Workflow, MessageSquareText, ArrowLeftRight, Tag, FilePenLine, BellRing } from "lucide-react"
 
 export const dynamic = 'force-dynamic'
 
 export default async function LandingPage() {
-  const session = await getServerSession(authOptions)
+  const session = await getSession()
 
   return (
     <div className="flex flex-col items-center">

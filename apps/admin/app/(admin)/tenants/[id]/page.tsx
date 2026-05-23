@@ -1,6 +1,5 @@
-import { getServerSession } from "next-auth"
+import { getSession } from "@/lib/session"
 import { redirect, notFound } from "next/navigation"
-import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { Header } from "@/components/layout/header"
 import { Badge } from "@/components/ui/badge"
@@ -15,7 +14,7 @@ export const dynamic = "force-dynamic"
 
 export default async function TenantDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const session = await getServerSession(authOptions)
+  const session = await getSession()
   if (!session?.user?.isSuperAdmin) redirect("/login")
 
   const org = await prisma.organization.findUnique({
