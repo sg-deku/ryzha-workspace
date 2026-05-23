@@ -25,7 +25,7 @@ export default function LoginPage() {
         toast.success("Welcome back!")
         router.push("/dashboard")
       } else {
-        toast.error("Invalid credentials. Please try again.")
+        toast.error(res?.error || "Invalid credentials. Please try again.")
       }
     } catch (error) {
       toast.error("An error occurred. Please try again later.")
