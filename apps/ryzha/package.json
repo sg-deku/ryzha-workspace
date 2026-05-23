@@ -43,6 +43,7 @@
     "@ryzha/database": "*",
     "@tailwindcss/postcss": "^4.3.0",
     "@types/nodemailer": "^8.0.0",
+    "@vercel/analytics": "^2.0.1",
     "@xyflow/react": "^12.10.2",
     "axios": "^1.16.1",
     "bcryptjs": "^3.0.3",
