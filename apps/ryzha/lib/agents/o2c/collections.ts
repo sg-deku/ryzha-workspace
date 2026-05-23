@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma"
 import { callLLM } from "@/lib/ai/llm"
+import { parseAIJson } from "@/lib/ai/client"
 
 export async function runCollectionsAgent(organizationId: string) {
   // Find overdue invoices (sales orders that are INVOICED but not PAID and past due)
@@ -24,7 +25,7 @@ export async function runCollectionsAgent(organizationId: string) {
         { role: "user", content: `Customer: ${order.customer.name}, Amount: $${order.totalAmount}, Days Overdue: 30+` }
       ], "agent_o2c_collections", { temperature: 0.7 })
 
-      const parsed = JSON.parse(response.content as string)
+      const parsed = parseAIJson(response.content as string)
       dunningMessage = parsed.message
       action = "SEND_DUNNING"
     } catch (e) {

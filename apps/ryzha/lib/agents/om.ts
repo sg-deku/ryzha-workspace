@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma"
 import { getFinancialContext } from "@/lib/ai/rag"
 import { callLLM } from "@/lib/ai/llm"
+import { parseAIJson } from "@/lib/ai/client"
 import { appendAgentLog } from "./utils"
 
 export async function runOMAgent(transactionId: string) {
@@ -40,7 +41,7 @@ export async function runOMAgent(transactionId: string) {
       ], "agent_om", { modelName: "gpt-4o-mini", temperature: 0 })
 
       try {
-        const result = JSON.parse(response.content as string)
+        const result = parseAIJson(response.content as string)
         isDeferred = result.deferred
         aiReasoning = result.reason
       } catch (e) {

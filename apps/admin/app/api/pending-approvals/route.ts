@@ -73,9 +73,15 @@ export async function POST(request: NextRequest) {
         })
       }
 
-      await tx.financialSettings.update({
+      await tx.financialSettings.upsert({
         where: { organizationId },
-        data: {
+        create: {
+          organizationId,
+          ...(aiProvider !== undefined && { aiProvider }),
+          ...(aiModel !== undefined && { aiModel }),
+          ...(aiApiKey !== undefined && { aiApiKey }),
+        },
+        update: {
           ...(aiProvider !== undefined && { aiProvider }),
           ...(aiModel !== undefined && { aiModel }),
           ...(aiApiKey !== undefined && { aiApiKey }),

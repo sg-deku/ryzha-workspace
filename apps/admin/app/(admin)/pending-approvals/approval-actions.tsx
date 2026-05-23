@@ -38,6 +38,13 @@ export function ApprovalActions({ organizationId, plans }: ApprovalActionsProps)
   const [maxAiTokens, setMaxAiTokens] = useState(String((firstPlan?.features as PlanFeatures)?.aiTokens ?? 50000))
   const [adminNotes, setAdminNotes] = useState("")
   const [billingContact, setBillingContact] = useState("")
+  const providerDefaults: Record<string, string> = {
+    openai: "gpt-4o-mini",
+    anthropic: "claude-3-5-haiku-20241022",
+    gemini: "gemini-1.5-flash",
+    groq: "llama-3.3-70b-versatile",
+    ollama: "llama3",
+  }
   const [aiProvider, setAiProvider] = useState("openai")
   const [aiModel, setAiModel] = useState("gpt-4o-mini")
   const [aiApiKey, setAiApiKey] = useState("")
@@ -156,7 +163,7 @@ export function ApprovalActions({ organizationId, plans }: ApprovalActionsProps)
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>AI Provider</Label>
-                  <Select value={aiProvider} onValueChange={setAiProvider}>
+                  <Select value={aiProvider} onValueChange={(v) => { setAiProvider(v); setAiModel(providerDefaults[v] ?? "") }}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select provider" />
                     </SelectTrigger>

@@ -1,14 +1,45 @@
-import nodemailer from "nodemailer"
+async function sendBrevoEmail({
+  to,
+  subject,
+  html,
+}: {
+  to: string
+  subject: string
+  html: string
+}) {
+  const apiKey = process.env.BREVO_API_KEY
+  const fromEmail = process.env.SMTP_FROM
+  const fromName = process.env.SMTP_FROM_NAME || "Ryzha"
 
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || "smtp-relay.brevo.com",
-  port: Number(process.env.SMTP_PORT) || 587,
-  secure: false,
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASSWORD,
-  },
-})
+  if (!apiKey || !fromEmail) {
+    console.warn("[email] BREVO_API_KEY or SMTP_FROM not set — skipping email send")
+    return
+  }
+
+  const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+    method: "POST",
+    headers: {
+      "accept": "application/json",
+      "api-key": apiKey,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      sender: { name: fromName, email: fromEmail },
+      to: [{ email: to }],
+      subject,
+      htmlContent: html,
+    }),
+  })
+
+  if (!response.ok) {
+    const errorBody = await response.text()
+    throw new Error(`[email] Brevo API error ${response.status}: ${errorBody}`)
+  }
+
+  const result = await response.json()
+  console.log("[email] Sent successfully, messageId:", result.messageId)
+  return result
+}
 
 export async function sendEmail({
   to,
@@ -19,13 +50,11 @@ export async function sendEmail({
   subject: string
   html: string
 }) {
-  const from = process.env.SMTP_FROM || process.env.SMTP_USER
-  if (!from || !process.env.SMTP_USER || !process.env.SMTP_PASSWORD) {
-    console.warn("[email] SMTP not fully configured — skipping email send")
-    return
+  try {
+    await sendBrevoEmail({ to, subject, html })
+  } catch (err) {
+    console.error("[email] Failed to send email:", err)
   }
-
-  await transporter.sendMail({ from, to, subject, html })
 }
 
 export async function sendSignupThankYouEmail(to: string, name: string) {

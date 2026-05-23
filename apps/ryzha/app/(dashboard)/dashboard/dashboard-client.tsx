@@ -38,7 +38,18 @@ interface DashboardClientProps {
   overdueSales?: number
 }
 
-const PAIRED_WIDGETS = new Set(["cash_flow", "agent_log", "recent_transactions", "ai_usage"])
+const EXPLICIT_PAIRS: [string, string][] = [
+  ["cash_flow", "agent_log"],
+  ["recent_transactions", "ai_usage"],
+]
+
+function getPairPartner(id: string): string | null {
+  for (const [a, b] of EXPLICIT_PAIRS) {
+    if (id === a) return b
+    if (id === b) return a
+  }
+  return null
+}
 
 function renderWidgetContent(
   widget: WidgetConfig,
@@ -173,24 +184,28 @@ export function DashboardClient({
 
   const widgetProps = { pendingPurchases, overdueSales }
 
+  const rendered = new Set<string>()
   const rows: React.ReactNode[] = []
-  let i = 0
-  while (i < visible.length) {
-    const w = visible[i]
-    if (PAIRED_WIDGETS.has(w.id) && i + 1 < visible.length && PAIRED_WIDGETS.has(visible[i + 1].id)) {
-      const w2 = visible[i + 1]
+
+  for (const w of visible) {
+    if (rendered.has(w.id)) continue
+    const partnerId = getPairPartner(w.id)
+    const partner = partnerId ? visible.find((v) => v.id === partnerId) : null
+
+    if (partner) {
+      rendered.add(w.id)
+      rendered.add(partner.id)
       rows.push(
-        <div key={`pair-${w.id}-${w2.id}`} className="grid gap-6 lg:grid-cols-2">
+        <div key={`pair-${w.id}-${partner.id}`} className="grid gap-6 lg:grid-cols-2">
           <SortableWidget widget={w} widgetProps={widgetProps} onSettingsChange={handleSettingsChange} />
-          <SortableWidget widget={w2} widgetProps={widgetProps} onSettingsChange={handleSettingsChange} />
+          <SortableWidget widget={partner} widgetProps={widgetProps} onSettingsChange={handleSettingsChange} />
         </div>
       )
-      i += 2
     } else {
+      rendered.add(w.id)
       rows.push(
         <SortableWidget key={w.id} widget={w} widgetProps={widgetProps} onSettingsChange={handleSettingsChange} />
       )
-      i++
     }
   }
 

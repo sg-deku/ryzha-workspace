@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma"
 import { callLLM } from "@/lib/ai/llm"
+import { parseAIJson } from "@/lib/ai/client"
 import { appendAgentLog } from "./utils"
 
 export async function runFPAgent(transactionId: string) {
@@ -80,7 +81,7 @@ export async function runFPAgent(transactionId: string) {
     ], "agent_fpna", { temperature: 0.7 })
 
     try {
-      const result = JSON.parse(response.content as string)
+      const result = parseAIJson(response.content as string)
       aiNarrative = result.narrative
       logMessage = `FP&A: ${aiNarrative}`
     } catch (e) {

@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma"
 import crypto from "crypto"
 import { callLLM } from "@/lib/ai/llm"
+import { parseAIJson } from "@/lib/ai/client"
 import { appendAgentLog } from "./utils"
 
 export async function runAuditorAgent(transactionId: string) {
@@ -53,7 +54,7 @@ export async function runAuditorAgent(transactionId: string) {
     ], "agent_auditor", { temperature: 0 })
 
     try {
-      const result = JSON.parse(response.content as string)
+      const result = parseAIJson(response.content as string)
       anomalyDetected = result.is_anomaly
       aiReasoning = result.investigation_notes
     } catch (e) {

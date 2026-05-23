@@ -66,19 +66,54 @@ export async function POST(req: Request) {
         where: { name: { in: permissions } }
       })
 
-      // 3. Create Admin Role for this Organization
-      const adminRole = await tx.role.create({
-        data: {
+      const permByName = Object.fromEntries(allPermissions.map(p => [p.name, p]))
+
+      const roleDefinitions = [
+        {
           name: "Admin",
           isSystem: true,
-          organizationId: organization.id,
-          permissions: {
-            create: allPermissions.map(p => ({
-              permissionId: p.id
-            }))
+          perms: permissions,
+        },
+        {
+          name: "Manager",
+          isSystem: true,
+          perms: ["invoices:manage", "expenses:manage", "reports:view", "financial:manage", "agent:manage"],
+        },
+        {
+          name: "Accountant",
+          isSystem: true,
+          perms: ["invoices:manage", "expenses:manage", "reports:view", "financial:manage"],
+        },
+        {
+          name: "Employee",
+          isSystem: true,
+          perms: ["expenses:manage", "reports:view"],
+        },
+        {
+          name: "Viewer",
+          isSystem: true,
+          perms: ["reports:view"],
+        },
+      ]
+
+      let adminRole: { id: string } | null = null
+      for (const def of roleDefinitions) {
+        const role = await tx.role.create({
+          data: {
+            name: def.name,
+            isSystem: def.isSystem,
+            organizationId: organization.id,
+            permissions: {
+              create: def.perms
+                .filter(p => permByName[p])
+                .map(p => ({ permissionId: permByName[p].id }))
+            }
           }
-        }
-      })
+        })
+        if (def.name === "Admin") adminRole = role
+      }
+
+      if (!adminRole) throw new Error("Admin role creation failed")
 
       // 4. Create User
       const user = await tx.user.create({

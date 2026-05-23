@@ -1,6 +1,11 @@
 import OpenAI from "openai"
 import { prisma } from "@/lib/prisma"
 
+export function parseAIJson<T = unknown>(text: string): T {
+  const stripped = text.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim()
+  return JSON.parse(stripped) as T
+}
+
 function detectProvider(): string {
   if (process.env.OPENAI_API_KEY) return "openai"
   if (process.env.GROQ_API_KEY) return "groq"

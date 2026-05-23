@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma"
 import { callLLM } from "@/lib/ai/llm"
+import { parseAIJson } from "@/lib/ai/client"
 import { appendAgentLog } from "./utils"
 import { z } from "zod"
 
@@ -36,7 +37,7 @@ export async function runR2RAgent(transactionId: string) {
       
       // For now, we'll parse the content manually or assume it returns JSON
       try {
-        const parsed = JSON.parse(response.content as string)
+        const parsed = parseAIJson(response.content as string)
         metadata = parsed
         logMessage = `R2R: Intelligent extraction complete. Customer: ${parsed.customer || "Unknown"}, Product: ${parsed.product_type || "Generic"}.`
       } catch (e) {

@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma"
 import { callLLM } from "@/lib/ai/llm"
+import { parseAIJson } from "@/lib/ai/client"
 
 export async function runVendorIntakeAgent(organizationId: string, input: { name?: string, email?: string, text?: string }) {
   let name = input.name || "Unknown Vendor"
@@ -15,7 +16,7 @@ export async function runVendorIntakeAgent(organizationId: string, input: { name
       ], "agent_p2p_vendor", { modelName: "gpt-4o-mini", temperature: 0 })
 
       try {
-        const parsed = JSON.parse(response.content as string)
+        const parsed = parseAIJson(response.content as string)
         name = parsed.name || name
         email = parsed.email || email
         taxId = parsed.taxId || ""

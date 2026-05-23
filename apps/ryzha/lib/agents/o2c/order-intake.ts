@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma"
 import { callLLM } from "@/lib/ai/llm"
+import { parseAIJson } from "@/lib/ai/client"
 
 export async function runOrderIntakeAgent(organizationId: string, input: { text: string }) {
   try {
@@ -8,7 +9,7 @@ export async function runOrderIntakeAgent(organizationId: string, input: { text:
       { role: "user", content: input.text }
     ], "agent_o2c_order_intake", { modelName: "gpt-4o-mini", temperature: 0 })
 
-    const parsed = JSON.parse(response.content as string)
+    const parsed = parseAIJson(response.content as string)
     
     // 1. Find or create customer
     let customer = await prisma.customer.findFirst({
