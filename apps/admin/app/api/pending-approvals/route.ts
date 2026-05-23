@@ -118,7 +118,7 @@ export async function POST(request: NextRequest) {
           <p style="font-size:15px;line-height:1.7;color:#3f3f46;margin:0 0 20px;">
             You can now log in, invite your team members, and start using Ryzha's financial intelligence platform.
           </p>
-          <a href="${appUrl}/login" style="display:inline-block;background:#09090b;color:#ffffff;padding:13px 28px;border-radius:8px;text-decoration:none;font-weight:600;font-size:15px;">
+          <a href="${appUrl}/login" style="display:inline-block;background:#2563eb;color:#ffffff;padding:13px 28px;border-radius:8px;text-decoration:none;font-weight:600;font-size:15px;">
             Log In to Ryzha
           </a>
           <p style="font-size:13px;color:#a1a1aa;margin:24px 0 0;">

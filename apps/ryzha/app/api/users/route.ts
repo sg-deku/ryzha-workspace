@@ -140,7 +140,7 @@ export async function POST(req: Request) {
         <p style="font-size:15px;line-height:1.7;color:#3f3f46;margin:0 0 24px;">
           Click below to accept your invitation and set up your account:
         </p>
-        <a href="${loginUrl}" style="display:inline-block;background:#09090b;color:#ffffff;padding:13px 28px;border-radius:8px;text-decoration:none;font-weight:600;font-size:15px;">
+        <a href="${loginUrl}" style="display:inline-block;background:#2563eb;color:#ffffff;padding:13px 28px;border-radius:8px;text-decoration:none;font-weight:600;font-size:15px;">
           Accept Invitation
         </a>
         <p style="font-size:13px;color:#a1a1aa;margin:24px 0 0;">

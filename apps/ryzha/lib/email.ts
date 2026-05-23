@@ -65,20 +65,22 @@ export function emailTemplate(bodyHtml: string): string {
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Ryzha</title>
 </head>
-<body style="margin:0;padding:0;background-color:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f4f5;padding:40px 16px;">
+<body style="margin:0;padding:0;background-color:#eff6ff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#eff6ff;padding:40px 16px;">
     <tr>
       <td align="center">
         <table width="100%" cellpadding="0" cellspacing="0" style="max-width:580px;">
 
           <!-- Header -->
           <tr>
-            <td style="background-color:#09090b;border-radius:12px 12px 0 0;padding:28px 36px;">
+            <td style="background-color:#2563eb;border-radius:12px 12px 0 0;padding:24px 36px;">
               <table width="100%" cellpadding="0" cellspacing="0">
                 <tr>
-                  <td>
-                    <span style="font-size:26px;font-weight:800;color:#ffffff;letter-spacing:-0.5px;">Ryzha</span>
-                    <span style="font-size:12px;color:#a1a1aa;margin-left:8px;font-weight:400;letter-spacing:0.5px;">Financial Intelligence</span>
+                  <td style="vertical-align:middle;">
+                    <img src="https://ryzha.vercel.app/logo.png" alt="Ryzha" width="40" height="40"
+                         style="display:inline-block;vertical-align:middle;filter:brightness(0) invert(1);" />
+                    <span style="font-size:24px;font-weight:800;color:#ffffff;letter-spacing:-0.5px;vertical-align:middle;margin-left:10px;">Ryzha</span>
+                    <span style="font-size:11px;color:#bfdbfe;margin-left:8px;font-weight:400;letter-spacing:0.5px;vertical-align:middle;">Financial Intelligence</span>
                   </td>
                 </tr>
               </table>
@@ -87,17 +89,17 @@ export function emailTemplate(bodyHtml: string): string {
 
           <!-- Body -->
           <tr>
-            <td style="background-color:#ffffff;padding:36px 36px 28px;border-left:1px solid #e4e4e7;border-right:1px solid #e4e4e7;">
+            <td style="background-color:#ffffff;padding:36px 36px 28px;border-left:1px solid #bfdbfe;border-right:1px solid #bfdbfe;">
               ${bodyHtml}
             </td>
           </tr>
 
           <!-- Footer -->
           <tr>
-            <td style="background-color:#fafafa;border:1px solid #e4e4e7;border-top:none;border-radius:0 0 12px 12px;padding:24px 36px;">
-              <p style="margin:0 0 4px;font-size:14px;color:#3f3f46;font-weight:600;">Thank you,</p>
-              <p style="margin:0 0 16px;font-size:14px;color:#3f3f46;">Karina &amp; Sushmit</p>
-              <p style="margin:0;font-size:12px;color:#a1a1aa;line-height:1.6;">
+            <td style="background-color:#eff6ff;border:1px solid #bfdbfe;border-top:none;border-radius:0 0 12px 12px;padding:24px 36px;">
+              <p style="margin:0 0 4px;font-size:14px;color:#1e40af;font-weight:600;">Thank you,</p>
+              <p style="margin:0 0 16px;font-size:14px;color:#1e40af;">Karina &amp; Sushmit</p>
+              <p style="margin:0;font-size:12px;color:#93c5fd;line-height:1.6;">
                 You received this email because you have an account with Ryzha.<br />
                 &copy; ${new Date().getFullYear()} Ryzha. All rights reserved.
               </p>
