@@ -63,3 +63,36 @@ export async function DELETE(req: Request) {
   })
   return NextResponse.json({ success: true })
 }
+
+export async function PATCH(req: Request) {
+  const session = await getServerSession(authOptions)
+  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+
+  const body = await req.json()
+  const { id, stripePaymentIntentId, customerEmail, amount, status } = body
+
+  if (!id) {
+    return NextResponse.json({ error: "id is required" }, { status: 400 })
+  }
+
+  try {
+    const contract = await prisma.contract.update({
+      where: { id, organizationId: session.user.organizationId },
+      data: {
+        ...(stripePaymentIntentId && { stripePaymentIntentId }),
+        ...(customerEmail && { customerEmail }),
+        ...(amount && { amount: Number(amount) }),
+        ...(status && { status }),
+      },
+    })
+    return NextResponse.json(contract)
+  } catch (err: any) {
+    if (err.code === "P2002") {
+      return NextResponse.json(
+        { error: "A contract with this Payment Intent ID already exists." },
+        { status: 409 }
+      )
+    }
+    return NextResponse.json({ error: err.message }, { status: 500 })
+  }
+}
