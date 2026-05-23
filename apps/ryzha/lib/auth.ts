@@ -73,6 +73,10 @@ export const authOptions: NextAuthOptions = {
             console.error(`[auth] User has no org membership: ${credentials.email}`)
             return null
           }
+
+          if (userOrg.organization?.status === "SUSPENDED") {
+            throw new Error("Your account is suspended, contact the admin for more details")
+          }
           
           return { 
             id: user.id, 

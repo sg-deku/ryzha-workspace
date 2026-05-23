@@ -1,4 +1,3 @@
-import { redis } from "./redis"
 import { EventEmitter } from "events"
 
 const globalForEvents = globalThis as unknown as {
@@ -12,15 +11,6 @@ if (process.env.NODE_ENV !== "production") {
 }
 
 export async function publishEvent(channel: string, data: any) {
-  // Always emit locally for in-memory fallback
+  // Use local in-memory emitter instead of Redis
   localEmitter.emit(channel, JSON.stringify(data))
-  
-  // Try to publish to Redis if it's connected/configured
-  if (redis.status === "ready" || process.env.REDIS_URL) {
-    try {
-      await redis.publish(channel, JSON.stringify(data))
-    } catch (e) {
-      console.warn("Redis publish failed, falling back to local emitter")
-    }
-  }
 }
