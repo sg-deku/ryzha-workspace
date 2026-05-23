@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { sendEmail } from "@/lib/email"
+import { sendEmail, emailTemplate } from "@/lib/email"
 
 export const dynamic = "force-dynamic"
 
@@ -106,11 +106,25 @@ export async function POST(request: NextRequest) {
 
     const adminUser = orgWithUsers?.users[0]?.user
     if (adminUser) {
+      const appUrl = process.env.CLIENT_URL || process.env.NEXTAUTH_URL || "https://ryzha.vercel.app"
       await sendEmail({
         to: adminUser.email,
-        subject: "Welcome to Ryzha! Your organization is approved.",
-        text: `Hi ${adminUser.name},\n\nYour organization ${orgWithUsers.name} has been approved by the admin. You can now login and invite your team.`,
-        html: `<p>Hi ${adminUser.name},</p><p>Your organization <strong>${orgWithUsers.name}</strong> has been approved by the admin. You can now login and invite your team.</p>`
+        subject: `🎉 ${orgWithUsers.name} is approved — welcome to Ryzha!`,
+        html: emailTemplate(`
+          <h1 style="font-size:22px;font-weight:700;color:#09090b;margin:0 0 16px;">Welcome to Ryzha, ${adminUser.name}!</h1>
+          <p style="font-size:15px;line-height:1.7;color:#3f3f46;margin:0 0 14px;">
+            Great news — your organisation <strong>${orgWithUsers.name}</strong> has been approved and your account is now active.
+          </p>
+          <p style="font-size:15px;line-height:1.7;color:#3f3f46;margin:0 0 20px;">
+            You can now log in, invite your team members, and start using Ryzha's financial intelligence platform.
+          </p>
+          <a href="${appUrl}/login" style="display:inline-block;background:#09090b;color:#ffffff;padding:13px 28px;border-radius:8px;text-decoration:none;font-weight:600;font-size:15px;">
+            Log In to Ryzha
+          </a>
+          <p style="font-size:13px;color:#a1a1aa;margin:24px 0 0;">
+            If you have any questions, simply reply to this email — we're here to help.
+          </p>
+        `),
       }).catch(err => {
         console.error("Failed to send welcome email:", err)
       })

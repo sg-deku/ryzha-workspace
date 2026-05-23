@@ -57,24 +57,76 @@ export async function sendEmail({
   }
 }
 
+export function emailTemplate(bodyHtml: string): string {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ryzha</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f4f5;padding:40px 16px;">
+    <tr>
+      <td align="center">
+        <table width="100%" cellpadding="0" cellspacing="0" style="max-width:580px;">
+
+          <!-- Header -->
+          <tr>
+            <td style="background-color:#09090b;border-radius:12px 12px 0 0;padding:28px 36px;">
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td>
+                    <span style="font-size:26px;font-weight:800;color:#ffffff;letter-spacing:-0.5px;">Ryzha</span>
+                    <span style="font-size:12px;color:#a1a1aa;margin-left:8px;font-weight:400;letter-spacing:0.5px;">Financial Intelligence</span>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Body -->
+          <tr>
+            <td style="background-color:#ffffff;padding:36px 36px 28px;border-left:1px solid #e4e4e7;border-right:1px solid #e4e4e7;">
+              ${bodyHtml}
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background-color:#fafafa;border:1px solid #e4e4e7;border-top:none;border-radius:0 0 12px 12px;padding:24px 36px;">
+              <p style="margin:0 0 4px;font-size:14px;color:#3f3f46;font-weight:600;">Thank you,</p>
+              <p style="margin:0 0 16px;font-size:14px;color:#3f3f46;">Karina &amp; Sushmit</p>
+              <p style="margin:0;font-size:12px;color:#a1a1aa;line-height:1.6;">
+                You received this email because you have an account with Ryzha.<br />
+                &copy; ${new Date().getFullYear()} Ryzha. All rights reserved.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`
+}
+
 export async function sendSignupThankYouEmail(to: string, name: string) {
   await sendEmail({
     to,
     subject: "Thanks for signing up to Ryzha — you're on the list!",
-    html: `
-      <div style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:32px 24px;color:#111;">
-        <h1 style="font-size:24px;font-weight:700;margin-bottom:8px;">Hi ${name},</h1>
-        <p style="font-size:16px;line-height:1.6;margin-bottom:16px;">
-          Thanks for signing up to <strong>Ryzha</strong>! We've received your organisation details and they are now under review by our founders.
-        </p>
-        <p style="font-size:16px;line-height:1.6;margin-bottom:16px;">
-          You'll get another email as soon as your account is approved and you can start using the platform.
-        </p>
-        <p style="font-size:16px;line-height:1.6;margin-bottom:32px;">
-          If you have any questions in the meantime, just reply to this email.
-        </p>
-        <p style="font-size:14px;color:#666;">— The Ryzha Team</p>
-      </div>
-    `,
+    html: emailTemplate(`
+      <h1 style="font-size:22px;font-weight:700;color:#09090b;margin:0 0 16px;">Hi ${name},</h1>
+      <p style="font-size:15px;line-height:1.7;color:#3f3f46;margin:0 0 14px;">
+        Thanks for signing up to <strong>Ryzha</strong>! We've received your organisation details and they are now under review by our founders.
+      </p>
+      <p style="font-size:15px;line-height:1.7;color:#3f3f46;margin:0 0 14px;">
+        You'll get another email as soon as your account is approved — then you can log in, invite your team, and start using the platform.
+      </p>
+      <p style="font-size:15px;line-height:1.7;color:#3f3f46;margin:0;">
+        In the meantime, if you have any questions just reply to this email and we'll get back to you.
+      </p>
+    `),
   })
 }

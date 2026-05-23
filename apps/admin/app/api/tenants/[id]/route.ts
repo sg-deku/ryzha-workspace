@@ -86,18 +86,28 @@ export async function PATCH(
 
   if (status === "ACTIVE" && orgBefore?.status !== "ACTIVE") {
     try {
-      const { sendEmail } = await import("@/lib/email")
+      const { sendEmail, emailTemplate } = await import("@/lib/email")
+      const appUrl = process.env.CLIENT_URL || process.env.NEXTAUTH_URL || "https://ryzha.vercel.app"
       for (const uo of org.users) {
         if (uo.user?.email) {
           await sendEmail({
             to: uo.user.email,
-            subject: "Your Organization is Approved!",
-            html: `
-              <h1>Welcome to Ryzha!</h1>
-              <p>Your organization <strong>${org.name}</strong> has been approved.</p>
-              <p>You can now log in to the Ryzha app and set up your workspace.</p>
-              <p><a href="${process.env.CLIENT_URL || 'http://localhost:3000'}/login">Log in here</a></p>
-            `
+            subject: `🎉 ${org.name} is approved — welcome to Ryzha!`,
+            html: emailTemplate(`
+              <h1 style="font-size:22px;font-weight:700;color:#09090b;margin:0 0 16px;">Welcome to Ryzha${uo.user.name ? `, ${uo.user.name}` : ""}!</h1>
+              <p style="font-size:15px;line-height:1.7;color:#3f3f46;margin:0 0 14px;">
+                Great news — your organisation <strong>${org.name}</strong> has been approved and your account is now active.
+              </p>
+              <p style="font-size:15px;line-height:1.7;color:#3f3f46;margin:0 0 20px;">
+                You can now log in, invite your team members, and start using Ryzha's financial intelligence platform.
+              </p>
+              <a href="${appUrl}/login" style="display:inline-block;background:#09090b;color:#ffffff;padding:13px 28px;border-radius:8px;text-decoration:none;font-weight:600;font-size:15px;">
+                Log In to Ryzha
+              </a>
+              <p style="font-size:13px;color:#a1a1aa;margin:24px 0 0;">
+                If you have any questions, simply reply to this email — we're here to help.
+              </p>
+            `)
           })
         }
       }

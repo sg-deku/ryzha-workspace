@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { hasPermission } from "@/lib/permissions"
-import { sendEmail } from "@/lib/email"
+import { sendEmail, emailTemplate } from "@/lib/email"
 
 export const dynamic = "force-dynamic"
 
@@ -128,22 +128,25 @@ export async function POST(req: Request) {
 
     sendEmail({
       to: email,
-      subject: `You've been invited to join ${org?.name ?? "Ryzha"}`,
-      html: `
-        <div style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:32px 24px;color:#111;">
-          <h1 style="font-size:22px;font-weight:700;margin-bottom:8px;">You're invited!</h1>
-          <p style="font-size:16px;line-height:1.6;margin-bottom:16px;">
-            Hi ${name}, you've been invited to join <strong>${org?.name ?? "Ryzha"}</strong> on Ryzha.
-          </p>
-          <p style="font-size:16px;line-height:1.6;margin-bottom:24px;">
-            Log in with this email address to get started:
-          </p>
-          <a href="${loginUrl}" style="display:inline-block;background:#000;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;">
-            Accept Invitation
-          </a>
-          <p style="font-size:14px;color:#666;margin-top:32px;">— The Ryzha Team</p>
-        </div>
-      `,
+      subject: `You've been invited to join ${org?.name ?? "Ryzha"} on Ryzha`,
+      html: emailTemplate(`
+        <h1 style="font-size:22px;font-weight:700;color:#09090b;margin:0 0 16px;">You're invited!</h1>
+        <p style="font-size:15px;line-height:1.7;color:#3f3f46;margin:0 0 14px;">
+          Hi ${name},
+        </p>
+        <p style="font-size:15px;line-height:1.7;color:#3f3f46;margin:0 0 20px;">
+          You've been invited to join <strong>${org?.name ?? "Ryzha"}</strong> on Ryzha — the financial intelligence platform built for modern teams.
+        </p>
+        <p style="font-size:15px;line-height:1.7;color:#3f3f46;margin:0 0 24px;">
+          Click below to accept your invitation and set up your account:
+        </p>
+        <a href="${loginUrl}" style="display:inline-block;background:#09090b;color:#ffffff;padding:13px 28px;border-radius:8px;text-decoration:none;font-weight:600;font-size:15px;">
+          Accept Invitation
+        </a>
+        <p style="font-size:13px;color:#a1a1aa;margin:24px 0 0;">
+          If you weren't expecting this invitation, you can safely ignore this email.
+        </p>
+      `),
     }).catch(err => console.error("[invite] Failed to send invite email:", err))
 
     return NextResponse.json({ message: "User invited successfully" })
