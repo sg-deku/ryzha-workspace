@@ -7,6 +7,12 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
+import { motion } from "framer-motion"
+
+const sectionVariant = (delay: number) => ({
+  initial: { opacity: 0, y: 12 },
+  animate: { opacity: 1, y: 0, transition: { duration: 0.35, delay, ease: [0.22, 1, 0.36, 1] } },
+})
 
 interface AriaMessage {
   id: string
@@ -295,7 +301,12 @@ export function AriaClient({ userName }: { userName?: string | null }) {
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-background">
-      <header className="flex items-center justify-between px-6 py-3 border-b bg-card">
+      <motion.header
+        className="flex items-center justify-between px-6 py-3 border-b bg-card"
+        variants={sectionVariant(0)}
+        initial="initial"
+        animate="animate"
+      >
         <div className="flex items-center gap-3">
           <div className="relative">
             <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
@@ -327,9 +338,14 @@ export function AriaClient({ userName }: { userName?: string | null }) {
             <X className="h-4 w-4" />
           </Button>
         </div>
-      </header>
+      </motion.header>
 
-      <div className="flex-1 overflow-y-auto px-4 py-6">
+      <motion.div
+        className="flex-1 overflow-y-auto px-4 py-6"
+        variants={sectionVariant(0.08)}
+        initial="initial"
+        animate="animate"
+      >
         <div className="max-w-3xl mx-auto space-y-5">
           {!historyLoaded ? (
             <div className="flex items-center justify-center py-16 text-muted-foreground">
@@ -343,10 +359,15 @@ export function AriaClient({ userName }: { userName?: string | null }) {
           )}
           <div ref={bottomRef} />
         </div>
-      </div>
+      </motion.div>
 
       {showSuggestions && (
-        <div className="px-4 pb-4">
+        <motion.div
+          className="px-4 pb-4"
+          variants={sectionVariant(0.16)}
+          initial="initial"
+          animate="animate"
+        >
           <div className="max-w-3xl mx-auto">
             <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-2 px-0.5">Try asking</p>
             <div className="flex flex-wrap gap-2">
@@ -362,10 +383,15 @@ export function AriaClient({ userName }: { userName?: string | null }) {
               ))}
             </div>
           </div>
-        </div>
+        </motion.div>
       )}
 
-      <div className="border-t bg-card px-4 pb-5 pt-3">
+      <motion.div
+        className="border-t bg-card px-4 pb-5 pt-3"
+        variants={sectionVariant(showSuggestions ? 0.24 : 0.16)}
+        initial="initial"
+        animate="animate"
+      >
         <div className="max-w-3xl mx-auto">
           <div className="flex items-end gap-3 bg-background border border-border rounded-xl px-4 py-2.5 focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary/50 transition-all">
             <Sparkles className="h-4 w-4 text-primary/50 flex-shrink-0 mb-0.5" />
@@ -402,7 +428,7 @@ export function AriaClient({ userName }: { userName?: string | null }) {
             Aria can make mistakes. Review created records before sharing.
           </p>
         </div>
-      </div>
+      </motion.div>
     </div>
   )
 }
