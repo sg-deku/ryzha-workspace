@@ -31,7 +31,7 @@ export async function GET(req: Request) {
   const limit = parseInt(searchParams.get("limit") ?? "50")
 
   const messages = await prisma.chatMessage.findMany({
-    where: { userId, organizationId: orgId },
+    where: { userId, organizationId: orgId, role: { in: ["user", "assistant"] } },
     orderBy: { createdAt: "asc" },
     take: limit,
     select: { id: true, role: true, content: true, createdAt: true },
@@ -67,6 +67,7 @@ export async function POST(req: Request) {
   const history = recentMessages
     .reverse()
     .slice(0, -1)
+    .filter((m) => m.role === "user" || m.role === "assistant")
     .map((m) => ({ role: m.role as "user" | "assistant", content: m.content }))
 
   let reply: string
@@ -94,7 +95,11 @@ export async function POST(req: Request) {
       while (response.choices[0]?.finish_reason === "tool_calls" && iterationCount < 5) {
         iterationCount++
         const assistantMessage = response.choices[0].message
-        messages.push({ role: "assistant", content: assistantMessage.content || "", ...assistantMessage })
+        messages.push({
+          role: "assistant",
+          content: assistantMessage.content ?? "",
+          ...(assistantMessage.tool_calls ? { tool_calls: assistantMessage.tool_calls } : {}),
+        })
 
         const toolResults: typeof messages = []
         for (const toolCall of assistantMessage.tool_calls || []) {
