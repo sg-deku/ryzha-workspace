@@ -243,7 +243,7 @@ export function AriaClient({ userName }: { userName?: string | null }) {
         body: JSON.stringify({ message: text.trim(), history }),
       })
 
-      if (!res.ok) throw new Error("Aria is unavailable — check your AI configuration in Settings → Financial Engine")
+      if (!res.ok) throw new Error("Aria is unavailable — please contact your administrator to configure the AI provider")
 
       const data = await res.json()
 
