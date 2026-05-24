@@ -86,7 +86,7 @@ export function MainLayout({ children, session }: MainLayoutProps) {
                       ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
                       : <Zap className="h-3.5 w-3.5" />
                     }
-                    <span className="hidden sm:inline">{ariaLaunching ? "Launching..." : "Aria"}</span>
+                    <span className="hidden sm:inline">{ariaLaunching ? "Launching..." : "Launch Aria"}</span>
                   </button>
                 </TooltipTrigger>
                 <TooltipContent>AI Accounting Co-pilot</TooltipContent>
