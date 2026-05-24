@@ -35,13 +35,14 @@ function emailTemplate(bodyHtml: string): string {
           <!-- Header -->
           <tr>
             <td style="background-color:#2563eb;border-radius:12px 12px 0 0;padding:24px 36px;">
-              <table width="100%" cellpadding="0" cellspacing="0">
+              <table cellpadding="0" cellspacing="0" border="0">
                 <tr>
-                  <td style="vertical-align:middle;">
-                    <img src="https://raw.githubusercontent.com/sg-deku/ryzha-workspace/refs/heads/dev/apps/ryzha/public/logo.png" alt="Ryzha" width="40" height="40"
-                         style="display:inline-block;vertical-align:middle;filter:brightness(0) invert(1);" />
-                    <span style="font-size:24px;font-weight:800;color:#ffffff;letter-spacing:-0.5px;vertical-align:middle;margin-left:10px;">Ryzha</span>
-                    <span style="font-size:11px;color:#bfdbfe;margin-left:8px;font-weight:400;letter-spacing:0.5px;vertical-align:middle;">Financial Intelligence</span>
+                  <td valign="middle" style="padding-right:12px;">
+                    <div style="width:44px;height:44px;background-color:#ffffff;border-radius:10px;text-align:center;line-height:44px;font-size:22px;font-weight:900;color:#2563eb;display:inline-block;">R</div>
+                  </td>
+                  <td valign="middle">
+                    <div style="font-size:22px;font-weight:800;color:#ffffff;letter-spacing:-0.5px;line-height:1;">Ryzha</div>
+                    <div style="font-size:11px;color:#bfdbfe;font-weight:400;letter-spacing:0.5px;margin-top:3px;">Financial Intelligence</div>
                   </td>
                 </tr>
               </table>
