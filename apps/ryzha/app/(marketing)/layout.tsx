@@ -17,7 +17,7 @@ export default function MarketingLayout({
           <div className="flex items-center gap-4 md:gap-6">
             <nav className="hidden md:flex items-center gap-6">
               <Link href="/" className="text-sm font-medium hover:text-primary transition-colors">Home</Link>
-              <Link href="/aria" className="text-sm font-medium hover:text-primary transition-colors flex items-center gap-1">
+              <Link href="/aria-mode" className="text-sm font-medium hover:text-primary transition-colors flex items-center gap-1">
                 <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-primary"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
                 Aria
               </Link>
@@ -43,7 +43,7 @@ export default function MarketingLayout({
             © {new Date().getFullYear()} Ryzha. All rights reserved.
           </p>
           <div className="flex gap-4">
-            <Link href="/aria" className="text-sm text-muted-foreground hover:text-primary transition-colors">
+            <Link href="/aria-mode" className="text-sm text-muted-foreground hover:text-primary transition-colors">
               Aria
             </Link>
             <Link href="/about" className="text-sm text-muted-foreground hover:text-primary transition-colors">
