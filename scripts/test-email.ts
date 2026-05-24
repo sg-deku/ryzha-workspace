@@ -35,17 +35,8 @@ function emailTemplate(bodyHtml: string): string {
           <!-- Header -->
           <tr>
             <td style="background-color:#2563eb;border-radius:12px 12px 0 0;padding:24px 36px;">
-              <table cellpadding="0" cellspacing="0" border="0">
-                <tr>
-                  <td valign="middle" style="padding-right:12px;">
-                    <div style="width:44px;height:44px;background-color:#ffffff;border-radius:10px;text-align:center;line-height:44px;font-size:22px;font-weight:900;color:#2563eb;display:inline-block;">R</div>
-                  </td>
-                  <td valign="middle">
-                    <div style="font-size:22px;font-weight:800;color:#ffffff;letter-spacing:-0.5px;line-height:1;">Ryzha</div>
-                    <div style="font-size:11px;color:#bfdbfe;font-weight:400;letter-spacing:0.5px;margin-top:3px;">Financial Intelligence</div>
-                  </td>
-                </tr>
-              </table>
+              <div style="font-size:22px;font-weight:800;color:#ffffff;letter-spacing:-0.5px;line-height:1;">Ryzha</div>
+              <div style="font-size:11px;color:#bfdbfe;font-weight:400;letter-spacing:0.5px;margin-top:4px;">Financial Intelligence</div>
             </td>
           </tr>
 
@@ -60,7 +51,8 @@ function emailTemplate(bodyHtml: string): string {
           <tr>
             <td style="background-color:#f3f4f6;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 12px 12px;padding:24px 36px;">
               <p style="margin:0 0 4px;font-size:14px;color:#374151;font-weight:600;">Thank you,</p>
-              <p style="margin:0 0 16px;font-size:14px;color:#374151;">Karina &amp; Sushmit</p>
+              <p style="margin:0 0 2px;font-size:14px;color:#374151;">Karina &amp; Sushmit</p>
+              <p style="margin:0 0 16px;font-size:12px;color:#6b7280;font-style:italic;">Founders, Ryzha</p>
               <p style="margin:0;font-size:12px;color:#9ca3af;line-height:1.6;">
                 You received this email because you have an account with Ryzha.<br />
                 &copy; ${new Date().getFullYear()} Ryzha. All rights reserved.
