@@ -1,13 +1,45 @@
+"use client"
+
+import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Mail, MapPin, Phone } from "lucide-react"
-
-export const dynamic = 'force-static'
+import { Mail, MapPin, CheckCircle2 } from "lucide-react"
 
 export default function ContactPage() {
+  const [form, setForm] = useState({ firstName: "", lastName: "", email: "", message: "" })
+  const [loading, setLoading] = useState(false)
+  const [success, setSuccess] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setLoading(true)
+    setError(null)
+
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        setError(data.error ?? "Something went wrong.")
+      } else {
+        setSuccess(true)
+      }
+    } catch {
+      setError("Failed to send message. Please try again.")
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
     <div className="container mx-auto py-16 px-4 max-w-5xl">
       <div className="text-center space-y-4 mb-16">
@@ -18,7 +50,6 @@ export default function ContactPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-        {/* Contact Info */}
         <div className="space-y-6">
           <Card>
             <CardHeader className="space-y-1">
@@ -45,7 +76,6 @@ export default function ContactPage() {
           </Card>
         </div>
 
-        {/* Contact Form */}
         <div className="md:col-span-2">
           <Card>
             <CardHeader>
@@ -55,36 +85,75 @@ export default function ContactPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <form className="space-y-6">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="first-name">First name</Label>
-                    <Input id="first-name" placeholder="Jane" />
+              {success ? (
+                <div className="flex flex-col items-center justify-center py-12 gap-4 text-center">
+                  <CheckCircle2 className="h-12 w-12 text-green-500" />
+                  <h3 className="text-xl font-semibold">Message sent!</h3>
+                  <p className="text-muted-foreground">
+                    Thanks for reaching out. We'll get back to you as soon as possible.
+                  </p>
+                  <Button variant="outline" onClick={() => { setSuccess(false); setForm({ firstName: "", lastName: "", email: "", message: "" }) }}>
+                    Send another message
+                  </Button>
+                </div>
+              ) : (
+                <form className="space-y-6" onSubmit={handleSubmit}>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="first-name">First name</Label>
+                      <Input
+                        id="first-name"
+                        placeholder="Jane"
+                        required
+                        value={form.firstName}
+                        onChange={(e) => setForm((f) => ({ ...f, firstName: e.target.value }))}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="last-name">Last name</Label>
+                      <Input
+                        id="last-name"
+                        placeholder="Doe"
+                        required
+                        value={form.lastName}
+                        onChange={(e) => setForm((f) => ({ ...f, lastName: e.target.value }))}
+                      />
+                    </div>
                   </div>
+
                   <div className="space-y-2">
-                    <Label htmlFor="last-name">Last name</Label>
-                    <Input id="last-name" placeholder="Doe" />
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="jane@company.com"
+                      required
+                      value={form.email}
+                      onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+                    />
                   </div>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input id="email" type="email" placeholder="jane@company.com" />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="message">Message</Label>
-                  <Textarea 
-                    id="message" 
-                    placeholder="How can we help you?" 
-                    className="min-h-[120px]"
-                  />
-                </div>
-                
-                <Button type="button" className="w-full sm:w-auto">
-                  Send Message
-                </Button>
-              </form>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="message">Message</Label>
+                    <Textarea
+                      id="message"
+                      placeholder="How can we help you?"
+                      className="min-h-[120px]"
+                      required
+                      value={form.message}
+                      onChange={(e) => setForm((f) => ({ ...f, message: e.target.value }))}
+                    />
+                  </div>
+
+                  {error && (
+                    <p className="text-sm text-destructive">{error}</p>
+                  )}
+
+                  <Button type="submit" className="w-full sm:w-auto" disabled={loading}>
+                    {loading ? "Sending…" : "Send Message"}
+                  </Button>
+                </form>
+              )}
             </CardContent>
           </Card>
         </div>
