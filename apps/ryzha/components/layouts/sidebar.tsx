@@ -23,19 +23,23 @@ import {
   Landmark,
   Banknote,
   FileX,
+  Zap,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { SidebarItem } from "./sidebar-item"
-import { TooltipProvider } from "@/components/ui/tooltip"
+import { TooltipProvider, Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { Authorized } from "@/components/auth/authorized"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { useSession } from "next-auth/react"
+import { useRouter } from "next/navigation"
 
 export function Sidebar() {
   const { data: session } = useSession()
+  const router = useRouter()
   const [collapsed, setCollapsed] = React.useState(false)
   const [mounted, setMounted] = React.useState(false)
+  const [ariaLaunching, setAriaLaunching] = React.useState(false)
 
   React.useEffect(() => {
     const saved = localStorage.getItem("sidebar-collapsed")
@@ -49,6 +53,14 @@ export function Sidebar() {
     const newState = !collapsed
     setCollapsed(newState)
     localStorage.setItem("sidebar-collapsed", JSON.stringify(newState))
+  }
+
+  const launchAria = () => {
+    setAriaLaunching(true)
+    setTimeout(() => {
+      router.push("/aria")
+      setAriaLaunching(false)
+    }, 400)
   }
 
   if (!mounted) return null
@@ -223,6 +235,35 @@ export function Sidebar() {
         </nav>
 
         <div className="border-t p-2 space-y-2">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={launchAria}
+                className={cn(
+                  "w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-300 group relative overflow-hidden",
+                  "bg-gradient-to-r from-violet-600/90 to-indigo-600/90 hover:from-violet-500 hover:to-indigo-500",
+                  "text-white shadow-lg shadow-violet-500/20 hover:shadow-violet-500/40",
+                  "hover:scale-[1.02] active:scale-[0.98]",
+                  ariaLaunching && "animate-pulse scale-95",
+                  collapsed && "justify-center px-0"
+                )}
+              >
+                <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
+                <Zap className={cn("h-4 w-4 flex-shrink-0", ariaLaunching && "animate-spin")} />
+                {!collapsed && (
+                  <span className="tracking-wide">
+                    {ariaLaunching ? "Launching..." : "Launch Aria"}
+                  </span>
+                )}
+              </button>
+            </TooltipTrigger>
+            {collapsed && (
+              <TooltipContent side="right">
+                <p className="font-medium">Aria — AI Co-pilot</p>
+              </TooltipContent>
+            )}
+          </Tooltip>
+
           <div className={cn("flex items-center", collapsed ? "justify-center" : "px-2 justify-between")}>
             {!collapsed && <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Appearance</span>}
             <ThemeToggle />
