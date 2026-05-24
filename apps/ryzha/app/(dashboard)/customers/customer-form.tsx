@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ArrowLeft } from "lucide-react"
 import Link from "next/link"
 import { toast } from "sonner"
+import { AISuggestBar } from "@/components/ai/ai-suggest-bar"
 
 export default function CustomerForm({ initialData }: { initialData?: any }) {
   const router = useRouter()
@@ -69,6 +70,23 @@ export default function CustomerForm({ initialData }: { initialData?: any }) {
         </Button>
         <h2 className="text-3xl font-bold tracking-tight">{isEditing ? "Edit Customer" : "Add Customer"}</h2>
       </div>
+
+      {!isEditing && (
+        <div className="max-w-2xl">
+          <AISuggestBar
+            type="customer"
+            onSuggestion={(data) => {
+              setFormData(prev => ({
+                ...prev,
+                name: data.name || prev.name,
+                email: data.email || prev.email,
+                taxId: data.taxId || prev.taxId,
+                creditLimit: data.creditLimit ?? prev.creditLimit,
+              }))
+            }}
+          />
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-8 max-w-2xl">
         <Card>

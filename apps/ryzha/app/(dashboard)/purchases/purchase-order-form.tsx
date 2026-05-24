@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, Trash2, ArrowLeft } from "lucide-react"
 import Link from "next/link"
 import { toast } from "sonner"
+import { AISuggestBar } from "@/components/ai/ai-suggest-bar"
 
 export default function PurchaseOrderForm({ initialData }: { initialData?: any }) {
   const router = useRouter()
@@ -93,6 +94,21 @@ export default function PurchaseOrderForm({ initialData }: { initialData?: any }
         </Button>
         <h2 className="text-3xl font-bold tracking-tight">{isEditing ? "Edit Purchase Order" : "New Purchase Order"}</h2>
       </div>
+
+      {!isEditing && (
+        <AISuggestBar
+          type="purchase"
+          onSuggestion={(data) => {
+            if (data.items?.length) {
+              setLineItems(data.items.map((item: any) => ({
+                description: item.description || "",
+                quantity: item.quantity || 1,
+                unitPrice: item.unitPrice || 0,
+              })))
+            }
+          }}
+        />
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-8">
         <Card>

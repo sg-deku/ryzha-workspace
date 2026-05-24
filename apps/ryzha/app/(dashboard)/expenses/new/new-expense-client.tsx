@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ArrowLeft } from "lucide-react"
 import Link from "next/link"
 import { toast } from "sonner"
+import { AISuggestBar } from "@/components/ai/ai-suggest-bar"
 
 export default function NewExpenseClient({ categories }: { categories: string[] }) {
   const router = useRouter()
@@ -64,6 +65,21 @@ export default function NewExpenseClient({ categories }: { categories: string[] 
           </Link>
         </Button>
         <h2 className="text-3xl font-bold tracking-tight">Add Individual Expense</h2>
+      </div>
+
+      <div className="max-w-2xl">
+        <AISuggestBar
+          type="expense"
+          onSuggestion={(data) => {
+            setFormData(prev => ({
+              ...prev,
+              description: data.description || prev.description,
+              amount: data.amount ? String(data.amount) : prev.amount,
+              category: data.category || prev.category,
+              date: data.date || prev.date,
+            }))
+          }}
+        />
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-8 max-w-2xl">
