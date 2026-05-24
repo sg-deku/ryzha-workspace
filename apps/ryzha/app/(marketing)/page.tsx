@@ -1,7 +1,7 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { getSession } from "@/lib/session"
-import { ArrowRight, BarChart3, ShieldCheck, Zap, Workflow, MessageSquareText, ArrowLeftRight, Tag, FilePenLine, BellRing } from "lucide-react"
+import { ArrowRight, BarChart3, ShieldCheck, Zap, Workflow, MessageSquareText, ArrowLeftRight, Tag, FilePenLine, BellRing, CheckCircle2, Sparkles } from "lucide-react"
 
 export const dynamic = 'force-dynamic'
 
@@ -105,6 +105,107 @@ export default async function LandingPage() {
               <p className="text-muted-foreground">
                 Stay ahead of the curve with AI-driven churn risk predictions and automated overdue invoice warnings.
               </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Aria Section */}
+      <section className="w-full py-20">
+        <div className="container px-4 md:px-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <div className="space-y-6">
+              <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-sm font-medium text-primary">
+                <Sparkles className="h-3.5 w-3.5" />
+                Built into Ryzha
+              </div>
+              <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
+                Aria — Ryzha's AI mode
+              </h2>
+              <p className="text-muted-foreground text-lg">
+                Switch into Aria mode and run your entire accounting workflow through conversation. No forms, no menus — just tell Ryzha what needs to happen.
+              </p>
+              <div className="space-y-3">
+                {[
+                  "Create invoices, expenses, and orders in plain language",
+                  "Query live financial data — overdue invoices, burn rate, runway",
+                  "Every action links directly to the created record",
+                  "Persistent session memory — Aria follows the conversation",
+                ].map((item) => (
+                  <div key={item} className="flex items-start gap-3">
+                    <CheckCircle2 className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                    <span className="text-sm text-muted-foreground">{item}</span>
+                  </div>
+                ))}
+              </div>
+              <Link href="/aria-mode" className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:text-primary/80 transition-colors">
+                See everything Aria can do
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+
+            <div className="rounded-2xl border bg-background shadow-2xl overflow-hidden">
+              <div className="flex items-center justify-between px-5 py-3.5 border-b bg-card">
+                <div className="flex items-center gap-3">
+                  <div className="relative">
+                    <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
+                      <Zap className="h-3.5 w-3.5 text-primary-foreground" />
+                    </div>
+                    <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-emerald-500 rounded-full border-2 border-card" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold">Aria</p>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Ryzha AI Mode</p>
+                  </div>
+                </div>
+              </div>
+              <div className="p-5 space-y-4 bg-background min-h-[300px]">
+                <div className="flex gap-3 flex-row-reverse">
+                  <div className="rounded-2xl rounded-tr-sm bg-primary text-primary-foreground px-4 py-2.5 text-sm max-w-[82%]">
+                    Create an invoice for Acme Corp — 5 hours consulting at $200/hr
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <div className="flex-shrink-0 w-7 h-7 rounded-full bg-primary flex items-center justify-center">
+                    <Zap className="h-3.5 w-3.5 text-primary-foreground" />
+                  </div>
+                  <div className="rounded-2xl rounded-tl-sm bg-card border px-4 py-3 text-sm max-w-[82%] space-y-2">
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-mono bg-muted rounded px-2 py-1 w-fit">
+                      <span>🧾</span><span>create invoice</span>
+                    </div>
+                    <p>Invoice <strong>INV-0004</strong> created for <strong>Acme Corp</strong> — $1,000.00 due 23 Jun.</p>
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/50 rounded-lg px-3 py-1 text-xs text-emerald-700 dark:text-emerald-400">
+                        <CheckCircle2 className="h-3 w-3" /><span>Invoice created</span>
+                      </div>
+                      <span className="text-xs text-primary font-medium">View →</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex gap-3 flex-row-reverse">
+                  <div className="rounded-2xl rounded-tr-sm bg-primary text-primary-foreground px-4 py-2.5 text-sm max-w-[82%]">
+                    What's our runway?
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <div className="flex-shrink-0 w-7 h-7 rounded-full bg-primary flex items-center justify-center">
+                    <Zap className="h-3.5 w-3.5 text-primary-foreground" />
+                  </div>
+                  <div className="rounded-2xl rounded-tl-sm bg-card border px-4 py-3 text-sm max-w-[82%] space-y-1">
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-mono bg-muted rounded px-2 py-1 w-fit mb-1.5">
+                      <span>📊</span><span>query financial summary</span>
+                    </div>
+                    <p><strong>Cash:</strong> $142,500 &nbsp;·&nbsp; <strong>Burn:</strong> $28,400/mo</p>
+                    <p className="text-muted-foreground">Runway: ~<strong className="text-foreground">5.0 months</strong> at current rate.</p>
+                  </div>
+                </div>
+              </div>
+              <div className="border-t bg-card px-4 py-3">
+                <div className="flex items-center gap-3 bg-background border rounded-xl px-4 py-2 opacity-50">
+                  <Sparkles className="h-4 w-4 text-primary/50" />
+                  <span className="text-xs text-muted-foreground">Tell Aria what to do...</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
