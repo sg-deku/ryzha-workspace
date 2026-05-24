@@ -58,7 +58,7 @@ export async function POST(req: Request) {
   })
 
   const recentMessages = await prisma.chatMessage.findMany({
-    where: { userId, organizationId: orgId },
+    where: { userId, organizationId: orgId, role: { in: ["user", "assistant"] } },
     orderBy: { createdAt: "desc" },
     take: 20,
     select: { role: true, content: true },
@@ -150,7 +150,7 @@ export async function POST(req: Request) {
     }
   } catch (err) {
     console.error("[chat] AI error:", err)
-    reply = "I'm having trouble connecting to the AI service. Please check your AI configuration in Settings → Financial Engine."
+    reply = "I'm having trouble connecting to the AI service. Please contact your administrator to configure the AI provider."
   }
 
   await prisma.chatMessage.create({

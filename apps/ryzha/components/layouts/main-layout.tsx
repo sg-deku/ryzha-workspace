@@ -1,13 +1,12 @@
 "use client"
 
 import * as React from "react"
-import { cn } from "@/lib/utils"
+import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { Sidebar } from "./sidebar"
 import { BottomNav } from "./bottom-nav"
-import { PageTransition } from "../page-transition"
-import { Search, Bell } from "lucide-react"
+import { Search, Zap, Loader2, User, LogOut } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,9 +18,12 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { CommandPalette } from "@/components/ui/command-palette"
 import { FloatingAIChat } from "@/components/chat/floating-ai-chat"
-import type { Session } from "next-auth"
-
+import { NotificationBell } from "@/components/dashboard/notification-bell"
+import { cn } from "@/lib/utils"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { signOut } from "next-auth/react"
 import Link from "next/link"
+import type { Session } from "next-auth"
 
 interface MainLayoutProps {
   children: React.ReactNode
@@ -29,15 +31,26 @@ interface MainLayoutProps {
 }
 
 export function MainLayout({ children, session }: MainLayoutProps) {
+  const router = useRouter()
+  const [ariaLaunching, setAriaLaunching] = useState(false)
+
   const userInitials = session?.user?.name
     ? session.user.name.split(" ").map((n) => n[0]).join("").toUpperCase()
     : "U"
+
+  const launchAria = () => {
+    if (ariaLaunching) return
+    setAriaLaunching(true)
+    setTimeout(() => {
+      router.push("/aria")
+      setAriaLaunching(false)
+    }, 350)
+  }
 
   return (
     <div className="flex h-screen overflow-hidden">
       <Sidebar />
       <div className="flex flex-1 flex-col overflow-hidden">
-        {/* Dashboard Header */}
         <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-background px-4 md:px-6">
           <div className="flex items-center gap-4 flex-1">
             <div className="relative w-full max-w-md hidden md:block">
@@ -53,17 +66,40 @@ export function MainLayout({ children, session }: MainLayoutProps) {
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" className="relative">
-              <Bell className="h-5 w-5" />
-              <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-primary" />
-            </Button>
-            
+
+          <div className="flex items-center gap-3">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={launchAria}
+                    className={cn(
+                      "relative flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium transition-all duration-300 overflow-hidden group",
+                      "bg-gradient-to-r from-violet-600/90 to-indigo-600/90 hover:from-violet-500 hover:to-indigo-500",
+                      "text-white shadow-md shadow-violet-500/20 hover:shadow-violet-500/40",
+                      "hover:scale-[1.02] active:scale-[0.98]",
+                      ariaLaunching && "opacity-80 scale-95"
+                    )}
+                  >
+                    <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
+                    {ariaLaunching
+                      ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      : <Zap className="h-3.5 w-3.5" />
+                    }
+                    <span className="hidden sm:inline">{ariaLaunching ? "Launching..." : "Aria"}</span>
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>AI Accounting Co-pilot</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
+            <NotificationBell />
+
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-9 w-9 rounded-full">
                   <Avatar className="h-9 w-9">
-                    <AvatarFallback>{userInitials}</AvatarFallback>
+                    <AvatarFallback className="bg-primary/10 text-primary">{userInitials}</AvatarFallback>
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
@@ -71,25 +107,29 @@ export function MainLayout({ children, session }: MainLayoutProps) {
                 <DropdownMenuLabel className="font-normal">
                   <div className="flex flex-col space-y-1">
                     <p className="text-sm font-medium leading-none">{session?.user?.name}</p>
-                    <p className="text-xs leading-none text-muted-foreground">
-                      {session?.user?.email}
-                    </p>
+                    <p className="text-xs leading-none text-muted-foreground">{session?.user?.email}</p>
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                  <Link href="/settings/account">Profile</Link>
+                  <Link href="/profile" className="flex w-full items-center">
+                    <User className="mr-2 h-4 w-4" />
+                    Profile
+                  </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem asChild className="text-destructive">
-                  <Link href="/logout" className="w-full cursor-pointer">Log out</Link>
+                <DropdownMenuItem
+                  onSelect={(e) => { e.preventDefault(); signOut({ callbackUrl: "/login" }) }}
+                  className="text-destructive focus:text-destructive cursor-pointer"
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Log out
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
         </header>
 
-        {/* Main Content Area */}
         <main className="flex-1 overflow-y-auto bg-muted/20 p-4 md:p-6">
           {children}
         </main>
