@@ -7,7 +7,7 @@ import { ArrowLeft, Pencil } from "lucide-react"
 import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-
+import { VendorInvoicePaymentPanel } from "../vendor-invoice-payment-panel"
 
 export const dynamic = "force-dynamic";
 
@@ -24,11 +24,15 @@ export default async function VendorInvoiceDetailsPage({ params }: { params: Pro
     include: {
       vendor: true,
       purchaseOrder: true,
-      lineItems: true
+      lineItems: true,
+      vendorPayments: { orderBy: { paymentDate: "desc" } },
     }
   })
 
   if (!invoice) return notFound()
+
+  const totalPaid = invoice.vendorPayments.reduce((s, p) => s + p.amount, 0)
+  const outstanding = Math.max(0, invoice.amount - totalPaid)
 
   return (
     <div className="flex-1 space-y-6 p-8 pt-6">
@@ -57,76 +61,92 @@ export default async function VendorInvoiceDetailsPage({ params }: { params: Pro
         )}
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Details</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Vendor</p>
-                <Link href={`/vendors/${invoice.vendorId}`} className="text-primary hover:underline">
-                  {invoice.vendor.name}
-                </Link>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">PO Number</p>
-                {invoice.purchaseOrderId ? (
-                  <Link href={`/purchases/${invoice.purchaseOrderId}`} className="text-primary hover:underline">
-                    {invoice.purchaseOrder?.poNumber}
+      <div className="grid gap-6 md:grid-cols-3">
+        <div className="md:col-span-2 space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Details</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Vendor</p>
+                  <Link href={`/vendors/${invoice.vendorId}`} className="text-primary hover:underline">
+                    {invoice.vendor.name}
                   </Link>
-                ) : (
-                  <span>N/A</span>
-                )}
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">PO Number</p>
+                  {invoice.purchaseOrderId ? (
+                    <Link href={`/purchases/${invoice.purchaseOrderId}`} className="text-primary hover:underline">
+                      {invoice.purchaseOrder?.poNumber}
+                    </Link>
+                  ) : (
+                    <span>N/A</span>
+                  )}
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Total Amount</p>
+                  <p className="font-bold">${invoice.amount.toFixed(2)}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Due Date</p>
+                  <p>{new Date(invoice.dueDate).toLocaleDateString()}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Created</p>
+                  <p>{new Date(invoice.createdAt).toLocaleDateString()}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Outstanding</p>
+                  <p className={outstanding > 0 ? "font-bold text-destructive" : "font-bold text-green-600"}>${outstanding.toFixed(2)}</p>
+                </div>
               </div>
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Total Amount</p>
-                <p className="font-bold">${invoice.amount.toFixed(2)}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Due Date</p>
-                <p>{new Date(invoice.dueDate).toLocaleDateString()}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Created</p>
-                <p>{new Date(invoice.createdAt).toLocaleDateString()}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        <Card className="md:col-span-2">
-          <CardHeader>
-            <CardTitle>Line Items</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Description</TableHead>
-                  <TableHead>Quantity</TableHead>
-                  <TableHead>Unit Price</TableHead>
-                  <TableHead className="text-right">Amount</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {invoice.lineItems.map((item) => (
-                  <TableRow key={item.id}>
-                    <TableCell>{item.description}</TableCell>
-                    <TableCell>{item.quantity}</TableCell>
-                    <TableCell>${item.unitPrice.toFixed(2)}</TableCell>
-                    <TableCell className="text-right">${item.amount.toFixed(2)}</TableCell>
+          <Card>
+            <CardHeader>
+              <CardTitle>Line Items</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Description</TableHead>
+                    <TableHead>Quantity</TableHead>
+                    <TableHead>Unit Price</TableHead>
+                    <TableHead className="text-right">Amount</TableHead>
                   </TableRow>
-                ))}
-                <TableRow>
-                  <TableCell colSpan={3} className="text-right font-bold">Total</TableCell>
-                  <TableCell className="text-right font-bold">${invoice.amount.toFixed(2)}</TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+                </TableHeader>
+                <TableBody>
+                  {invoice.lineItems.map((item) => (
+                    <TableRow key={item.id}>
+                      <TableCell>{item.description}</TableCell>
+                      <TableCell>{item.quantity}</TableCell>
+                      <TableCell>${item.unitPrice.toFixed(2)}</TableCell>
+                      <TableCell className="text-right">${item.amount.toFixed(2)}</TableCell>
+                    </TableRow>
+                  ))}
+                  <TableRow>
+                    <TableCell colSpan={3} className="text-right font-bold">Total</TableCell>
+                    <TableCell className="text-right font-bold">${invoice.amount.toFixed(2)}</TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div>
+          <VendorInvoicePaymentPanel
+            invoiceId={invoice.id}
+            invoiceNumber={invoice.invoiceNumber}
+            totalAmount={invoice.amount}
+            initialPayments={JSON.parse(JSON.stringify(invoice.vendorPayments))}
+            status={invoice.status}
+          />
+        </div>
       </div>
     </div>
   )

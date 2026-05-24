@@ -1,4 +1,3 @@
-import { getSession } from "@/lib/session"
 import { prisma } from "@/lib/prisma"
 import { notFound, redirect } from "next/navigation"
 import { InvoiceDetail } from "@/components/invoices/invoice-detail"
@@ -16,7 +15,9 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
       organizationId: session.user.organizationId
     },
     include: {
-      lineItems: true
+      lineItems: true,
+      payments: { orderBy: { paymentDate: "desc" } },
+      creditNotes: { orderBy: { issueDate: "desc" } },
     }
   })
 

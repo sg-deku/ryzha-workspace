@@ -52,10 +52,13 @@ export async function runOMAgent(transactionId: string) {
     }
   }
 
+  const paymentFraction: number = (tx as any).paymentFraction ?? 1
+  const effectiveAmount = tx.amount * paymentFraction
+
   let updated
   if (isDeferred) {
-    const monthlyPortion = tx.amount / deferralMonths
-    const deferred = tx.amount - monthlyPortion
+    const monthlyPortion = effectiveAmount / deferralMonths
+    const deferred = effectiveAmount - monthlyPortion
     const logMessage = aiReasoning 
       ? `O&M: ${aiReasoning} (ASC 606). Recognized $${monthlyPortion.toFixed(2)}, deferred $${deferred.toFixed(2)} over ${deferralMonths} months.`
       : `STOP! According to ASC 606, this transaction should be deferred. Recognized $${monthlyPortion.toFixed(2)}, deferred $${deferred.toFixed(2)}.`

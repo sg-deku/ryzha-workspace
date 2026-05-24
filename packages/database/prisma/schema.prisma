@@ -59,6 +59,12 @@ model Organization {
   glEntries        GeneralLedgerEntry[]
   chartOfAccounts  ChartOfAccounts[]
 
+  // Payment Models
+  payments         Payment[]
+  creditNotes      CreditNote[]
+  vendorPayments   VendorPayment[]
+  bankTransactions BankTransaction[]
+
   // Admin Models
   license          License?
   usageMetrics     UsageMetrics[]
@@ -134,6 +140,53 @@ model VendorInvoice {
   purchaseOrder    PurchaseOrder? @relation(fields: [purchaseOrderId], references: [id])
   organization     Organization @relation(fields: [organizationId], references: [id])
   lineItems        VendorInvoiceLine[]
+  vendorPayments   VendorPayment[]
+}
+
+model VendorPayment {
+  id              String   @id @default(cuid())
+  vendorInvoiceId String
+  amount          Float
+  paymentDate     DateTime
+  method          String   @default("bank_transfer")
+  referenceNumber String?
+  notes           String?
+  expenseId       String?
+  createdById     String?
+  organizationId  String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  vendorInvoice   VendorInvoice @relation(fields: [vendorInvoiceId], references: [id])
+  organization    Organization  @relation(fields: [organizationId], references: [id])
+
+  @@index([vendorInvoiceId])
+  @@index([organizationId, paymentDate])
+}
+
+model BankTransaction {
+  id                     String   @id @default(cuid())
+  date                   DateTime
+  description            String
+  amount                 Float
+  currency               String   @default("USD")
+  balance                Float?
+  reference              String?
+  counterparty           String?
+  matchedPaymentId       String?
+  matchedVendorPaymentId String?
+  matchStatus            String   @default("unmatched")
+  matchConfidence        Float?
+  matchReason            String?
+  source                 String   @default("manual")
+  organizationId         String
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  organization    Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId, date])
+  @@index([organizationId, matchStatus])
 }
 
 model VendorInvoiceLine {
@@ -258,6 +311,8 @@ model Invoice {
   updatedAt      DateTime      @updatedAt
 
   lineItems    InvoiceLineItem[]
+  payments     Payment[]
+  creditNotes  CreditNote[]
   organization Organization      @relation(fields: [organizationId], references: [id])
 }
 
@@ -275,8 +330,55 @@ model InvoiceLineItem {
 enum InvoiceStatus {
   DRAFT
   SENT
+  PARTIAL
   PAID
   VOID
+  REFUNDED
+}
+
+model Payment {
+  id              String   @id @default(cuid())
+  invoiceId       String
+  amount          Float
+  paymentDate     DateTime
+  method          String   @default("bank_transfer")
+  referenceNumber String?
+  notes           String?
+  transactionId   String?
+  createdById     String?
+  organizationId  String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  invoice         Invoice      @relation(fields: [invoiceId], references: [id])
+  organization    Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([invoiceId])
+  @@index([organizationId, paymentDate])
+}
+
+model CreditNote {
+  id              String   @id @default(cuid())
+  invoiceId       String
+  amount          Float
+  reason          String
+  reasonCategory  String   @default("other")
+  issueDate       DateTime @default(now())
+  refundMethod    String?
+  refundDate      DateTime?
+  referenceNumber String?
+  notes           String?
+  transactionId   String?
+  createdById     String?
+  organizationId  String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  invoice         Invoice      @relation(fields: [invoiceId], references: [id])
+  organization    Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([invoiceId])
+  @@index([organizationId, issueDate])
 }
 
 model Expense {

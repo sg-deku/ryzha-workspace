@@ -5,6 +5,9 @@ import { runAuditorAgent } from "./auditor"
 import { runFPAgent } from "./fpna"
 import { runMatchingAgent } from "./p2p/matching"
 import { runCollectionsAgent } from "./o2c/collections"
+import { runCashApplicationAgent } from "./o2c/cash-application"
+import { runCreditNoteAgent } from "./o2c/credit-note"
+import { runPaymentSchedulerAgent } from "./p2p/payment-scheduler"
 import { sendVoiceSummary, sendSMSNotification, createNotification } from "@/lib/notifications"
 import { publishEvent } from "@/lib/events"
 
@@ -346,6 +349,105 @@ export async function startO2CWorkflow(salesOrderId: string, scenario?: string) 
       title: "O2C Workflow Failed",
       message: `Error processing sales order #${order.orderNumber}.`,
       link: `/sales-orders/${salesOrderId}`
+    }).catch(() => {})
+  }
+}
+
+export async function startCashApplicationWorkflow(paymentId: string, organizationId: string) {
+  try {
+    const result = await runCashApplicationAgent(paymentId, organizationId)
+    if (result.status === "ERROR") {
+      await createNotification({
+        organizationId,
+        type: "ERROR",
+        title: "Payment Application Failed",
+        message: result.message,
+        link: `/invoices`,
+      })
+    } else {
+      await createNotification({
+        organizationId,
+        type: "SUCCESS",
+        title: "Payment Applied",
+        message: result.message,
+        link: result.transactionId ? `/transactions/${result.transactionId}` : `/invoices`,
+      })
+    }
+    return result
+  } catch (error: any) {
+    console.error("Cash application workflow error:", error)
+    await createNotification({
+      organizationId,
+      type: "ERROR",
+      title: "Payment Application Error",
+      message: error.message,
+      link: `/invoices`,
+    }).catch(() => {})
+  }
+}
+
+export async function startCreditNoteWorkflow(creditNoteId: string, organizationId: string) {
+  try {
+    const result = await runCreditNoteAgent(creditNoteId, organizationId)
+    if (result.status === "ERROR") {
+      await createNotification({
+        organizationId,
+        type: "ERROR",
+        title: "Credit Note Failed",
+        message: result.message,
+        link: `/invoices`,
+      })
+    } else {
+      await createNotification({
+        organizationId,
+        type: "SUCCESS",
+        title: "Credit Note Issued",
+        message: result.message,
+        link: result.reversalTransactionId ? `/transactions/${result.reversalTransactionId}` : `/invoices`,
+      })
+    }
+    return result
+  } catch (error: any) {
+    console.error("Credit note workflow error:", error)
+    await createNotification({
+      organizationId,
+      type: "ERROR",
+      title: "Credit Note Error",
+      message: error.message,
+      link: `/invoices`,
+    }).catch(() => {})
+  }
+}
+
+export async function startVendorPaymentWorkflow(vendorPaymentId: string, organizationId: string) {
+  try {
+    const result = await runPaymentSchedulerAgent(vendorPaymentId, organizationId)
+    if (result.status === "ERROR") {
+      await createNotification({
+        organizationId,
+        type: "ERROR",
+        title: "Vendor Payment Failed",
+        message: result.message,
+        link: `/vendor-invoices`,
+      })
+    } else {
+      await createNotification({
+        organizationId,
+        type: "SUCCESS",
+        title: "Vendor Payment Recorded",
+        message: result.message,
+        link: `/vendor-invoices`,
+      })
+    }
+    return result
+  } catch (error: any) {
+    console.error("Vendor payment workflow error:", error)
+    await createNotification({
+      organizationId,
+      type: "ERROR",
+      title: "Vendor Payment Error",
+      message: error.message,
+      link: `/vendor-invoices`,
     }).catch(() => {})
   }
 }
