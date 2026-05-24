@@ -123,7 +123,7 @@ export default function StripeIntegrationPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+      <div className="space-y-6">
         <div className="space-y-6">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
@@ -231,59 +231,59 @@ export default function StripeIntegrationPage() {
           </Card>
         </div>
 
-        <div className="space-y-6">
-          <Card className="h-full flex flex-col">
-            <CardHeader>
-              <CardTitle>Stripe Event Logs</CardTitle>
-              <CardDescription>Recent payment_intent events captured from Stripe webhooks.</CardDescription>
-            </CardHeader>
-            <CardContent className="flex-1 p-0">
-              <Table>
-                <TableHeader>
+        <Card>
+          <CardHeader>
+            <CardTitle>Stripe Event Logs</CardTitle>
+            <CardDescription>Recent payment_intent events captured from Stripe webhooks.</CardDescription>
+          </CardHeader>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="pl-6 w-[35%]">Intent ID</TableHead>
+                  <TableHead className="w-[15%]">Amount</TableHead>
+                  <TableHead className="w-[20%]">Status</TableHead>
+                  <TableHead className="pr-6 text-right w-[30%]">Time</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {logsLoading ? (
                   <TableRow>
-                    <TableHead className="pl-6">Intent ID</TableHead>
-                    <TableHead>Amount</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="pr-6 text-right">Time</TableHead>
+                    <TableCell colSpan={4} className="h-24 text-center">
+                      <Loader2 className="h-5 w-5 animate-spin mx-auto text-muted-foreground" />
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {logsLoading ? (
-                    <TableRow>
-                      <TableCell colSpan={4} className="h-24 text-center">
-                        <Loader2 className="h-5 w-5 animate-spin mx-auto text-muted-foreground" />
-                      </TableCell>
-                    </TableRow>
-                  ) : logs.map(log => (
-                    <TableRow key={log.id}>
-                      <TableCell className="pl-6 font-medium text-xs">
+                ) : logs.map(log => (
+                  <TableRow key={log.id}>
+                    <TableCell className="pl-6 font-mono text-xs max-w-0">
+                      <span className="block truncate" title={log.stripePaymentIntentId}>
                         {log.stripePaymentIntentId}
-                      </TableCell>
-                      <TableCell>
-                        ${log.amount.toFixed(2)} {log.currency.toUpperCase()}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="font-mono text-[10px]">
-                          {log.workflowStatus}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground whitespace-nowrap text-xs text-right pr-6">
-                        {new Date(log.createdAt).toLocaleString()}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {!logsLoading && logs.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={4} className="h-24 text-center text-muted-foreground italic">
-                        No Stripe events received yet.
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </div>
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      ${log.amount.toFixed(2)} {log.currency.toUpperCase()}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="font-mono text-[10px]">
+                        {log.workflowStatus}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground text-xs text-right pr-6 whitespace-nowrap">
+                      {new Date(log.createdAt).toLocaleString()}
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {!logsLoading && logs.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={4} className="h-24 text-center text-muted-foreground italic">
+                      No Stripe events received yet.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
       </div>
     </div>
   )
