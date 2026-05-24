@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic"
 
 import { redirect } from 'next/navigation'
+import { getSession } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
 
 export default async function SettingsLayout({ children }: { children: React.ReactNode }) {

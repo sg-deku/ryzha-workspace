@@ -1,3 +1,5 @@
+import { getServerSession } from "next-auth"
+import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { suggestInvoiceLineItems } from "@/lib/ai/invoice-generator"
 import { NextResponse } from "next/server"
@@ -5,7 +7,7 @@ import { NextResponse } from "next/server"
 export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
-  const session = await getSession()
+  const session = await getServerSession(authOptions)
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
   try {

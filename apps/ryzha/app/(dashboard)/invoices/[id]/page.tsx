@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma"
 import { notFound, redirect } from "next/navigation"
+import { getSession } from "@/lib/session"
 import { InvoiceDetail } from "@/components/invoices/invoice-detail"
 
 export const dynamic = 'force-dynamic'
