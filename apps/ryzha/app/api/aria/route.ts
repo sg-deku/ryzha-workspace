@@ -449,17 +449,29 @@ export async function POST(req: Request) {
       result = await executeAction(parsed.action, parsed.params || {}, orgId, userId)
     }
 
-    prisma.aIUsageLog.create({
-      data: {
-        organizationId: orgId,
-        feature: "aria",
-        model,
-        provider: "org",
-        promptTokens: completion.usage?.prompt_tokens || 0,
-        completionTokens: completion.usage?.completion_tokens || 0,
-        totalTokens: completion.usage?.total_tokens || 0,
-      },
-    }).catch(() => {})
+    const replyContent = result?.summary
+      ? `${parsed.message}\n\n${result.summary}`
+      : parsed.message
+
+    await Promise.all([
+      prisma.chatMessage.create({
+        data: { userId, organizationId: orgId, role: "aria_user", content: message },
+      }),
+      prisma.chatMessage.create({
+        data: { userId, organizationId: orgId, role: "aria_assistant", content: replyContent },
+      }),
+      prisma.aIUsageLog.create({
+        data: {
+          organizationId: orgId,
+          feature: "aria",
+          model,
+          provider: "org",
+          promptTokens: completion.usage?.prompt_tokens || 0,
+          completionTokens: completion.usage?.completion_tokens || 0,
+          totalTokens: completion.usage?.total_tokens || 0,
+        },
+      }),
+    ]).catch(() => {})
 
     return NextResponse.json({
       action: parsed.action,
@@ -475,5 +487,36 @@ export async function POST(req: Request) {
 export async function GET(req: Request) {
   const session = await getServerSession(authOptions)
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-  return NextResponse.json({ status: "aria-ready" })
+
+  const userId = session.user.id
+  const orgId = session.user.organizationId
+  if (!orgId) return NextResponse.json({ messages: [] })
+
+  const rows = await prisma.chatMessage.findMany({
+    where: {
+      userId,
+      organizationId: orgId,
+      role: { in: ["aria_user", "aria_assistant"] },
+    },
+    orderBy: { createdAt: "asc" },
+    take: 100,
+    select: { id: true, role: true, content: true, createdAt: true },
+  })
+
+  return NextResponse.json({ messages: rows })
+}
+
+export async function DELETE(req: Request) {
+  const session = await getServerSession(authOptions)
+  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+
+  const userId = session.user.id
+  const orgId = session.user.organizationId
+  if (!orgId) return NextResponse.json({ success: true })
+
+  await prisma.chatMessage.deleteMany({
+    where: { userId, organizationId: orgId, role: { in: ["aria_user", "aria_assistant"] } },
+  })
+
+  return NextResponse.json({ success: true })
 }

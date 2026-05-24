@@ -66,7 +66,7 @@ function AriaMarkdown({ content, onLinkClick }: { content: string; onLinkClick?:
         const parts = line.split(/(\*\*[^*]+\*\*|\[[^\]]+\]\([^)]+\))/g)
         const rendered = parts.map((part, j) => {
           const boldMatch = part.match(/^\*\*([^*]+)\*\*$/)
-          if (boldMatch) return <strong key={j} className="font-semibold text-white/90">{boldMatch[1]}</strong>
+          if (boldMatch) return <strong key={j} className="font-semibold">{boldMatch[1]}</strong>
 
           const linkMatch = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/)
           if (linkMatch) {
@@ -74,7 +74,7 @@ function AriaMarkdown({ content, onLinkClick }: { content: string; onLinkClick?:
               <Link
                 key={j}
                 href={linkMatch[2]}
-                className="text-violet-400 hover:text-violet-300 underline underline-offset-2"
+                className="text-primary hover:text-primary/80 underline underline-offset-2 font-medium"
                 onClick={(e: React.MouseEvent) => { if (onLinkClick) { e.preventDefault(); onLinkClick(linkMatch[2]) } }}
               >
                 {linkMatch[1]}
@@ -88,8 +88,8 @@ function AriaMarkdown({ content, onLinkClick }: { content: string; onLinkClick?:
         const isBullet = line.startsWith("• ") || line.startsWith("- ")
         if (isBullet) {
           return (
-            <div key={i} className="flex gap-2 text-white/70">
-              <span className="text-violet-400/70 mt-0.5">•</span>
+            <div key={i} className="flex gap-2 text-muted-foreground">
+              <span className="text-primary/60 mt-0.5 flex-shrink-0">•</span>
               <span className="flex-1">{rendered.slice(1)}</span>
             </div>
           )
@@ -97,7 +97,7 @@ function AriaMarkdown({ content, onLinkClick }: { content: string; onLinkClick?:
 
         if (line === "") return <div key={i} className="h-1" />
 
-        return <p key={i} className="text-white/80">{rendered}</p>
+        return <p key={i} className="text-foreground">{rendered}</p>
       })}
     </>
   )
@@ -107,34 +107,29 @@ function AriaMessageBubble({ msg, onLinkClick }: { msg: AriaMessage; onLinkClick
   const isUser = msg.role === "user"
 
   return (
-    <div
-      className={cn(
-        "flex gap-3 animate-fade-in",
-        isUser ? "flex-row-reverse" : "flex-row"
-      )}
-    >
+    <div className={cn("flex gap-3 animate-fade-in", isUser ? "flex-row-reverse" : "flex-row")}>
       {!isUser && (
-        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-violet-500/20">
-          <Zap className="h-4 w-4 text-white" />
+        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary flex items-center justify-center shadow-sm">
+          <Zap className="h-4 w-4 text-primary-foreground" />
         </div>
       )}
 
-      <div className={cn("flex flex-col gap-2 max-w-[78%]", isUser && "items-end")}>
+      <div className={cn("flex flex-col gap-1.5 max-w-[78%]", isUser && "items-end")}>
         {isUser ? (
-          <div className="rounded-2xl rounded-tr-sm bg-violet-600 text-white px-4 py-2.5 text-sm shadow-md">
+          <div className="rounded-2xl rounded-tr-sm bg-primary text-primary-foreground px-4 py-2.5 text-sm shadow-sm">
             {msg.content}
           </div>
         ) : (
-          <div className="rounded-2xl rounded-tl-sm bg-white/5 dark:bg-white/[0.03] border border-white/10 px-4 py-3 text-sm text-foreground shadow-sm">
+          <div className="rounded-2xl rounded-tl-sm bg-card border border-border px-4 py-3 text-sm shadow-sm">
             {msg.pending ? (
               <div className="flex items-center gap-2 text-muted-foreground">
-                <Loader2 className="h-4 w-4 animate-spin text-violet-400" />
-                <span className="italic">Aria is thinking...</span>
+                <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                <span className="italic text-sm">Aria is thinking...</span>
               </div>
             ) : (
               <>
                 {msg.action && msg.action !== "none" && (
-                  <div className="flex items-center gap-1.5 mb-2 text-xs text-violet-400 font-mono">
+                  <div className="flex items-center gap-1.5 mb-2 text-xs text-muted-foreground font-mono bg-muted rounded px-2 py-1 w-fit">
                     <span>{ACTION_ICONS[msg.action] || "⚡"}</span>
                     <span>{msg.action.replace(/_/g, " ")}</span>
                   </div>
@@ -145,13 +140,13 @@ function AriaMessageBubble({ msg, onLinkClick }: { msg: AriaMessage; onLinkClick
 
                 {msg.result?.success && msg.result.link && (
                   <div className="mt-3 flex items-center gap-2">
-                    <div className="flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-lg px-3 py-1.5 text-xs text-emerald-400">
+                    <div className="flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/50 rounded-lg px-3 py-1.5 text-xs text-emerald-700 dark:text-emerald-400">
                       <CheckCircle2 className="h-3.5 w-3.5" />
                       <span>{ENTITY_LABELS[msg.result.entityType || ""] || "Entity"} created</span>
                     </div>
                     <Link
                       href={msg.result.link}
-                      className="flex items-center gap-1 text-xs text-violet-400 hover:text-violet-300 transition-colors"
+                      className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 transition-colors font-medium"
                     >
                       View <ExternalLink className="h-3 w-3" />
                     </Link>
@@ -159,7 +154,7 @@ function AriaMessageBubble({ msg, onLinkClick }: { msg: AriaMessage; onLinkClick
                 )}
 
                 {msg.result && !msg.result.success && msg.result.error && (
-                  <div className="mt-2 flex items-center gap-1.5 text-xs text-red-400">
+                  <div className="mt-2 flex items-center gap-1.5 text-xs text-destructive">
                     <AlertCircle className="h-3.5 w-3.5" />
                     <span>{msg.result.error}</span>
                   </div>
@@ -169,7 +164,7 @@ function AriaMessageBubble({ msg, onLinkClick }: { msg: AriaMessage; onLinkClick
           </div>
         )}
 
-        <span className="text-[10px] text-muted-foreground/50 px-1">
+        <span className="text-[10px] text-muted-foreground/60 px-1">
           {msg.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
         </span>
       </div>
@@ -177,25 +172,38 @@ function AriaMessageBubble({ msg, onLinkClick }: { msg: AriaMessage; onLinkClick
   )
 }
 
+const WELCOME_MSG = (userName?: string | null): AriaMessage => ({
+  id: "welcome",
+  role: "aria",
+  content: `Hello${userName ? `, **${userName.split(" ")[0]}**` : ""}. I'm **Aria**, your AI accounting co-pilot.\n\nI can create invoices, log expenses, add customers and vendors, query your financial data, and more — all through conversation.\n\nWhat would you like to do?`,
+  timestamp: new Date(),
+})
+
 export function AriaClient({ userName }: { userName?: string | null }) {
   const router = useRouter()
-  const [messages, setMessages] = useState<AriaMessage[]>([
-    {
-      id: "welcome",
-      role: "aria",
-      content: `Hello${userName ? `, **${userName.split(" ")[0]}**` : ""}. I'm **Aria**, your AI accounting co-pilot.\n\nI can create invoices, log expenses, add customers and vendors, query your financial data, and more — all through conversation.\n\nWhat would you like to do?`,
-      timestamp: new Date(),
-    },
-  ])
+  const [messages, setMessages] = useState<AriaMessage[]>([WELCOME_MSG(userName)])
   const [input, setInput] = useState("")
   const [loading, setLoading] = useState(false)
-  const [entered, setEntered] = useState(false)
+  const [historyLoaded, setHistoryLoaded] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
-    const t = setTimeout(() => setEntered(true), 100)
-    return () => clearTimeout(t)
+    fetch("/api/aria")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data?.messages?.length) {
+          const restored: AriaMessage[] = data.messages.map((m: any) => ({
+            id: m.id,
+            role: m.role === "aria_user" ? "user" : "aria",
+            content: m.content,
+            timestamp: new Date(m.createdAt),
+          }))
+          setMessages(restored)
+        }
+      })
+      .catch(() => {})
+      .finally(() => setHistoryLoaded(true))
   }, [])
 
   useEffect(() => {
@@ -218,7 +226,7 @@ export function AriaClient({ userName }: { userName?: string | null }) {
     }
 
     const pendingMsg: AriaMessage = {
-      id: `a-${Date.now()}`,
+      id: `pending-${Date.now()}`,
       role: "aria",
       content: "",
       timestamp: new Date(),
@@ -255,7 +263,7 @@ export function AriaClient({ userName }: { userName?: string | null }) {
       setMessages((prev) => prev.filter((m) => !m.pending).concat(ariaMsg))
     } catch (err: any) {
       const errMsg: AriaMessage = {
-        id: `a-${Date.now()}`,
+        id: `err-${Date.now()}`,
         role: "aria",
         content: `⚠️ ${err.message}`,
         timestamp: new Date(),
@@ -266,6 +274,11 @@ export function AriaClient({ userName }: { userName?: string | null }) {
       setTimeout(() => inputRef.current?.focus(), 100)
     }
   }, [loading, history])
+
+  const handleClear = async () => {
+    await fetch("/api/aria", { method: "DELETE" })
+    setMessages([WELCOME_MSG(userName)])
+  }
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -278,60 +291,37 @@ export function AriaClient({ userName }: { userName?: string | null }) {
     router.push(href)
   }
 
-  return (
-    <div
-      className={cn(
-        "fixed inset-0 z-50 flex flex-col bg-[#0a0a12] transition-all duration-700",
-        entered ? "opacity-100 scale-100" : "opacity-0 scale-95"
-      )}
-      style={{
-        backgroundImage: `
-          radial-gradient(ellipse at 20% 10%, rgba(139, 92, 246, 0.08) 0%, transparent 50%),
-          radial-gradient(ellipse at 80% 80%, rgba(99, 102, 241, 0.06) 0%, transparent 50%),
-          linear-gradient(to bottom, #0a0a12, #08080f)
-        `,
-      }}
-    >
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          backgroundImage: `linear-gradient(rgba(139,92,246,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(139,92,246,0.03) 1px, transparent 1px)`,
-          backgroundSize: "60px 60px",
-        }}
-      />
+  const showSuggestions = historyLoaded && messages.length <= 1
 
-      <header className="relative z-10 flex items-center justify-between px-6 py-4 border-b border-white/[0.06] bg-black/20 backdrop-blur-sm">
+  return (
+    <div className="fixed inset-0 z-50 flex flex-col bg-background">
+      <header className="flex items-center justify-between px-6 py-3 border-b bg-card">
         <div className="flex items-center gap-3">
           <div className="relative">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-violet-500/30">
-              <Zap className="h-5 w-5 text-white" />
+            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+              <Zap className="h-4 w-4 text-primary-foreground" />
             </div>
-            <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-400 rounded-full border-2 border-[#0a0a12] animate-pulse" />
+            <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-emerald-500 rounded-full border-2 border-card" />
           </div>
           <div>
-            <h1 className="text-white font-semibold text-sm tracking-wide">Aria</h1>
-            <p className="text-[10px] text-violet-400/70 tracking-wider uppercase">AI Accounting Co-pilot · Ryzha</p>
+            <h1 className="font-semibold text-sm">Aria</h1>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">AI Accounting Co-pilot</p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
           <Button
             variant="ghost"
             size="sm"
-            className="text-white/40 hover:text-white/70 hover:bg-white/5 gap-1.5 text-xs"
-            onClick={() => setMessages([{
-              id: "welcome",
-              role: "aria",
-              content: "Session cleared. How can I help you?",
-              timestamp: new Date(),
-            }])}
+            className="gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+            onClick={handleClear}
           >
             <RotateCcw className="h-3.5 w-3.5" />
-            Clear
+            Clear history
           </Button>
           <Button
             variant="ghost"
             size="icon"
-            className="text-white/40 hover:text-white/70 hover:bg-white/5"
+            className="text-muted-foreground hover:text-foreground"
             onClick={() => router.push("/dashboard")}
           >
             <X className="h-4 w-4" />
@@ -339,27 +329,34 @@ export function AriaClient({ userName }: { userName?: string | null }) {
         </div>
       </header>
 
-      <div className="relative z-10 flex-1 overflow-y-auto px-4 py-6 space-y-5 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
+      <div className="flex-1 overflow-y-auto px-4 py-6">
         <div className="max-w-3xl mx-auto space-y-5">
-          {messages.map((msg) => (
-            <AriaMessageBubble key={msg.id} msg={msg} onLinkClick={handleLinkClick} />
-          ))}
+          {!historyLoaded ? (
+            <div className="flex items-center justify-center py-16 text-muted-foreground">
+              <Loader2 className="h-5 w-5 animate-spin mr-2" />
+              <span className="text-sm">Loading conversation...</span>
+            </div>
+          ) : (
+            messages.map((msg) => (
+              <AriaMessageBubble key={msg.id} msg={msg} onLinkClick={handleLinkClick} />
+            ))
+          )}
           <div ref={bottomRef} />
         </div>
       </div>
 
-      {messages.length <= 1 && (
-        <div className="relative z-10 px-4 pb-4">
+      {showSuggestions && (
+        <div className="px-4 pb-4">
           <div className="max-w-3xl mx-auto">
-            <p className="text-[10px] text-white/30 uppercase tracking-widest mb-2 px-1">Suggestions</p>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-2 px-0.5">Try asking</p>
             <div className="flex flex-wrap gap-2">
               {SUGGESTIONS.map((s) => (
                 <button
                   key={s}
                   onClick={() => sendMessage(s)}
-                  className="text-xs bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] rounded-lg px-3 py-1.5 text-white/60 hover:text-white/90 transition-all flex items-center gap-1.5 group"
+                  className="text-xs bg-muted hover:bg-muted/80 border border-border rounded-lg px-3 py-1.5 text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5 group"
                 >
-                  <ChevronRight className="h-3 w-3 text-violet-400/50 group-hover:text-violet-400 transition-colors" />
+                  <ChevronRight className="h-3 w-3 text-primary/50 group-hover:text-primary transition-colors" />
                   {s}
                 </button>
               ))}
@@ -368,10 +365,10 @@ export function AriaClient({ userName }: { userName?: string | null }) {
         </div>
       )}
 
-      <div className="relative z-10 px-4 pb-6 pt-2 border-t border-white/[0.06] bg-black/10 backdrop-blur-sm">
+      <div className="border-t bg-card px-4 pb-5 pt-3">
         <div className="max-w-3xl mx-auto">
-          <div className="flex items-end gap-3 bg-white/[0.04] border border-white/[0.1] rounded-2xl px-4 py-3 focus-within:border-violet-500/50 focus-within:bg-white/[0.06] transition-all">
-            <Sparkles className="h-4 w-4 text-violet-400/60 flex-shrink-0 mb-0.5" />
+          <div className="flex items-end gap-3 bg-background border border-border rounded-xl px-4 py-2.5 focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary/50 transition-all">
+            <Sparkles className="h-4 w-4 text-primary/50 flex-shrink-0 mb-0.5" />
             <Textarea
               ref={inputRef}
               value={input}
@@ -380,7 +377,7 @@ export function AriaClient({ userName }: { userName?: string | null }) {
               placeholder="Tell Aria what to do... (Enter to send, Shift+Enter for new line)"
               disabled={loading}
               rows={1}
-              className="flex-1 bg-transparent border-none shadow-none resize-none text-white/90 placeholder:text-white/25 text-sm focus-visible:ring-0 focus-visible:ring-offset-0 min-h-0 max-h-32 overflow-auto p-0"
+              className="flex-1 bg-transparent border-none shadow-none resize-none text-foreground placeholder:text-muted-foreground text-sm focus-visible:ring-0 focus-visible:ring-offset-0 min-h-0 max-h-32 overflow-auto p-0"
               style={{ height: "auto" }}
               onInput={(e) => {
                 const t = e.currentTarget
@@ -392,16 +389,16 @@ export function AriaClient({ userName }: { userName?: string | null }) {
               size="icon"
               disabled={loading || !input.trim()}
               onClick={() => sendMessage(input)}
-              className="flex-shrink-0 h-8 w-8 rounded-xl bg-violet-600 hover:bg-violet-500 disabled:opacity-30 transition-all hover:scale-[1.05] active:scale-[0.95] shadow-lg shadow-violet-500/20"
+              className="flex-shrink-0 h-8 w-8 rounded-lg bg-primary hover:bg-primary/90 disabled:opacity-30 transition-all hover:scale-[1.05] active:scale-[0.95]"
             >
               {loading ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin text-white" />
+                <Loader2 className="h-3.5 w-3.5 animate-spin text-primary-foreground" />
               ) : (
-                <Send className="h-3.5 w-3.5 text-white" />
+                <Send className="h-3.5 w-3.5 text-primary-foreground" />
               )}
             </Button>
           </div>
-          <p className="text-center text-[10px] text-white/20 mt-2">
+          <p className="text-center text-[10px] text-muted-foreground/60 mt-2">
             Aria can make mistakes. Review created records before sharing.
           </p>
         </div>
