@@ -1,7 +1,7 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { getSession } from "@/lib/session"
-import { ArrowRight, BarChart3, ShieldCheck, Zap, Workflow, MessageSquareText, ArrowLeftRight, Tag, FilePenLine, BellRing, CheckCircle2, Sparkles } from "lucide-react"
+import { ArrowRight, BarChart3, ShieldCheck, Zap, Workflow, MessageSquareText, ArrowLeftRight, Tag, FilePenLine, BellRing, CheckCircle2, Sparkles, TrendingUp } from "lucide-react"
 
 export const dynamic = 'force-dynamic'
 
@@ -241,67 +241,40 @@ export default async function LandingPage() {
                 </p>
               </div>
             </div>
-            <div className="relative rounded-xl border bg-background/50 shadow-2xl flex flex-col min-h-[400px] overflow-hidden">
-              {/* Terminal Header */}
-              <div className="flex items-center px-4 py-3 border-b bg-muted/50 backdrop-blur-sm">
-                <div className="flex gap-2">
-                  <div className="h-3 w-3 rounded-full bg-red-500/80"></div>
-                  <div className="h-3 w-3 rounded-full bg-yellow-500/80"></div>
-                  <div className="h-3 w-3 rounded-full bg-green-500/80"></div>
+            <div className="rounded-xl border bg-background shadow-2xl overflow-hidden">
+              <div className="flex items-center justify-between px-5 py-3.5 border-b bg-card">
+                <div>
+                  <p className="text-sm font-semibold">Payment Received — $12,500</p>
+                  <p className="text-xs text-muted-foreground">Acme Corp · Stripe · just now</p>
                 </div>
-                <div className="mx-auto text-xs font-mono text-muted-foreground flex items-center gap-2">
-                  <ShieldCheck className="h-3 w-3" /> agent-orchestrator.log
-                </div>
+                <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/40 rounded-full px-2.5 py-1">
+                  <CheckCircle2 className="h-3 w-3" /> Processed
+                </span>
               </div>
-              
-              {/* Terminal Content */}
-              <div className="flex-1 p-6 font-mono text-sm bg-zinc-950 text-zinc-300 flex flex-col gap-4">
-                <div className="flex items-start gap-3 opacity-80">
-                  <span className="text-emerald-500 mt-0.5">▶</span>
-                  <div>
-                    <div className="text-zinc-500">[10:42:54.120] Orchestrator</div>
-                    <div className="text-zinc-100">Workflow started | Transaction ID: tx_12984 | Amount: $12,500</div>
-                  </div>
-                </div>
-                
-                <div className="flex items-start gap-3">
-                  <span className="text-emerald-500 mt-0.5">▶</span>
-                  <div className="w-full">
-                    <div className="text-zinc-500">[10:42:54.850] P2P Agent</div>
-                    <div className="flex justify-between items-center w-full">
-                      <span className="text-zinc-300">Matching invoice INV-1779268...</span>
-                      <span className="text-emerald-400 font-bold bg-emerald-400/10 px-2 py-0.5 rounded text-xs">MATCHED</span>
+              <div className="p-5 space-y-0">
+                {[
+                  { icon: Workflow,    color: "text-primary bg-primary/10 border-primary/20",           label: "Workflow Manager",     msg: "Payment received from Acme Corp · $12,500 · initiating processing", done: true },
+                  { icon: TrendingUp,  color: "text-blue-600 bg-blue-50 border-blue-200 dark:text-blue-400 dark:bg-blue-950/40 dark:border-blue-800/40",   label: "Revenue Recording",    msg: "Revenue of $12,500 recorded · recognition type: deferred (12 months)", done: true },
+                  { icon: BarChart3,   color: "text-violet-600 bg-violet-50 border-violet-200 dark:text-violet-400 dark:bg-violet-950/40 dark:border-violet-800/40", label: "Revenue Policy",       msg: "ASC 606 applied · $1,041.67 recognised · $11,458.33 deferred over contract", done: true },
+                  { icon: ShieldCheck, color: "text-amber-600 bg-amber-50 border-amber-200 dark:text-amber-400 dark:bg-amber-950/40 dark:border-amber-800/40",  label: "Audit & Verification", msg: "Contract matched · audit hash verified · no discrepancies found", done: true },
+                  { icon: TrendingUp,  color: "text-emerald-600 bg-emerald-50 border-emerald-200 dark:text-emerald-400 dark:bg-emerald-950/40 dark:border-emerald-800/40", label: "Financial Forecast",   msg: "Runway updated to 8.4 months · financial model refreshed", done: true },
+                ].map(({ icon: Icon, color, label, msg, done }, i, arr) => (
+                  <div key={i} className="flex gap-3">
+                    <div className="flex flex-col items-center">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 border ${color}`}>
+                        <Icon className="h-3.5 w-3.5" />
+                      </div>
+                      {i < arr.length - 1 && <div className="w-px flex-1 bg-border my-1 min-h-[10px]" />}
+                    </div>
+                    <div className="pb-3.5 flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 mb-0.5">
+                        <span className="text-xs font-semibold">{label}</span>
+                        {done && <CheckCircle2 className="h-3 w-3 text-emerald-500 flex-shrink-0" />}
+                      </div>
+                      <p className="text-xs text-muted-foreground leading-relaxed">{msg}</p>
                     </div>
                   </div>
-                </div>
-                
-                <div className="flex items-start gap-3">
-                  <span className="text-emerald-500 mt-0.5">▶</span>
-                  <div className="w-full">
-                    <div className="text-zinc-500">[10:42:55.210] R2R Agent</div>
-                    <div className="flex justify-between items-center w-full">
-                      <span className="text-zinc-300">Reconciling Stripe charge ch_3TZ5...</span>
-                      <span className="text-emerald-400 font-bold bg-emerald-400/10 px-2 py-0.5 rounded text-xs">DONE</span>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="flex items-start gap-3">
-                  <span className="text-emerald-500 mt-0.5">▶</span>
-                  <div className="w-full">
-                    <div className="text-zinc-500">[10:42:56.050] FP&A Agent</div>
-                    <div className="flex justify-between items-center w-full">
-                      <span className="text-zinc-300">Calculating new runway forecast...</span>
-                      <span className="text-emerald-400 font-bold bg-emerald-400/10 px-2 py-0.5 rounded text-xs">UPDATED</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3 mt-auto pt-4 border-t border-zinc-800">
-                  <span className="text-blue-400 animate-pulse">●</span>
-                  <span className="text-zinc-500 italic">Waiting for next event...</span>
-                  <span className="inline-block w-2 h-4 bg-zinc-500 animate-pulse ml-1"></span>
-                </div>
+                ))}
               </div>
             </div>
           </div>

@@ -4,6 +4,27 @@ import { prisma } from "@/lib/prisma"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { TransactionRerunButton } from "./rerun-button"
+import { CheckCircle2, AlertCircle, Clock, TrendingUp, ShieldCheck, BarChart3, Workflow } from "lucide-react"
+
+const AGENT_META: Record<string, { label: string; icon: React.ElementType; color: string }> = {
+  Orchestrator:  { label: "Workflow Manager",       icon: Workflow,      color: "text-primary bg-primary/10" },
+  "R2R":         { label: "Revenue Recording",      icon: TrendingUp,    color: "text-blue-600 bg-blue-50 dark:text-blue-400 dark:bg-blue-950/40" },
+  "O&M":         { label: "Revenue Policy",         icon: BarChart3,     color: "text-violet-600 bg-violet-50 dark:text-violet-400 dark:bg-violet-950/40" },
+  Auditor:       { label: "Audit & Verification",   icon: ShieldCheck,   color: "text-amber-600 bg-amber-50 dark:text-amber-400 dark:bg-amber-950/40" },
+  "FP&A":        { label: "Financial Forecast",     icon: TrendingUp,    color: "text-emerald-600 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-950/40" },
+}
+
+function agentMeta(agent: string) {
+  return AGENT_META[agent] ?? { label: agent, icon: CheckCircle2, color: "text-muted-foreground bg-muted" }
+}
+
+function isSuccess(msg: string) {
+  const lower = msg.toLowerCase()
+  return lower.includes("completed") || lower.includes("verified") || lower.includes("updated") || lower.includes("matched") || lower.includes("recorded") || lower.includes("applied") || lower.includes("done") || lower.includes("recalculated")
+}
+function isError(msg: string) {
+  return msg.toLowerCase().includes("fail") || msg.toLowerCase().includes("error") || msg.toLowerCase().includes("reject")
+}
 
 export const dynamic = "force-dynamic"
 
@@ -98,18 +119,41 @@ export default async function TransactionPage({ params }: { params: Promise<{ id
 
       <Card>
         <CardHeader>
-          <CardTitle>Agent Logs</CardTitle>
-          <CardDescription>Step-by-step reasoning from the AI agents</CardDescription>
+          <CardTitle>Processing Steps</CardTitle>
+          <CardDescription>How Ryzha processed this transaction</CardDescription>
         </CardHeader>
         <CardContent>
           {logs.length > 0 ? (
-            <div className="bg-black text-green-400 font-mono text-sm p-4 rounded-md whitespace-pre-wrap max-h-96 overflow-y-auto">
-              {logs.map((l, i) => (
-                <div key={i}>[{l.agent}] {l.message}</div>
-              ))}
+            <div className="relative space-y-0">
+              {logs.map((l: any, i: number) => {
+                const meta = agentMeta(l.agent)
+                const Icon = meta.icon
+                const success = isSuccess(l.message)
+                const error = isError(l.message)
+                const isLast = i === logs.length - 1
+                return (
+                  <div key={i} className="flex gap-4">
+                    <div className="flex flex-col items-center">
+                      <div className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${meta.color}`}>
+                        <Icon className="h-4 w-4" />
+                      </div>
+                      {!isLast && <div className="w-px flex-1 bg-border my-1" />}
+                    </div>
+                    <div className={`pb-5 flex-1 min-w-0 ${isLast ? "" : ""}`}>
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <span className="text-xs font-semibold text-foreground">{meta.label}</span>
+                        {success && <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 flex-shrink-0" />}
+                        {error && <AlertCircle className="h-3.5 w-3.5 text-destructive flex-shrink-0" />}
+                        {!success && !error && <Clock className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />}
+                      </div>
+                      <p className="text-sm text-muted-foreground leading-relaxed">{l.message}</p>
+                    </div>
+                  </div>
+                )
+              })}
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">No logs available for this transaction.</p>
+            <p className="text-sm text-muted-foreground">No processing steps available for this transaction.</p>
           )}
         </CardContent>
       </Card>
