@@ -1,5 +1,6 @@
 import { getSession } from "@/lib/session"
 import { redirect } from "next/navigation"
+import { prisma } from "@/lib/prisma"
 import { Clock, LogOut } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -9,10 +10,17 @@ export const dynamic = "force-dynamic"
 export default async function PendingApprovalPage() {
   const session = await getSession()
 
-  if (!session) redirect("/login")
-  if (session.user.orgStatus === "ACTIVE") redirect("/dashboard")
-  if (session.user.orgStatus === "SUSPENDED") redirect("/suspended")
-  if (session.user.orgStatus === "REJECTED") {
+  if (!session?.user?.organizationId) redirect("/login")
+
+  const org = await prisma.organization.findUnique({
+    where: { id: session.user.organizationId },
+    select: { status: true },
+  })
+
+  if (org?.status === "ACTIVE") redirect("/dashboard")
+  if (org?.status === "SUSPENDED") redirect("/suspended")
+
+  if (org?.status === "REJECTED") {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background px-4">
         <div className="max-w-md text-center space-y-4">
@@ -62,4 +70,3 @@ export default async function PendingApprovalPage() {
     </div>
   )
 }
-
