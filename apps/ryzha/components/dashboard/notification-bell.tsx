@@ -6,14 +6,12 @@ import { useRouter } from "next/navigation"
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { formatDistanceToNow } from "date-fns"
+import { cn } from "@/lib/utils"
 
 interface Notification {
   id: string
@@ -25,9 +23,17 @@ interface Notification {
   createdAt: string
 }
 
+const TYPE_DOT: Record<string, string> = {
+  ERROR: "bg-destructive",
+  WARNING: "bg-amber-500",
+  SUCCESS: "bg-emerald-500",
+  INFO: "bg-primary",
+}
+
 export function NotificationBell() {
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
+  const [showAll, setShowAll] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
@@ -39,9 +45,7 @@ export function NotificationBell() {
           setNotifications(data)
           setUnreadCount(data.filter((n: any) => !n.read).length)
         }
-      } catch (err) {
-        console.error("Failed to fetch notifications", err)
-      }
+      } catch {}
     }
 
     async function generateAndFetch() {
@@ -60,19 +64,32 @@ export function NotificationBell() {
     if (!notification.read) {
       try {
         await fetch(`/api/notifications/${notification.id}/read`, { method: "PUT" })
-        setNotifications(prev => 
+        setNotifications(prev =>
           prev.map(n => n.id === notification.id ? { ...n, read: true } : n)
         )
         setUnreadCount(prev => Math.max(0, prev - 1))
-      } catch (err) {
-        console.error("Failed to mark notification as read", err)
-      }
+      } catch {}
     }
-    
-    if (notification.link) {
-      router.push(notification.link)
-    }
+    if (notification.link) router.push(notification.link)
   }
+
+  const markAllRead = async () => {
+    const unread = notifications.filter(n => !n.read)
+    await Promise.all(
+      unread.map(n => fetch(`/api/notifications/${n.id}/read`, { method: "PUT" }).catch(() => {}))
+    )
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })))
+    setUnreadCount(0)
+  }
+
+  const unread = notifications.filter(n => !n.read)
+  const read = notifications.filter(n => n.read)
+
+  const displayed = showAll
+    ? [...unread, ...read.slice(0, 5)]
+    : unread.length > 0
+      ? [...unread, ...read.slice(0, 5)]
+      : read.slice(0, 5)
 
   return (
     <DropdownMenu>
@@ -80,49 +97,81 @@ export function NotificationBell() {
         <Button variant="ghost" size="icon" className="relative">
           <Bell className="h-5 w-5" />
           {unreadCount > 0 && (
-            <Badge 
-              variant="destructive" 
+            <Badge
+              variant="destructive"
               className="absolute -right-1 -top-1 h-5 w-5 justify-center rounded-full p-0 text-[10px]"
             >
-              {unreadCount}
+              {unreadCount > 9 ? "9+" : unreadCount}
             </Badge>
           )}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-80" align="end">
-        <DropdownMenuLabel className="flex items-center justify-between">
-          <span>Notifications</span>
-          {unreadCount > 0 && (
-            <Badge variant="secondary" className="font-normal">
-              {unreadCount} unread
-            </Badge>
-          )}
-        </DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        <div className="max-h-80 overflow-y-auto">
-          {notifications.length === 0 ? (
-            <div className="flex h-32 items-center justify-center p-4 text-sm text-muted-foreground">
-              No notifications
+      <DropdownMenuContent className="w-80 p-0" align="end">
+        <div className="flex items-center justify-between px-4 py-3 border-b">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-semibold">Notifications</span>
+            {unreadCount > 0 && (
+              <Badge variant="secondary" className="h-5 px-1.5 text-[10px] font-normal">
+                {unreadCount} unread
+              </Badge>
+            )}
+          </div>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={(e) => { e.preventDefault(); setShowAll(v => !v) }}
+              className={cn(
+                "text-[10px] px-2 py-0.5 rounded-full border transition-colors",
+                showAll
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "text-muted-foreground border-border hover:border-primary/40 hover:text-foreground"
+              )}
+            >
+              {showAll ? "Unread only" : "All"}
+            </button>
+            {unreadCount > 0 && (
+              <button
+                onClick={(e) => { e.preventDefault(); markAllRead() }}
+                className="text-[10px] text-muted-foreground hover:text-foreground px-2 py-0.5 rounded transition-colors"
+              >
+                Mark all read
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div className="max-h-[360px] overflow-y-auto">
+          {displayed.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-28 text-muted-foreground">
+              <Bell className="h-6 w-6 mb-2 opacity-30" />
+              <p className="text-sm">All caught up</p>
             </div>
           ) : (
-            notifications.map((notification) => (
-              <DropdownMenuItem
+            displayed.map((notification) => (
+              <button
                 key={notification.id}
-                className={`flex flex-col items-start gap-1 p-4 cursor-pointer ${
-                  !notification.read ? "bg-muted/50" : ""
-                }`}
+                className={cn(
+                  "w-full flex items-start gap-3 px-4 py-3 text-left hover:bg-muted/50 transition-colors border-b last:border-b-0",
+                  !notification.read && "bg-primary/5"
+                )}
                 onClick={() => markAsReadAndNavigate(notification)}
               >
-                <div className="flex w-full items-center justify-between">
-                  <span className="font-semibold">{notification.title}</span>
-                  <span className="text-[10px] text-muted-foreground">
-                    {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
-                  </span>
+                <div className="mt-1.5 flex-shrink-0">
+                  <span className={cn("block w-2 h-2 rounded-full", TYPE_DOT[notification.type] || "bg-primary")} />
                 </div>
-                <p className="text-sm text-muted-foreground line-clamp-2">
-                  {notification.message}
-                </p>
-              </DropdownMenuItem>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className={cn("text-sm font-medium truncate", !notification.read ? "text-foreground" : "text-muted-foreground")}>
+                      {notification.title}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground/70 flex-shrink-0">
+                      {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                    {notification.message}
+                  </p>
+                </div>
+              </button>
             ))
           )}
         </div>
