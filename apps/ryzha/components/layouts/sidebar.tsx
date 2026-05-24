@@ -21,6 +21,8 @@ import {
   FileCheck,
   CreditCard,
   Landmark,
+  Banknote,
+  FileX,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -109,6 +111,18 @@ export function Sidebar() {
             href="/invoices"
             icon={FileText}
             label="Invoices"
+            collapsed={collapsed}
+          />
+          <SidebarItem
+            href="/payments"
+            icon={Banknote}
+            label="Payments"
+            collapsed={collapsed}
+          />
+          <SidebarItem
+            href="/credit-notes"
+            icon={FileX}
+            label="Credit Notes"
             collapsed={collapsed}
           />
           <SidebarItem

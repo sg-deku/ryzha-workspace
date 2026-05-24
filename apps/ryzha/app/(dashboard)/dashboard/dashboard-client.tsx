@@ -177,7 +177,7 @@ export function DashboardClient({
     const next = visible[i + 1]
     if (w.halfWidth && next?.halfWidth) {
       rows.push(
-        <div key={`pair-${w.id}-${next.id}`} className="grid gap-6 lg:grid-cols-2">
+        <div key={`pair-${w.id}-${next.id}`} className="grid gap-4 lg:grid-cols-2">
           <SortableWidget widget={w} widgetProps={widgetProps} onSettingsChange={handleSettingsChange} />
           <SortableWidget widget={next} widgetProps={widgetProps} onSettingsChange={handleSettingsChange} />
         </div>
@@ -192,7 +192,7 @@ export function DashboardClient({
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">
@@ -214,7 +214,7 @@ export function DashboardClient({
           onDragEnd={handleDragEnd}
         >
           <SortableContext items={visible.map((w) => w.id)} strategy={verticalListSortingStrategy}>
-            <div className="space-y-6">
+            <div className="space-y-4">
               {rows}
             </div>
           </SortableContext>

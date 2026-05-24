@@ -9,10 +9,10 @@ export interface WidgetConfig {
 export const DEFAULT_WIDGET_CONFIG: WidgetConfig[] = [
   { id: "kpi_row",             visible: true,  order: 1, halfWidth: false },
   { id: "alerts_row",          visible: true,  order: 2, halfWidth: false },
-  { id: "real_time_pl",        visible: true,  order: 3, halfWidth: false, settings: { dateRangePreset: "this_month" } },
+  { id: "real_time_pl",        visible: true,  order: 3, halfWidth: true,  settings: { dateRangePreset: "this_month" } },
   { id: "cash_flow",           visible: true,  order: 4, halfWidth: true  },
   { id: "anomaly_alerts",      visible: true,  order: 5, halfWidth: true  },
-  { id: "recent_transactions", visible: true,  order: 6, halfWidth: false },
+  { id: "recent_transactions", visible: true,  order: 6, halfWidth: true  },
   { id: "agent_log",           visible: true,  order: 7, halfWidth: true  },
   { id: "ai_usage",            visible: true,  order: 8, halfWidth: true  },
 ]
