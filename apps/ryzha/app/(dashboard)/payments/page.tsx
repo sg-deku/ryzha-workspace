@@ -27,7 +27,7 @@ export default async function PaymentsPage() {
     orderBy: { paymentDate: "desc" },
     include: {
       invoice: {
-        select: { invoiceNumber: true, customerName: true },
+        select: { invoiceNumber: true, clientName: true },
       },
     },
   })
@@ -87,7 +87,7 @@ export default async function PaymentsPage() {
                         <ExternalLink className="h-3 w-3" />
                       </Link>
                     </TableCell>
-                    <TableCell className="text-sm">{payment.invoice.customerName}</TableCell>
+                    <TableCell className="text-sm">{payment.invoice.clientName}</TableCell>
                     <TableCell className="font-semibold text-green-600">
                       ${payment.amount.toLocaleString("en-US", { minimumFractionDigits: 2 })}
                     </TableCell>
