@@ -7,17 +7,18 @@ export function parseAIJson<T = unknown>(text: string): T {
 }
 
 function detectProvider(): string {
-  if (process.env.OPENAI_API_KEY) return "openai"
   if (process.env.GROQ_API_KEY) return "groq"
+  if (process.env.OPENAI_API_KEY) return "openai"
   if (process.env.ANTHROPIC_API_KEY) return "anthropic"
-  return "openai"
+  return "groq"
 }
 
 function envKeyForProvider(provider: string): string | undefined {
   switch (provider) {
     case "groq": return process.env.GROQ_API_KEY
     case "anthropic": return process.env.ANTHROPIC_API_KEY
-    default: return process.env.OPENAI_API_KEY
+    case "openai": return process.env.OPENAI_API_KEY
+    default: return undefined
   }
 }
 
@@ -25,6 +26,7 @@ function defaultModel(provider: string): string {
   switch (provider) {
     case "groq": return "llama-3.3-70b-versatile"
     case "anthropic": return "claude-3-haiku-20240307"
+    case "gemini": return "gemini-1.5-flash"
     default: return "gpt-4o-mini"
   }
 }

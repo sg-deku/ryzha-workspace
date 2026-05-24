@@ -7,11 +7,11 @@ import { ChatOllama } from "@langchain/ollama"
 import { getAIClientConfig } from "@/lib/ai/client"
 
 function detectAvailableProvider(): string {
-  if (process.env.OPENAI_API_KEY) return "openai"
   if (process.env.GROQ_API_KEY) return "groq"
+  if (process.env.OPENAI_API_KEY) return "openai"
   if (process.env.ANTHROPIC_API_KEY) return "anthropic"
   if (process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY) return "gemini"
-  return "openai"
+  return "groq"
 }
 
 function defaultModelForProvider(provider: string): string {
