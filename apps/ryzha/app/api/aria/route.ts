@@ -432,9 +432,15 @@ export async function POST(req: Request) {
   try {
     const { client, model, provider } = await getAIClientConfig(orgId)
 
+    const roleMap: Record<string, string> = {
+      aria_user: "user",
+      aria_assistant: "assistant",
+      user: "user",
+      assistant: "assistant",
+    }
     const messages: any[] = [
       { role: "system", content: ARIA_SYSTEM_PROMPT },
-      ...history.slice(-10).map((h: any) => ({ role: h.role, content: h.content })),
+      ...history.slice(-10).map((h: any) => ({ role: roleMap[h.role] || "user", content: h.content })),
       { role: "user", content: message },
     ]
 
