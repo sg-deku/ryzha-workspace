@@ -296,10 +296,19 @@ async function executeAction(action: string, params: any, orgId: string, userId:
       }
 
       case "query_invoices": {
+        const statusFilter = params.status?.toLowerCase()
+        const isOverdue = statusFilter === "overdue"
+        const validStatuses = ["DRAFT", "SENT", "PARTIAL", "PAID", "VOID", "REFUNDED"]
+        const prismaStatus = !isOverdue && statusFilter
+          ? validStatuses.find(s => s.toLowerCase() === statusFilter)
+          : undefined
+
         const invoices = await prisma.invoice.findMany({
           where: {
             organizationId: orgId,
-            ...(params.status ? { status: params.status } : {}),
+            ...(isOverdue
+              ? { dueDate: { lt: new Date() }, status: { in: ["SENT", "PARTIAL"] } }
+              : prismaStatus ? { status: prismaStatus as any } : {}),
           },
           orderBy: { createdAt: "desc" },
           take: params.limit || 10,

@@ -44,9 +44,15 @@ export function NotificationBell() {
       }
     }
 
-    fetchNotifications()
-    // In a real app, we'd use WebSockets or polling here
-    const interval = setInterval(fetchNotifications, 30000)
+    async function generateAndFetch() {
+      try {
+        await fetch("/api/notifications/generate", { method: "POST" })
+      } catch {}
+      await fetchNotifications()
+    }
+
+    generateAndFetch()
+    const interval = setInterval(fetchNotifications, 60000)
     return () => clearInterval(interval)
   }, [])
 
