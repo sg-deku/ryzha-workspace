@@ -77,7 +77,7 @@ export function emailTemplate(bodyHtml: string): string {
               <table width="100%" cellpadding="0" cellspacing="0">
                 <tr>
                   <td style="vertical-align:middle;">
-                    <img src="https://ryzha.vercel.app/logo.png" alt="Ryzha" width="40" height="40"
+                    <img src="https://raw.githubusercontent.com/sg-deku/ryzha-workspace/refs/heads/dev/apps/ryzha/public/logo.png" alt="Ryzha" width="40" height="40"
                          style="display:inline-block;vertical-align:middle;filter:brightness(0) invert(1);" />
                     <span style="font-size:24px;font-weight:800;color:#ffffff;letter-spacing:-0.5px;vertical-align:middle;margin-left:10px;">Ryzha</span>
                     <span style="font-size:11px;color:#bfdbfe;margin-left:8px;font-weight:400;letter-spacing:0.5px;vertical-align:middle;">Financial Intelligence</span>
