@@ -1,5 +1,3 @@
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { suggestInvoiceLineItems } from "@/lib/ai/invoice-generator"
 import { NextResponse } from "next/server"
@@ -7,7 +5,7 @@ import { NextResponse } from "next/server"
 export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
-  const session = await getServerSession(authOptions)
+  const session = await getSession()
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
   try {
@@ -33,7 +31,7 @@ export async function POST(req: Request) {
       }
     }
 
-    const suggestions = await suggestInvoiceLineItems(userInput, clientHistory)
+    const suggestions = await suggestInvoiceLineItems(session.user.organizationId, userInput, clientHistory)
     return NextResponse.json(suggestions)
   } catch (error: any) {
     console.error("AI suggest error:", error)

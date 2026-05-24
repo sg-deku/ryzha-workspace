@@ -1,19 +1,7 @@
-import OpenAI from "openai"
+import { callLLM } from "@/lib/ai/llm"
+import { parseAIJson } from "@/lib/ai/client"
 
-let openaiInstance: OpenAI | null = null
-
-function getOpenAI() {
-  if (!openaiInstance) {
-    const apiKey = process.env.OPENAI_API_KEY
-    if (!apiKey) {
-      throw new Error("Missing OPENAI_API_KEY environment variable")
-    }
-    openaiInstance = new OpenAI({ apiKey })
-  }
-  return openaiInstance
-}
-
-export async function suggestInvoiceLineItems(userInput: string, clientHistory?: string) {
+export async function suggestInvoiceLineItems(organizationId: string, userInput: string, clientHistory?: string) {
   const prompt = `You are an expert invoice generator for startups.
 Input: User typed "${userInput}".
 ${clientHistory ? `Context from past invoices for this client: ${clientHistory}` : ""}
@@ -27,16 +15,12 @@ For each item, include:
 
 Return ONLY a JSON array: [{ "description": string, "suggestedQuantity": number, "suggestedUnitPrice": number, "recommendedTaxRate": number }]`
 
-  const openai = getOpenAI()
-  const completion = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
-    messages: [{ role: "user", content: prompt }],
-    response_format: { type: "json_object" }
-  })
+  const response = await callLLM(organizationId, [
+    { role: "user", content: prompt }
+  ], "invoice_suggest", { temperature: 0.3 })
 
-  const content = completion.choices[0].message.content || "{ \"items\": [] }"
-  const result = JSON.parse(content)
-  
-  // Handle case where AI might return { "items": [...] } instead of raw array
+  const content = response.content as string
+  const result = parseAIJson(content)
+
   return Array.isArray(result) ? result : (result.items || [])
 }
