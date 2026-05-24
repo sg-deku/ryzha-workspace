@@ -35,7 +35,7 @@ export default async function CreditNotesPage() {
     orderBy: { issueDate: "desc" },
     include: {
       invoice: {
-        select: { invoiceNumber: true, customerName: true },
+        select: { invoiceNumber: true, clientName: true },
       },
     },
   })
@@ -95,7 +95,7 @@ export default async function CreditNotesPage() {
                         <ExternalLink className="h-3 w-3" />
                       </Link>
                     </TableCell>
-                    <TableCell className="text-sm">{cn.invoice.customerName}</TableCell>
+                    <TableCell className="text-sm">{cn.invoice.clientName}</TableCell>
                     <TableCell className="font-semibold text-destructive">
                       -${cn.amount.toLocaleString("en-US", { minimumFractionDigits: 2 })}
                     </TableCell>
