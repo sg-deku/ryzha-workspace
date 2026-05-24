@@ -421,7 +421,7 @@ export async function POST(req: Request) {
   if (!message) return NextResponse.json({ error: "message required" }, { status: 400 })
 
   try {
-    const { client, model } = await getAIClientConfig(orgId)
+    const { client, model, provider } = await getAIClientConfig(orgId)
 
     const messages: any[] = [
       { role: "system", content: ARIA_SYSTEM_PROMPT },
@@ -465,7 +465,7 @@ export async function POST(req: Request) {
           organizationId: orgId,
           feature: "aria",
           model,
-          provider: "org",
+          provider,
           promptTokens: completion.usage?.prompt_tokens || 0,
           completionTokens: completion.usage?.completion_tokens || 0,
           totalTokens: completion.usage?.total_tokens || 0,
