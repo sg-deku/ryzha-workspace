@@ -6,40 +6,121 @@ import { Badge } from "@/components/ui/badge"
 import { Loader2, Square, CheckCircle2, AlertCircle, Clock, TrendingUp, ShieldCheck, BarChart3, Workflow, Circle } from "lucide-react"
 import { toast } from "sonner"
 
-const AGENT_META: Record<string, { label: string; icon: React.ElementType; color: string }> = {
-  Orchestrator: { label: "Workflow Manager",     icon: Workflow,    color: "text-primary bg-primary/10 border-primary/20" },
-  "R2R":        { label: "Revenue Recording",    icon: TrendingUp,  color: "text-blue-600 bg-blue-50 border-blue-200 dark:text-blue-400 dark:bg-blue-950/40 dark:border-blue-800/40" },
-  "O&M":        { label: "Revenue Policy",       icon: BarChart3,   color: "text-violet-600 bg-violet-50 border-violet-200 dark:text-violet-400 dark:bg-violet-950/40 dark:border-violet-800/40" },
-  Auditor:      { label: "Audit & Verification", icon: ShieldCheck, color: "text-amber-600 bg-amber-50 border-amber-200 dark:text-amber-400 dark:bg-amber-950/40 dark:border-amber-800/40" },
-  "FP&A":       { label: "Financial Forecast",   icon: TrendingUp,  color: "text-emerald-600 bg-emerald-50 border-emerald-200 dark:text-emerald-400 dark:bg-emerald-950/40 dark:border-emerald-800/40" },
+interface RichLog {
+  agent: string
+  message: string
+  timestamp: string
 }
 
-function parseAgent(log: string): { agent: string; message: string } {
-  const match = log.match(/^\[([^\]]+)\]\s*(.*)$/)
-  if (match) return { agent: match[1], message: match[2] }
-  return { agent: "System", message: log }
+interface AgentGroup {
+  agent: string
+  messages: { message: string; timestamp: string }[]
+  firstTs: string
 }
 
-function isSuccess(msg: string) {
-  const l = msg.toLowerCase()
-  return l.includes("completed") || l.includes("verified") || l.includes("updated") || l.includes("matched") || l.includes("recorded") || l.includes("applied") || l.includes("done") || l.includes("recalculated") || l.includes("connected")
-}
-function isError(msg: string) {
-  return msg.toLowerCase().includes("fail") || msg.toLowerCase().includes("error") || msg.toLowerCase().includes("reject")
+const AGENT_META: Record<string, {
+  label: string
+  icon: React.ElementType
+  accent: string
+  iconBg: string
+  iconText: string
+}> = {
+  Orchestrator: {
+    label: "Workflow Manager",
+    icon: Workflow,
+    accent: "border-l-primary",
+    iconBg: "bg-primary/10",
+    iconText: "text-primary",
+  },
+  "R2R": {
+    label: "Revenue Recording",
+    icon: TrendingUp,
+    accent: "border-l-blue-500",
+    iconBg: "bg-blue-50 dark:bg-blue-950/40",
+    iconText: "text-blue-600 dark:text-blue-400",
+  },
+  "O&M": {
+    label: "Revenue Policy",
+    icon: BarChart3,
+    accent: "border-l-violet-500",
+    iconBg: "bg-violet-50 dark:bg-violet-950/40",
+    iconText: "text-violet-600 dark:text-violet-400",
+  },
+  Auditor: {
+    label: "Audit & Verification",
+    icon: ShieldCheck,
+    accent: "border-l-amber-500",
+    iconBg: "bg-amber-50 dark:bg-amber-950/40",
+    iconText: "text-amber-600 dark:text-amber-400",
+  },
+  "FP&A": {
+    label: "Financial Forecast",
+    icon: TrendingUp,
+    accent: "border-l-emerald-500",
+    iconBg: "bg-emerald-50 dark:bg-emerald-950/40",
+    iconText: "text-emerald-600 dark:text-emerald-400",
+  },
 }
 
 function agentMeta(agent: string) {
-  return AGENT_META[agent] ?? { label: agent, icon: Circle, color: "text-muted-foreground bg-muted border-border" }
+  return AGENT_META[agent] ?? {
+    label: agent,
+    icon: Circle,
+    accent: "border-l-border",
+    iconBg: "bg-muted",
+    iconText: "text-muted-foreground",
+  }
+}
+
+function groupLogs(logs: RichLog[]): AgentGroup[] {
+  const groups: AgentGroup[] = []
+  for (const log of logs) {
+    const existing = groups.find(g => g.agent === log.agent)
+    if (existing) {
+      existing.messages.push({ message: log.message, timestamp: log.timestamp })
+    } else {
+      groups.push({
+        agent: log.agent,
+        messages: [{ message: log.message, timestamp: log.timestamp }],
+        firstTs: log.timestamp,
+      })
+    }
+  }
+  return groups
+}
+
+function formatTime(ts: string) {
+  try {
+    return new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })
+  } catch {
+    return ""
+  }
+}
+
+function groupHasError(group: AgentGroup) {
+  return group.messages.some(m =>
+    m.message.toLowerCase().includes("fail") ||
+    m.message.toLowerCase().includes("error") ||
+    m.message.toLowerCase().includes("reject")
+  )
+}
+
+function groupIsComplete(group: AgentGroup) {
+  const last = group.messages[group.messages.length - 1]?.message.toLowerCase() ?? ""
+  return last.includes("completed") || last.includes("verified") || last.includes("updated") ||
+    last.includes("matched") || last.includes("recorded") || last.includes("applied") ||
+    last.includes("done") || last.includes("recalculated") || last.includes("created") ||
+    last.includes("connected")
 }
 
 export function LiveExecutionView({ executionId }: { executionId: string | null }) {
-  const [logs, setLogs] = useState<string[]>([])
+  const [logs, setLogs] = useState<RichLog[]>([])
   const [status, setStatus] = useState<"idle" | "running" | "completed" | "error">("idle")
   const scrollRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (!executionId) return
-    setLogs([`[System] Processing started for execution ${executionId}`])
+    setLogs([{ agent: "System", message: `Processing started for execution ${executionId}`, timestamp: new Date().toISOString() }])
     setStatus("running")
 
     let intervalId: NodeJS.Timeout
@@ -50,7 +131,10 @@ export function LiveExecutionView({ executionId }: { executionId: string | null 
         if (res.ok) {
           const data = await res.json()
           if (data.logs && data.logs.length > 0) {
-            setLogs([`[System] Processing started for execution ${executionId}`, ...data.logs])
+            setLogs([
+              { agent: "System", message: `Processing started for execution ${executionId}`, timestamp: new Date().toISOString() },
+              ...data.logs,
+            ])
           }
           if (data.status === "completed" || data.status === "error") {
             setStatus(data.status)
@@ -81,7 +165,8 @@ export function LiveExecutionView({ executionId }: { executionId: string | null 
     } catch { toast.error("Failed to stop workflow") }
   }
 
-  const parsed = logs.map(parseAgent)
+  const groups = groupLogs(logs)
+  const lastGroup = groups[groups.length - 1]
 
   return (
     <Card>
@@ -112,35 +197,57 @@ export function LiveExecutionView({ executionId }: { executionId: string | null 
             <p className="text-sm">Waiting for a workflow to begin...</p>
           </div>
         ) : (
-          <div ref={scrollRef} className="max-h-[420px] overflow-y-auto pr-2">
-            <div className="space-y-0">
-              {parsed.map((entry, i) => {
-                const meta = agentMeta(entry.agent)
+          <div ref={scrollRef} className="max-h-[480px] overflow-y-auto pr-1">
+            <div className="space-y-1">
+              {groups.map((group, gi) => {
+                const meta = agentMeta(group.agent)
                 const Icon = meta.icon
-                const success = isSuccess(entry.message)
-                const error = isError(entry.message)
-                const isRunning = status === "running" && i === parsed.length - 1
-                const isLast = i === parsed.length - 1
+                const hasError = groupHasError(group)
+                const isComplete = !hasError && groupIsComplete(group)
+                const isActiveGroup = status === "running" && group === lastGroup
+                const isLast = gi === groups.length - 1
+
                 return (
-                  <div key={i} className="flex gap-3">
-                    <div className="flex flex-col items-center">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 border ${meta.color}`}>
-                        {isRunning
-                          ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                          : <Icon className="h-3.5 w-3.5" />
-                        }
+                  <div key={gi}>
+                    <div className={`rounded-xl border border-l-4 ${meta.accent} bg-card overflow-hidden`}>
+                      <div className="flex items-center justify-between px-4 py-3 border-b bg-muted/20">
+                        <div className="flex items-center gap-2.5">
+                          <div className={`w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0 ${meta.iconBg}`}>
+                            {isActiveGroup
+                              ? <Loader2 className={`h-3.5 w-3.5 animate-spin ${meta.iconText}`} />
+                              : <Icon className={`h-3.5 w-3.5 ${meta.iconText}`} />
+                            }
+                          </div>
+                          <span className="text-sm font-semibold">{meta.label}</span>
+                          <span className="text-xs text-muted-foreground/60">{formatTime(group.firstTs)}</span>
+                        </div>
+                        <div>
+                          {isActiveGroup
+                            ? <Badge variant="secondary" className="gap-1 text-xs"><Loader2 className="h-3 w-3 animate-spin" />Processing</Badge>
+                            : hasError
+                              ? <Badge variant="destructive" className="gap-1 text-xs"><AlertCircle className="h-3 w-3" />Failed</Badge>
+                              : isComplete
+                                ? <Badge className="gap-1 text-xs bg-emerald-500 hover:bg-emerald-500"><CheckCircle2 className="h-3 w-3" />Complete</Badge>
+                                : <Badge variant="secondary" className="gap-1 text-xs"><Clock className="h-3 w-3" />Pending</Badge>
+                          }
+                        </div>
                       </div>
-                      {!isLast && <div className="w-px flex-1 bg-border my-1 min-h-[12px]" />}
-                    </div>
-                    <div className="pb-4 flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-0.5">
-                        <span className="text-xs font-semibold">{meta.label}</span>
-                        {success && !isRunning && <CheckCircle2 className="h-3 w-3 text-emerald-500" />}
-                        {error && <AlertCircle className="h-3 w-3 text-destructive" />}
-                        {!success && !error && !isRunning && <Clock className="h-3 w-3 text-muted-foreground" />}
+                      <div className="px-4 py-3 space-y-2">
+                        {group.messages.map((m, mi) => (
+                          <div key={mi} className="flex items-start gap-3">
+                            <span className="text-[11px] text-muted-foreground/50 mt-0.5 tabular-nums shrink-0 pt-px">
+                              {formatTime(m.timestamp)}
+                            </span>
+                            <p className="text-sm text-muted-foreground leading-relaxed">{m.message}</p>
+                          </div>
+                        ))}
                       </div>
-                      <p className="text-sm text-muted-foreground leading-relaxed">{entry.message}</p>
                     </div>
+                    {!isLast && (
+                      <div className="flex justify-start pl-[22px] py-0.5">
+                        <div className="w-px h-3 bg-border/60" />
+                      </div>
+                    )}
                   </div>
                 )
               })}
