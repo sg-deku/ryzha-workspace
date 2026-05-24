@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server"
+import { NextResponse, after } from "next/server"
 import Stripe from "stripe"
 import { getStripe } from "@/lib/stripe"
 import { prisma } from "@/lib/prisma"
@@ -62,7 +62,7 @@ export async function POST(req: Request) {
     })
 
     console.log(`[stripe webhook] Transaction ${transaction.id} created for org ${orgId}. Starting agent workflow.`)
-    startAgentWorkflow(transaction.id).catch(console.error)
+    after(startAgentWorkflow(transaction.id).catch(console.error))
   }
 
   return NextResponse.json({ received: true })

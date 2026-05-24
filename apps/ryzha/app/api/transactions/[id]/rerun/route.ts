@@ -1,6 +1,6 @@
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
-import { NextResponse } from "next/server"
+import { NextResponse, after } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { startAgentWorkflow } from "@/lib/agents/orchestrator"
 
@@ -26,7 +26,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     },
   })
 
-  startAgentWorkflow(id).catch(console.error)
+  after(startAgentWorkflow(id).catch(console.error))
 
   return NextResponse.json({ success: true, transactionId: id })
 }

@@ -1,6 +1,6 @@
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
-import { NextResponse } from "next/server"
+import { NextResponse, after } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { startAgentWorkflow, startP2PWorkflow, startO2CWorkflow } from "@/lib/agents/orchestrator"
 
@@ -42,7 +42,7 @@ export async function POST(req: Request) {
         },
       })
       executionId = transaction.id
-      startAgentWorkflow(executionId).catch(console.error)
+      after(startAgentWorkflow(executionId).catch(console.error))
 
     } else if (type === "p2p") {
       const amount = Number(payload?.amount) || 500
@@ -79,7 +79,7 @@ export async function POST(req: Request) {
         },
       })
       executionId = invoice.id
-      startP2PWorkflow(executionId).catch(console.error)
+      after(startP2PWorkflow(executionId).catch(console.error))
 
     } else if (type === "o2c") {
       const amount = Number(payload?.amount) || 1500
@@ -103,7 +103,7 @@ export async function POST(req: Request) {
         },
       })
       executionId = so.id
-      startO2CWorkflow(executionId, scenario).catch(console.error)
+      after(startO2CWorkflow(executionId, scenario).catch(console.error))
     }
 
     return NextResponse.json({ executionId })
