@@ -62,13 +62,13 @@ export function NotificationBell() {
 
   const markAsReadAndNavigate = async (notification: Notification) => {
     if (!notification.read) {
-      try {
-        await fetch(`/api/notifications/${notification.id}/read`, { method: "PUT" })
+      const res = await fetch(`/api/notifications/${notification.id}/read`, { method: "PUT" }).catch(() => null)
+      if (res?.ok) {
         setNotifications(prev =>
           prev.map(n => n.id === notification.id ? { ...n, read: true } : n)
         )
         setUnreadCount(prev => Math.max(0, prev - 1))
-      } catch {}
+      }
     }
     if (notification.link) router.push(notification.link)
   }
@@ -76,7 +76,7 @@ export function NotificationBell() {
   const markAllRead = async () => {
     const unread = notifications.filter(n => !n.read)
     await Promise.all(
-      unread.map(n => fetch(`/api/notifications/${n.id}/read`, { method: "PUT" }).catch(() => {}))
+      unread.map(n => fetch(`/api/notifications/${n.id}/read`, { method: "PUT" }).catch(() => null))
     )
     setNotifications(prev => prev.map(n => ({ ...n, read: true })))
     setUnreadCount(0)
