@@ -3,6 +3,7 @@ import { notFound } from "next/navigation"
 import { prisma } from "@/lib/prisma"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { TransactionRerunButton } from "./rerun-button"
 
 export const dynamic = "force-dynamic"
 
@@ -31,9 +32,12 @@ export default async function TransactionPage({ params }: { params: Promise<{ id
           <h1 className="text-3xl font-bold tracking-tight">Transaction Details</h1>
           <p className="text-muted-foreground">{transaction.id}</p>
         </div>
-        <Badge variant={transaction.workflowStatus === "completed" ? "default" : transaction.workflowStatus === "error" ? "destructive" : "secondary"}>
-          {transaction.workflowStatus}
-        </Badge>
+        <div className="flex items-center gap-3">
+          <Badge variant={transaction.workflowStatus === "completed" ? "default" : transaction.workflowStatus === "error" ? "destructive" : "secondary"}>
+            {transaction.workflowStatus}
+          </Badge>
+          <TransactionRerunButton transactionId={transaction.id} />
+        </div>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">

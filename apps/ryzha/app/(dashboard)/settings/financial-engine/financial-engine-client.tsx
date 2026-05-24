@@ -17,6 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { BarChart2, Zap, MessageSquare, FileSearch, Bot, RefreshCw, Eye, EyeOff } from "lucide-react"
+import { ThemeToggle } from "@/components/theme-toggle"
 
 const financialSettingsSchema = z.object({
   baseCurrency: z.string().min(1),
@@ -252,6 +253,12 @@ export default function FinancialEngineClient({ initialData }: { initialData: an
                     placeholder="Software, Hardware, Travel, Meals..."
                   />
                   <p className="text-xs text-muted-foreground">Categories used by AI and for manual entry.</p>
+                </div>
+                <Separator />
+                <div className="space-y-2">
+                  <Label>Appearance</Label>
+                  <p className="text-xs text-muted-foreground">Choose the colour theme for the application.</p>
+                  <ThemeToggle />
                 </div>
               </CardContent>
             </Card>

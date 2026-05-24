@@ -122,8 +122,8 @@ async function executeAction(action: string, params: any, orgId: string, userId:
           data: {
             invoiceNumber,
             organizationId: orgId,
-            customerName: params.customerName,
-            clientEmail: params.customerEmail || null,
+            clientName: params.customerName,
+            clientEmail: params.customerEmail || "",
             issueDate: today,
             dueDate: due,
             subtotal,
@@ -303,7 +303,7 @@ async function executeAction(action: string, params: any, orgId: string, userId:
           },
           orderBy: { createdAt: "desc" },
           take: params.limit || 10,
-          select: { id: true, invoiceNumber: true, customerName: true, total: true, status: true, dueDate: true },
+          select: { id: true, invoiceNumber: true, clientName: true, total: true, status: true, dueDate: true },
         })
 
         return {
@@ -311,7 +311,7 @@ async function executeAction(action: string, params: any, orgId: string, userId:
           summary: invoices.length === 0
             ? "No invoices found."
             : invoices.map(inv =>
-                `• [${inv.invoiceNumber}](/invoices/${inv.id}) — **${inv.customerName}** $${inv.total.toFixed(2)} (${inv.status})`
+                `• [${inv.invoiceNumber}](/invoices/${inv.id}) — **${inv.clientName}** $${inv.total.toFixed(2)} (${inv.status})`
               ).join("\n"),
         }
       }

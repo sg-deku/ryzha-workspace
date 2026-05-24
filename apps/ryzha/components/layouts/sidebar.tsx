@@ -30,7 +30,6 @@ import { Button } from "@/components/ui/button"
 import { SidebarItem } from "./sidebar-item"
 import { TooltipProvider, Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { Authorized } from "@/components/auth/authorized"
-import { ThemeToggle } from "@/components/theme-toggle"
 import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 
@@ -264,10 +263,7 @@ export function Sidebar() {
             )}
           </Tooltip>
 
-          <div className={cn("flex items-center", collapsed ? "justify-center" : "px-2 justify-between")}>
-            {!collapsed && <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Appearance</span>}
-            <ThemeToggle />
-          </div>
+
           <Button
             variant="ghost"
             size="icon"
