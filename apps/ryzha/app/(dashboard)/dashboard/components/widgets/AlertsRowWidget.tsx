@@ -34,15 +34,15 @@ export function AlertsRowWidget({ pendingPurchases = 0, overdueSales = 0 }: Aler
       {overdueSales > 0 && (
         <Card className="border-red-200 bg-red-50/30 dark:bg-red-900/10">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Overdue O2C Invoices</CardTitle>
+            <CardTitle className="text-sm font-medium">Overdue Invoices</CardTitle>
             <AlertCircle className="h-4 w-4 text-red-600" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{overdueSales}</div>
             <p className="text-xs text-muted-foreground">Invoices past their due date.</p>
             <Button variant="link" className="px-0 h-auto mt-2 text-red-600" asChild>
-              <Link href="/collections" className="flex items-center">
-                Collect Payments <ArrowRight className="ml-1 h-3 w-3" />
+              <Link href="/invoices?overdue=true" className="flex items-center">
+                View Overdue Invoices <ArrowRight className="ml-1 h-3 w-3" />
               </Link>
             </Button>
           </CardContent>

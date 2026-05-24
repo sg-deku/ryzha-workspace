@@ -5,12 +5,10 @@ import {
   FileText,
   Receipt,
   BarChart,
-  Settings,
   ChevronLeft,
   ChevronRight,
   LayoutDashboard,
   Users,
-  Shield,
   UserCircle,
   Building,
   Brain,
@@ -20,6 +18,9 @@ import {
   Globe,
   FilePenLine,
   ArrowLeftRight,
+  FileCheck,
+  CreditCard,
+  Landmark,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -51,13 +52,13 @@ export function Sidebar() {
   if (!mounted) return null
 
   return (
-      <TooltipProvider>
-        <aside
-          className={cn(
-            "flex h-screen flex-col border-r bg-background transition-all duration-300",
-            collapsed ? "w-16" : "w-64"
-          )}
-        >
+    <TooltipProvider>
+      <aside
+        className={cn(
+          "flex h-screen flex-col border-r bg-background transition-all duration-300",
+          collapsed ? "w-16" : "w-64"
+        )}
+      >
         <div className="flex h-16 items-center border-b px-4">
           <div className="flex items-center gap-2 font-bold">
             <div className="h-10 w-10 bg-primary logo-mask" />
@@ -72,28 +73,42 @@ export function Sidebar() {
             label="Dashboard"
             collapsed={collapsed}
           />
-          
+
+          {/* ACCOUNTING */}
           <div className="pt-4 pb-2 px-3">
-            {!collapsed && <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Financials</span>}
+            {!collapsed && <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Accounting</span>}
             {collapsed && <div className="border-t mx-2" />}
           </div>
 
           <SidebarItem
+            href="/transactions"
+            icon={ArrowLeftRight}
+            label="Transactions"
+            collapsed={collapsed}
+          />
+
+          {/* ORDER-TO-CASH */}
+          <div className="pt-4 pb-2 px-3">
+            {!collapsed && <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Order-to-Cash</span>}
+            {collapsed && <div className="border-t mx-2" />}
+          </div>
+
+          <SidebarItem
+            href="/customers"
+            icon={UserCircle}
+            label="Customers"
+            collapsed={collapsed}
+          />
+          <SidebarItem
+            href="/sales-orders"
+            icon={Truck}
+            label="Sales Orders"
+            collapsed={collapsed}
+          />
+          <SidebarItem
             href="/invoices"
             icon={FileText}
             label="Invoices"
-            collapsed={collapsed}
-          />
-          <SidebarItem
-            href="/expenses"
-            icon={Receipt}
-            label="Expenses"
-            collapsed={collapsed}
-          />
-          <SidebarItem
-            href="/reports"
-            icon={BarChart}
-            label="Reports"
             collapsed={collapsed}
           />
           <SidebarItem
@@ -102,13 +117,8 @@ export function Sidebar() {
             label="Contracts"
             collapsed={collapsed}
           />
-          <SidebarItem
-            href="/transactions"
-            icon={ArrowLeftRight}
-            label="Transactions"
-            collapsed={collapsed}
-          />
 
+          {/* PROCURE-TO-PAY */}
           <div className="pt-4 pb-2 px-3">
             {!collapsed && <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Procure-to-Pay</span>}
             {collapsed && <div className="border-t mx-2" />}
@@ -128,35 +138,37 @@ export function Sidebar() {
           />
           <SidebarItem
             href="/vendor-invoices"
-            icon={FileText}
+            icon={FileCheck}
             label="Vendor Invoices"
             collapsed={collapsed}
           />
+          <SidebarItem
+            href="/expenses"
+            icon={CreditCard}
+            label="Expenses"
+            collapsed={collapsed}
+          />
 
+          {/* REPORTING */}
           <div className="pt-4 pb-2 px-3">
-            {!collapsed && <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Order-to-Cash</span>}
+            {!collapsed && <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Reporting</span>}
             {collapsed && <div className="border-t mx-2" />}
           </div>
 
           <SidebarItem
-            href="/customers"
-            icon={UserCircle}
-            label="Customers"
+            href="/reports"
+            icon={BarChart}
+            label="Reports"
             collapsed={collapsed}
           />
-          <SidebarItem
-            href="/sales-orders"
-            icon={Truck}
-            label="Sales Orders"
-            collapsed={collapsed}
-          />
-          
+
+          {/* ADMIN */}
           <Authorized permission="users:manage">
             <div className="pt-4 pb-2 px-3">
               {!collapsed && <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Admin</span>}
               {collapsed && <div className="border-t mx-2" />}
             </div>
-            
+
             <SidebarItem
               href="/settings/users"
               icon={Users}

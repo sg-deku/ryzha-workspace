@@ -113,7 +113,7 @@ export function RealTimePLWidget({ settings, onSettingsChange }: RealTimePLWidge
               </div>
               <div className="rounded-lg bg-blue-50 dark:bg-blue-950/30 p-3">
                 <div className="flex items-center gap-1 text-xs text-blue-700 dark:text-blue-400 mb-1">
-                  Margin
+                  Net Margin
                 </div>
                 <div className="text-lg font-bold text-blue-700 dark:text-blue-400">
                   {data.grossMargin.toFixed(1)}%

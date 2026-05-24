@@ -38,34 +38,21 @@ interface DashboardClientProps {
   overdueSales?: number
 }
 
-const EXPLICIT_PAIRS: [string, string][] = [
-  ["cash_flow", "agent_log"],
-  ["recent_transactions", "ai_usage"],
-]
-
-function getPairPartner(id: string): string | null {
-  for (const [a, b] of EXPLICIT_PAIRS) {
-    if (id === a) return b
-    if (id === b) return a
-  }
-  return null
-}
-
 function renderWidgetContent(
   widget: WidgetConfig,
   props: { pendingPurchases: number; overdueSales: number },
   onSettingsChange: (id: string, settings: Record<string, any>) => void
 ) {
   switch (widget.id) {
-    case "kpi_row":       return <KpiRowWidget />
-    case "alerts_row":    return <AlertsRowWidget pendingPurchases={props.pendingPurchases} overdueSales={props.overdueSales} />
-    case "real_time_pl":  return <RealTimePLWidget settings={widget.settings} onSettingsChange={(s) => onSettingsChange(widget.id, s)} />
-    case "cash_flow":     return <CashFlowWidget />
-    case "agent_log":     return <AgentLogWidget />
-    case "anomaly_alerts":return <AnomalyAlertsWidget />
-    case "recent_transactions": return <RecentTransactionsWidget />
-    case "ai_usage":      return <AIUsageWidget />
-    default:              return null
+    case "kpi_row":            return <KpiRowWidget />
+    case "alerts_row":         return <AlertsRowWidget pendingPurchases={props.pendingPurchases} overdueSales={props.overdueSales} />
+    case "real_time_pl":       return <RealTimePLWidget settings={widget.settings} onSettingsChange={(s) => onSettingsChange(widget.id, s)} />
+    case "cash_flow":          return <CashFlowWidget />
+    case "agent_log":          return <AgentLogWidget />
+    case "anomaly_alerts":     return <AnomalyAlertsWidget />
+    case "recent_transactions":return <RecentTransactionsWidget />
+    case "ai_usage":           return <AIUsageWidget />
+    default:                   return null
   }
 }
 
@@ -73,19 +60,17 @@ function SortableWidget({
   widget,
   widgetProps,
   onSettingsChange,
-  isDragging,
 }: {
   widget: WidgetConfig
   widgetProps: { pendingPurchases: number; overdueSales: number }
   onSettingsChange: (id: string, settings: Record<string, any>) => void
-  isDragging?: boolean
 }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging: isSelf } = useSortable({ id: widget.id })
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: widget.id })
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isSelf ? 0.4 : 1,
+    opacity: isDragging ? 0.4 : 1,
     position: "relative" as const,
   }
 
@@ -183,33 +168,28 @@ export function DashboardClient({
     .sort((a, b) => a.order - b.order)
 
   const widgetProps = { pendingPurchases, overdueSales }
+  const activeWidget = activeId ? widgets.find((w) => w.id === activeId) : null
 
-  const rendered = new Set<string>()
   const rows: React.ReactNode[] = []
-
-  for (const w of visible) {
-    if (rendered.has(w.id)) continue
-    const partnerId = getPairPartner(w.id)
-    const partner = partnerId ? visible.find((v) => v.id === partnerId) : null
-
-    if (partner) {
-      rendered.add(w.id)
-      rendered.add(partner.id)
+  let i = 0
+  while (i < visible.length) {
+    const w = visible[i]
+    const next = visible[i + 1]
+    if (w.halfWidth && next?.halfWidth) {
       rows.push(
-        <div key={`pair-${w.id}-${partner.id}`} className="grid gap-6 lg:grid-cols-2">
+        <div key={`pair-${w.id}-${next.id}`} className="grid gap-6 lg:grid-cols-2">
           <SortableWidget widget={w} widgetProps={widgetProps} onSettingsChange={handleSettingsChange} />
-          <SortableWidget widget={partner} widgetProps={widgetProps} onSettingsChange={handleSettingsChange} />
+          <SortableWidget widget={next} widgetProps={widgetProps} onSettingsChange={handleSettingsChange} />
         </div>
       )
+      i += 2
     } else {
-      rendered.add(w.id)
       rows.push(
         <SortableWidget key={w.id} widget={w} widgetProps={widgetProps} onSettingsChange={handleSettingsChange} />
       )
+      i += 1
     }
   }
-
-  const activeWidget = activeId ? widgets.find((w) => w.id === activeId) : null
 
   return (
     <div className="space-y-8">

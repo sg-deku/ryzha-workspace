@@ -28,8 +28,9 @@ import {
 import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
-import { GripVertical, RotateCcw, Save } from "lucide-react"
+import { GripVertical, RotateCcw, Save, Maximize2, Columns2 } from "lucide-react"
 import { WidgetConfig, WIDGET_META, DEFAULT_WIDGET_CONFIG } from "@/lib/dashboard/widget-config"
+import { cn } from "@/lib/utils"
 
 interface Props {
   open: boolean
@@ -41,9 +42,11 @@ interface Props {
 function SortableWidgetRow({
   widget,
   onToggle,
+  onToggleWidth,
 }: {
   widget: WidgetConfig
   onToggle: (id: string) => void
+  onToggleWidth: (id: string) => void
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: widget.id,
@@ -74,6 +77,24 @@ function SortableWidgetRow({
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium">{meta?.title ?? widget.id}</p>
         <p className="text-xs text-muted-foreground truncate">{meta?.description}</p>
+      </div>
+      <div className="flex items-center gap-1 shrink-0">
+        <button
+          onClick={() => onToggleWidth(widget.id)}
+          title={widget.halfWidth ? "Switch to full width" : "Switch to half width"}
+          className={cn(
+            "flex items-center gap-1 rounded px-2 py-1 text-[10px] font-medium border transition-colors",
+            widget.halfWidth
+              ? "border-primary/50 bg-primary/10 text-primary"
+              : "border-border bg-muted text-muted-foreground hover:text-foreground"
+          )}
+        >
+          {widget.halfWidth ? (
+            <><Columns2 className="h-3 w-3" />½</>
+          ) : (
+            <><Maximize2 className="h-3 w-3" />Full</>
+          )}
+        </button>
       </div>
       <Switch
         checked={widget.visible}
@@ -108,6 +129,10 @@ export function DashboardLayoutEditor({ open, onClose, widgets: initialWidgets, 
     setWidgets((prev) => prev.map((w) => (w.id === id ? { ...w, visible: !w.visible } : w)))
   }
 
+  const handleToggleWidth = (id: string) => {
+    setWidgets((prev) => prev.map((w) => (w.id === id ? { ...w, halfWidth: !w.halfWidth } : w)))
+  }
+
   const handleReset = () => {
     setWidgets([...DEFAULT_WIDGET_CONFIG])
   }
@@ -129,13 +154,18 @@ export function DashboardLayoutEditor({ open, onClose, widgets: initialWidgets, 
           <DialogTitle>Customize Dashboard</DialogTitle>
         </DialogHeader>
         <p className="text-sm text-muted-foreground -mt-2">
-          Drag to reorder widgets. Toggle to show or hide them.
+          Drag to reorder. Toggle visibility. Set Full or ½ width — consecutive half-width widgets appear side by side.
         </p>
         <div className="flex-1 overflow-y-auto space-y-2 pr-1">
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
             <SortableContext items={widgets.map((w) => w.id)} strategy={verticalListSortingStrategy}>
               {widgets.map((widget) => (
-                <SortableWidgetRow key={widget.id} widget={widget} onToggle={handleToggle} />
+                <SortableWidgetRow
+                  key={widget.id}
+                  widget={widget}
+                  onToggle={handleToggle}
+                  onToggleWidth={handleToggleWidth}
+                />
               ))}
             </SortableContext>
           </DndContext>

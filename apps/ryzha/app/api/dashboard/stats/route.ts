@@ -113,7 +113,7 @@ export async function GET() {
       data: monthlyExpenses.map(e => e || burnRate),
     },
     {
-      title: "MRR",
+      title: "Monthly Revenue",
       value: fmt(currentMRR),
       change: pctChange(currentMRR, prevMRR),
       data: monthlyRevenue,
