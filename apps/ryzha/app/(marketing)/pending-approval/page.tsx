@@ -14,10 +14,13 @@ export default async function PendingApprovalPage() {
 
   const org = await prisma.organization.findUnique({
     where: { id: session.user.organizationId },
-    select: { status: true },
+    select: { status: true, onboardingCompleted: true },
   })
 
-  if (org?.status === "ACTIVE") redirect("/dashboard")
+  if (org?.status === "ACTIVE") {
+    if (!org.onboardingCompleted) redirect("/onboarding")
+    redirect("/dashboard")
+  }
   if (org?.status === "SUSPENDED") redirect("/suspended")
 
   if (org?.status === "REJECTED") {
