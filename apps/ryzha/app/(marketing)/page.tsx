@@ -1,7 +1,7 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { getSession } from "@/lib/session"
-import { ArrowRight, BarChart3, ShieldCheck, Zap, Workflow, MessageSquareText, ArrowLeftRight, Tag, FilePenLine, BellRing, CheckCircle2, Sparkles, TrendingUp } from "lucide-react"
+import { ArrowRight, BarChart3, ShieldCheck, Zap, Workflow, MessageSquareText, ArrowLeftRight, Tag, FilePenLine, BellRing, CheckCircle2, Sparkles, TrendingUp, Smartphone, Bell, LayoutDashboard, Wallet, Bot } from "lucide-react"
 
 export const dynamic = 'force-dynamic'
 
@@ -277,6 +277,162 @@ export default async function LandingPage() {
                 ))}
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Mobile App Section */}
+      <section className="w-full py-20 bg-muted/50">
+        <div className="container px-4 md:px-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+
+            {/* Phone mockup */}
+            <div className="flex justify-center order-2 lg:order-1">
+              <div className="relative">
+                {/* Glow */}
+                <div className="absolute inset-0 bg-primary/20 blur-3xl rounded-full scale-75 translate-y-8" />
+                {/* Phone shell */}
+                <div className="relative w-[260px] rounded-[44px] border-[7px] border-foreground/10 bg-[#0F172A] shadow-2xl overflow-hidden">
+                  {/* Notch */}
+                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-6 bg-[#0F172A] rounded-b-2xl z-10" />
+                  {/* Screen */}
+                  <div className="bg-[#0F172A] min-h-[520px] pt-8 pb-16 flex flex-col">
+                    {/* Status bar */}
+                    <div className="flex items-center justify-between px-6 pb-3">
+                      <span className="text-[10px] text-white/60 font-medium">9:41</span>
+                      <div className="flex items-center gap-1">
+                        <div className="w-3 h-1.5 bg-white/50 rounded-[2px]" />
+                        <div className="w-3 h-1.5 bg-white/50 rounded-[2px]" />
+                        <div className="w-4 h-1.5 bg-white/70 rounded-[2px]" />
+                      </div>
+                    </div>
+                    {/* Header */}
+                    <div className="px-5 pb-4">
+                      <p className="text-[10px] text-white/50 uppercase tracking-widest font-semibold">Good morning</p>
+                      <p className="text-white text-lg font-black tracking-tight leading-tight">Alex Johnson</p>
+                    </div>
+                    {/* KPI cards */}
+                    <div className="grid grid-cols-2 gap-2 px-4 mb-3">
+                      {[
+                        { label: "Cash Balance", val: "$142.5K", up: true },
+                        { label: "Runway", val: "5.0 mo", up: false },
+                        { label: "MRR", val: "$28.4K", up: true },
+                        { label: "Pending", val: "3 exp", up: null },
+                      ].map(({ label, val, up }) => (
+                        <div key={label} className="bg-white/5 rounded-2xl p-3 border border-white/10">
+                          <p className="text-[9px] text-white/40 uppercase tracking-wider font-semibold mb-1">{label}</p>
+                          <p className="text-white text-sm font-black">{val}</p>
+                          {up !== null && (
+                            <p className={`text-[9px] font-semibold mt-0.5 ${up ? "text-emerald-400" : "text-red-400"}`}>
+                              {up ? "↑ 12%" : "↓ 3%"}
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                    {/* Aria card */}
+                    <div className="mx-4 mb-3 bg-gradient-to-r from-primary/30 to-violet-600/20 rounded-2xl p-3 border border-primary/30">
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <div className="w-5 h-5 rounded-md bg-primary flex items-center justify-center">
+                          <Zap className="h-2.5 w-2.5 text-white" />
+                        </div>
+                        <p className="text-white text-xs font-bold">Aria AI · This Month</p>
+                      </div>
+                      <div className="flex gap-2">
+                        {[["14.2K", "Tokens"], ["48", "Requests"], ["31", "Messages"]].map(([v, l]) => (
+                          <div key={l} className="flex-1 bg-white/5 rounded-lg p-1.5 text-center">
+                            <p className="text-white text-xs font-black">{v}</p>
+                            <p className="text-white/40 text-[8px] uppercase tracking-wide">{l}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    {/* Recent invoices */}
+                    <div className="mx-4">
+                      <p className="text-[9px] text-white/40 uppercase tracking-wider font-semibold mb-1.5">Recent Invoices</p>
+                      {[
+                        { name: "Acme Corp", amt: "$12,500", status: "PAID", color: "bg-emerald-500/20 text-emerald-400" },
+                        { name: "Beta Ltd", amt: "$3,200", status: "SENT", color: "bg-blue-500/20 text-blue-400" },
+                      ].map(({ name, amt, status, color }) => (
+                        <div key={name} className="flex items-center justify-between py-1.5 border-b border-white/5">
+                          <div>
+                            <p className="text-white text-[11px] font-semibold">{name}</p>
+                            <p className="text-white/40 text-[9px]">{amt}</p>
+                          </div>
+                          <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded-md ${color}`}>{status}</span>
+                        </div>
+                      ))}
+                    </div>
+                    {/* Bottom nav */}
+                    <div className="absolute bottom-0 left-0 right-0 flex items-center justify-around px-4 py-2.5 border-t border-white/10 bg-[#0F172A]">
+                      {[
+                        { icon: LayoutDashboard, label: "Home", active: true },
+                        { icon: Wallet, label: "Finance", active: false },
+                        { icon: Bot, label: "Aria", active: false },
+                        { icon: Bell, label: "Menu", active: false },
+                      ].map(({ icon: Icon, label, active }) => (
+                        <div key={label} className="flex flex-col items-center gap-0.5">
+                          <Icon className={`h-4 w-4 ${active ? "text-primary" : "text-white/30"}`} />
+                          <span className={`text-[8px] font-bold ${active ? "text-primary" : "text-white/30"}`}>{label}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                {/* Home indicator */}
+                <div className="absolute bottom-[18px] left-1/2 -translate-x-1/2 w-20 h-1 bg-white/20 rounded-full" />
+              </div>
+            </div>
+
+            {/* Copy */}
+            <div className="space-y-6 order-1 lg:order-2">
+              <div className="inline-flex items-center gap-2 rounded-full border border-amber-400/30 bg-amber-400/10 px-4 py-1.5 text-sm font-semibold text-amber-600 dark:text-amber-400">
+                <Smartphone className="h-3.5 w-3.5" />
+                Coming Soon — iOS & Android
+              </div>
+              <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
+                Ryzha in your pocket
+              </h2>
+              <p className="text-muted-foreground text-lg">
+                The full power of Ryzha's financial intelligence, now on mobile. Monitor runway, manage invoices, chat with Aria, and stay on top of your finances — anywhere.
+              </p>
+              <div className="space-y-4">
+                {[
+                  { icon: LayoutDashboard, title: "Live Dashboard", desc: "Cash balance, burn rate, runway, and KPIs at a glance with real-time data." },
+                  { icon: Wallet, title: "Finance & Operations", desc: "Create invoices, manage customers, vendors, expenses and payments on the go." },
+                  { icon: Bot, title: "Aria on Mobile", desc: "Chat with Aria for instant financial insights, queries, and AI-assisted actions." },
+                  { icon: Bell, title: "Smart Notifications", desc: "Instant alerts for overdue invoices, payment receipts, and runway warnings." },
+                ].map(({ icon: Icon, title, desc }) => (
+                  <div key={title} className="flex items-start gap-4">
+                    <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center text-primary flex-shrink-0 mt-0.5">
+                      <Icon className="h-4.5 w-4.5 h-[18px] w-[18px]" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-sm">{title}</p>
+                      <p className="text-muted-foreground text-sm mt-0.5">{desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {/* Store buttons — disabled */}
+              <div className="flex flex-wrap gap-3 pt-2">
+                <div className="flex items-center gap-3 border rounded-xl px-4 py-3 bg-foreground/5 opacity-60 cursor-not-allowed select-none">
+                  <svg viewBox="0 0 24 24" className="h-6 w-6 fill-current"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+                  <div className="text-left">
+                    <p className="text-[10px] text-muted-foreground leading-none mb-0.5">Coming soon on</p>
+                    <p className="text-sm font-bold leading-none">App Store</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 border rounded-xl px-4 py-3 bg-foreground/5 opacity-60 cursor-not-allowed select-none">
+                  <svg viewBox="0 0 24 24" className="h-6 w-6 fill-current"><path d="M3.18 23.76c.3.17.63.24.97.2l12.64-12.64L13.16 7.7 3.18 23.76zm17.69-11.35-3.12-1.81-3.48 3.48 3.48 3.48 3.14-1.82c.9-.52.9-1.82-.02-2.33zM2.08 1.25C2.03 1.41 2 1.59 2 1.79v20.42c0 .2.03.37.08.53l.12.11L14.46 10.6v-.2L2.2 1.14l-.12.11z"/></svg>
+                  <div className="text-left">
+                    <p className="text-[10px] text-muted-foreground leading-none mb-0.5">Coming soon on</p>
+                    <p className="text-sm font-bold leading-none">Google Play</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
           </div>
         </div>
       </section>
