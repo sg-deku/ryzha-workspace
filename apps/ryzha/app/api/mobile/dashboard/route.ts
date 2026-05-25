@@ -30,7 +30,18 @@ export async function GET(req: Request) {
 
   const orgId = session.organizationId
 
-  const [settings, salesOrders, expenses7mo, transactions7mo, invoiceCount, expenseCount] = await Promise.all([
+  const [
+    settings,
+    salesOrders,
+    expenses7mo,
+    transactions7mo,
+    invoiceCount,
+    expenseCount,
+    recentInvoices,
+    recentExpenses,
+    unreadNotifications,
+    snapshot,
+  ] = await Promise.all([
     prisma.financialSettings.findUnique({
       where: { organizationId: orgId },
       select: { bankBalance: true, averageMonthlyExpenses: true },
@@ -47,8 +58,37 @@ export async function GET(req: Request) {
       where: { organizationId: orgId, workflowStatus: "completed", createdAt: { gte: monthStart(6) } },
       select: { amount: true, createdAt: true },
     }),
-    prisma.invoice.count({ where: { organizationId: orgId, status: { in: ["SENT", "OVERDUE"] } } }),
+    prisma.invoice.count({ where: { organizationId: orgId, status: { in: ["SENT", "VOID"] } } }),
     prisma.expense.count({ where: { organizationId: orgId, status: "PENDING" } }),
+    prisma.invoice.findMany({
+      where: { organizationId: orgId },
+      orderBy: { createdAt: "desc" },
+      take: 4,
+      select: {
+        id: true,
+        invoiceNumber: true,
+        clientName: true,
+        total: true,
+        status: true,
+        dueDate: true,
+        createdAt: true,
+      },
+    }),
+    prisma.expense.findMany({
+      where: { organizationId: orgId },
+      orderBy: { date: "desc" },
+      take: 3,
+      select: {
+        id: true,
+        description: true,
+        amount: true,
+        category: true,
+        status: true,
+        date: true,
+      },
+    }),
+    prisma.notification.count({ where: { organizationId: orgId, read: false } }),
+    prisma.financialSnapshot.findUnique({ where: { organizationId: orgId } }),
   ])
 
   const bankBalance = settings?.bankBalance ?? 0
@@ -75,13 +115,20 @@ export async function GET(req: Request) {
   const prevExpenses = monthlyExpenses[5]
 
   return NextResponse.json({
+    cashBalance: bankBalance,
+    cashBalanceFmt: fmt(bankBalance),
+    runwayMonths: runway,
+    burnRate,
+    burnRateFmt: burnRate > 0 ? `${fmt(burnRate)}/mo` : "—",
+    zeroCashDate: snapshot?.zeroCashDate ?? null,
+    unreadNotifications,
     kpis: [
-      { title: "Cash Balance", value: fmt(bankBalance), change: "", data: Array(7).fill(bankBalance) },
-      { title: "Runway", value: runway > 0 ? `${runway.toFixed(1)} mo` : "—", change: "", data: Array(7).fill(runway) },
-      { title: "Monthly Revenue", value: fmt(currentMRR), change: pctChange(currentMRR, prevMRR), data: monthlyRevenue },
-      { title: "Burn Rate", value: burnRate > 0 ? `${fmt(burnRate)}/mo` : "—", change: pctChange(currentExpenses, prevExpenses), data: monthlyExpenses },
-      { title: "Outstanding", value: fmt(outstandingTotal), change: `${invoiceCount} invoice${invoiceCount !== 1 ? "s" : ""}`, data: Array(7).fill(outstandingTotal) },
-      { title: "Pending Expenses", value: `${expenseCount}`, change: "awaiting review", data: Array(7).fill(expenseCount) },
+      { title: "Monthly Revenue", value: fmt(currentMRR), change: pctChange(currentMRR, prevMRR), positive: currentMRR >= prevMRR },
+      { title: "Burn Rate", value: burnRate > 0 ? `${fmt(burnRate)}/mo` : "—", change: pctChange(currentExpenses, prevExpenses), positive: currentExpenses <= prevExpenses },
+      { title: "Outstanding AR", value: fmt(outstandingTotal), change: `${invoiceCount} open invoice${invoiceCount !== 1 ? "s" : ""}`, positive: null },
+      { title: "Pending Expenses", value: `${expenseCount}`, change: "awaiting review", positive: expenseCount === 0 },
     ],
+    recentInvoices,
+    recentExpenses,
   })
 }
