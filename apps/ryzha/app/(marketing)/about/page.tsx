@@ -7,29 +7,20 @@ export default function AboutPage() {
   return (
     <div className="flex flex-col items-center w-full">
 
-      {/* ─── Hero ─── */}
-      <section className="w-full relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/8 via-transparent to-violet-500/5 pointer-events-none" />
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[400px] bg-primary/10 rounded-full blur-3xl opacity-40 pointer-events-none" />
-
-        <div className="container relative px-4 md:px-6 pt-8 pb-20 lg:pb-24">
-          <Link href="/" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-10">
+      {/* ─── Dark banner hero ─── */}
+      <section className="w-full bg-foreground text-background">
+        <div className="container px-4 md:px-6 py-14 lg:py-20">
+          <Link href="/" className="inline-flex items-center gap-1.5 text-sm text-background/50 hover:text-background/80 transition-colors mb-10">
             <ArrowLeft className="h-3.5 w-3.5" />
             Back to Ryzha
           </Link>
-
-          <div className="max-w-2xl space-y-6">
-            <div className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/8 px-3.5 py-1.5 text-xs font-semibold text-primary">
-              <Sparkles className="h-3 w-3" />
-              The team behind Ryzha
-            </div>
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.08]">
-              Built by founders,
-              <br />
-              <span className="text-primary">for founders</span>
+          <div className="max-w-2xl space-y-4">
+            <p className="text-xs font-bold uppercase tracking-widest text-background/40">About</p>
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.06]">
+              Built by founders,<br />for founders.
             </h1>
-            <p className="text-lg text-muted-foreground max-w-[520px] leading-relaxed">
-              Ryzha was born from a simple frustration — founders spending too many hours on accounting instead of building their companies. We're fixing that.
+            <p className="text-lg text-background/60 max-w-[480px] leading-relaxed">
+              Ryzha was born from a simple frustration — founders spending too many hours on accounting instead of building their companies.
             </p>
           </div>
         </div>

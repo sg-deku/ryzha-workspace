@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Mail, CheckCircle2, ArrowLeft, Sparkles, MessageSquare, Clock } from "lucide-react"
+import { Mail, CheckCircle2, ArrowLeft, MessageSquare, Clock } from "lucide-react"
 
 export default function ContactPage() {
   const [form, setForm] = useState({ firstName: "", lastName: "", email: "", message: "" })
@@ -43,29 +43,18 @@ export default function ContactPage() {
   return (
     <div className="flex flex-col items-center w-full">
 
-      {/* ─── Hero ─── */}
-      <section className="w-full relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/8 via-transparent to-violet-500/5 pointer-events-none" />
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[400px] bg-primary/10 rounded-full blur-3xl opacity-40 pointer-events-none" />
-
-        <div className="container relative px-4 md:px-6 pt-8 pb-20 lg:pb-24">
-          <Link href="/" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-10">
+      {/* ─── Narrow centered header ─── */}
+      <section className="w-full border-b">
+        <div className="container px-4 md:px-6 py-10">
+          <Link href="/" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-8">
             <ArrowLeft className="h-3.5 w-3.5" />
             Back to Ryzha
           </Link>
-
-          <div className="max-w-2xl space-y-6">
-            <div className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/8 px-3.5 py-1.5 text-xs font-semibold text-primary">
-              <Sparkles className="h-3 w-3" />
-              We read every message
-            </div>
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.08]">
-              Let's talk
-              <br />
-              <span className="text-primary">about Ryzha</span>
-            </h1>
-            <p className="text-lg text-muted-foreground max-w-[480px] leading-relaxed">
-              Have a question, want a demo, or just curious about what Ryzha can do for your startup? Drop us a message.
+          <div className="max-w-xl space-y-2">
+            <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Contact</p>
+            <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">Get in touch</h1>
+            <p className="text-muted-foreground">
+              Have a question, want a demo, or just curious? We read every message.
             </p>
           </div>
         </div>
