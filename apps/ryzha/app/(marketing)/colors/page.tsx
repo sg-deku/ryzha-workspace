@@ -152,6 +152,12 @@ export default function ColorsDemoPage() {
         themeClass="theme-amethyst" 
         desc="Elegant, high-end SaaS. Pearl white background with a rich violet primary color."
       />
+
+      <ThemeShowcase 
+        name="Blush" 
+        themeClass="theme-blush" 
+        desc="Vibrant, energetic, and lovely. Soft rose background with a bold magenta pink primary."
+      />
     </div>
   )
 }

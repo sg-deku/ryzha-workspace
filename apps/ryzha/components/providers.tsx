@@ -10,7 +10,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
         defaultTheme="theme-amethyst"
         enableSystem
         disableTransitionOnChange
-        themes={["light", "dark", "system", "theme-amethyst", "theme-forge", "theme-vertex", "theme-quantum", "theme-void", "theme-oasis", "theme-azure", "theme-dune"]}
+        themes={["light", "dark", "system", "theme-amethyst", "theme-forge", "theme-vertex", "theme-quantum", "theme-void", "theme-oasis", "theme-azure", "theme-dune", "theme-blush"]}
       >
         {children}
       </ThemeProvider>

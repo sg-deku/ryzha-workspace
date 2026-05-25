@@ -4,7 +4,7 @@ import { Appearance } from "react-native"
 
 export type ColorScheme = "light" | "dark" | "system"
 
-export type AccentTheme = "amethyst" | "forge" | "vertex" | "quantum" | "void" | "oasis" | "azure" | "dune"
+export type AccentTheme = "amethyst" | "forge" | "vertex" | "quantum" | "void" | "oasis" | "azure" | "dune" | "blush"
 
 export interface ThemeColors {
   primary: string
@@ -75,6 +75,13 @@ export const ACCENT_THEMES: Record<AccentTheme, { name: string; primary: string;
     primaryLight: "#FFEDD5",
     gradient: ["#7C2D12", "#F16345"],
     preview: "#F16345",
+  },
+  "blush": {
+    name: "Blush",
+    primary: "#F43F5E",
+    primaryLight: "#FFE4E6",
+    gradient: ["#881337", "#F43F5E"],
+    preview: "#F43F5E",
   },
 }
 

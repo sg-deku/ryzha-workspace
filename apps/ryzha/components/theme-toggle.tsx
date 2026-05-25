@@ -48,6 +48,9 @@ export function ThemeToggle() {
         <DropdownMenuItem onClick={() => setTheme("theme-dune")}>
           Dune
         </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setTheme("theme-blush")}>
+          Blush
+        </DropdownMenuItem>
         <DropdownMenuItem onClick={() => setTheme("system")}>
           System Default
         </DropdownMenuItem>

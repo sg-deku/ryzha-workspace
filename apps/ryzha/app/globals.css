@@ -268,4 +268,23 @@
     --input: 260 15% 88%;
     --ring: 265 89% 60%;
   }
+
+  /* 9. Blush */
+  .theme-blush {
+    --background: 340 20% 99%;
+    --foreground: 340 30% 20%;
+    --card: 340 20% 100%;
+    --card-foreground: 340 30% 20%;
+    --popover: 340 20% 100%;
+    --popover-foreground: 340 30% 20%;
+    --primary: 340 82% 60%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 340 20% 94%;
+    --secondary-foreground: 340 30% 20%;
+    --muted: 340 20% 94%;
+    --muted-foreground: 340 10% 55%;
+    --border: 340 20% 88%;
+    --input: 340 20% 88%;
+    --ring: 340 82% 60%;
+  }
 }
