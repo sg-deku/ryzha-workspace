@@ -32,12 +32,21 @@
       "expo-router",
       "expo-secure-store",
       [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#2563eb"
+        }
+      ],
+      [
         "expo-font",
         {
           "fonts": []
         }
       ]
     ],
+    "newArchEnabled": true,
     "experiments": {
       "typedRoutes": true
     }

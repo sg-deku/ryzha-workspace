@@ -18,3 +18,4 @@ prisma/*.db
 *.tsbuildinfo
 build_output.log
 .turbo
+.expo/
