@@ -1,59 +1,146 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+import Link from "next/link"
+import { ArrowLeft, Zap, Sparkles, Target, Heart } from "lucide-react"
 
 export const dynamic = 'force-static'
 
 export default function AboutPage() {
   return (
-    <div className="container mx-auto py-16 px-4 max-w-5xl">
-      <div className="text-center space-y-4 mb-16">
-        <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight">About the Creators</h1>
-        <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-          The team behind Ryzha, building the financial brain for modern startups.
-        </p>
-      </div>
+    <div className="flex flex-col items-center w-full">
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-12 max-w-4xl mx-auto">
-        {/* Karina Rocha */}
-        <Card className="flex flex-col items-center text-center p-6 bg-card hover:shadow-md transition-shadow">
-          <CardHeader className="space-y-6 flex flex-col items-center">
-            {/* Image Placeholder */}
-            <div className="w-48 h-48 rounded-full bg-muted border-4 border-background shadow-sm overflow-hidden flex items-center justify-center">
-              <span className="text-muted-foreground text-sm">Image Placeholder</span>
-              {/* <img src="/images/karina.jpg" alt="Karina Rocha" className="w-full h-full object-cover" /> */}
-            </div>
-            <div className="space-y-2">
-              <CardTitle className="text-2xl font-bold">Karina Rocha</CardTitle>
-              <Badge variant="secondary" className="text-sm font-medium">CEO & Founder</Badge>
-            </div>
-          </CardHeader>
-          <CardContent className="text-muted-foreground">
-            <p>
-              The visionary behind Ryzha. As the mastermind and brain child of the platform, Karina combines deep industry knowledge with a clear vision for the future of financial intelligence for startups.
-            </p>
-          </CardContent>
-        </Card>
+      {/* ─── Hero ─── */}
+      <section className="w-full relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/8 via-transparent to-violet-500/5 pointer-events-none" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[400px] bg-primary/10 rounded-full blur-3xl opacity-40 pointer-events-none" />
 
-        {/* Sushmit Ghosh */}
-        <Card className="flex flex-col items-center text-center p-6 bg-card hover:shadow-md transition-shadow">
-          <CardHeader className="space-y-6 flex flex-col items-center">
-            {/* Image Placeholder */}
-            <div className="w-48 h-48 rounded-full bg-muted border-4 border-background shadow-sm overflow-hidden flex items-center justify-center">
-              <span className="text-muted-foreground text-sm">Image Placeholder</span>
-              {/* <img src="/images/sushmit.jpg" alt="Sushmit Ghosh" className="w-full h-full object-cover" /> */}
+        <div className="container relative px-4 md:px-6 pt-8 pb-20 lg:pb-24">
+          <Link href="/" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-10">
+            <ArrowLeft className="h-3.5 w-3.5" />
+            Back to Ryzha
+          </Link>
+
+          <div className="max-w-2xl space-y-6">
+            <div className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/8 px-3.5 py-1.5 text-xs font-semibold text-primary">
+              <Sparkles className="h-3 w-3" />
+              The team behind Ryzha
             </div>
-            <div className="space-y-2">
-              <CardTitle className="text-2xl font-bold">Sushmit Ghosh</CardTitle>
-              <Badge variant="secondary" className="text-sm font-medium">CTO & Lead Engineer</Badge>
-            </div>
-          </CardHeader>
-          <CardContent className="text-muted-foreground">
-            <p>
-              The technical powerhouse making Ryzha a reality. Sushmit architects and builds the complex AI-driven systems, workflow orchestrators, and integrations that give Ryzha its capabilities.
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.08]">
+              Built by founders,
+              <br />
+              <span className="text-primary">for founders</span>
+            </h1>
+            <p className="text-lg text-muted-foreground max-w-[520px] leading-relaxed">
+              Ryzha was born from a simple frustration — founders spending too many hours on accounting instead of building their companies. We're fixing that.
             </p>
-          </CardContent>
-        </Card>
-      </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── Mission ─── */}
+      <section className="w-full py-16 bg-muted/50">
+        <div className="container px-4 md:px-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+            {[
+              {
+                icon: Target,
+                color: "text-primary bg-primary/10",
+                title: "Our Mission",
+                desc: "Give every startup founder the financial intelligence that was previously only available to well-funded companies with dedicated CFOs and accounting teams.",
+              },
+              {
+                icon: Zap,
+                color: "text-violet-600 bg-violet-500/10 dark:text-violet-400",
+                title: "Our Approach",
+                desc: "Replace manual processes with AI agents that work 24/7. Not another dashboard to stare at — an autonomous system that handles reconciliation, reporting, and forecasting.",
+              },
+              {
+                icon: Heart,
+                color: "text-rose-600 bg-rose-500/10 dark:text-rose-400",
+                title: "Our Promise",
+                desc: "Ryzha will always be honest about what it does and doesn't do. No black-box magic — every action is transparent, traceable, and auditable.",
+              },
+            ].map(({ icon: Icon, color, title, desc }) => (
+              <div key={title} className="flex flex-col gap-4 p-6 rounded-2xl bg-background border hover:border-primary/30 hover:shadow-lg transition-all duration-200">
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${color}`}>
+                  <Icon className="h-5 w-5" />
+                </div>
+                <h3 className="text-base font-bold">{title}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">{desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ─── Founders ─── */}
+      <section className="w-full py-20">
+        <div className="container px-4 md:px-6">
+          <div className="text-center max-w-2xl mx-auto mb-14">
+            <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-sm font-medium text-primary mb-4">
+              <Sparkles className="h-3.5 w-3.5" />
+              The founders
+            </div>
+            <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-3">
+              The people behind the product
+            </h2>
+            <p className="text-muted-foreground text-lg">
+              A two-person team with a clear belief: financial intelligence should be accessible to every founder, not just the ones who can afford a CFO.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-3xl mx-auto">
+            {[
+              {
+                name: "Karina Rocha",
+                role: "CEO & Founder",
+                initials: "KR",
+                gradient: "from-violet-600 to-primary",
+                bio: "The visionary behind Ryzha. Karina combines deep industry knowledge with a clear vision for the future of financial intelligence for startups. She drives the product strategy, customer insight, and the core belief that founders deserve better financial tooling.",
+              },
+              {
+                name: "Sushmit Ghosh",
+                role: "CTO & Lead Engineer",
+                initials: "SG",
+                gradient: "from-primary to-blue-600",
+                bio: "The technical powerhouse making Ryzha a reality. Sushmit architects and builds the AI-driven systems, workflow orchestrators, and integrations that give Ryzha its capabilities. He turns Karina's vision into production-grade software.",
+              },
+            ].map(({ name, role, initials, gradient, bio }) => (
+              <div key={name} className="flex flex-col gap-6 p-8 rounded-2xl border bg-background hover:border-primary/30 hover:shadow-xl transition-all duration-200">
+                <div className="flex items-center gap-5">
+                  <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${gradient} flex items-center justify-center shadow-lg flex-shrink-0`}>
+                    <span className="text-white text-xl font-black">{initials}</span>
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold">{name}</h3>
+                    <span className="inline-flex items-center gap-1 text-xs font-semibold text-primary bg-primary/10 px-2.5 py-1 rounded-full mt-1">
+                      {role}
+                    </span>
+                  </div>
+                </div>
+                <p className="text-sm text-muted-foreground leading-relaxed">{bio}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ─── Contact nudge ─── */}
+      <section className="w-full py-16 bg-muted/50">
+        <div className="container px-4 md:px-6">
+          <div className="max-w-2xl mx-auto text-center space-y-4">
+            <h2 className="text-2xl font-bold">Want to talk to us directly?</h2>
+            <p className="text-muted-foreground">
+              We read every message. If you have questions, feedback, or just want to say hello — reach out.
+            </p>
+            <Link
+              href="/contact"
+              className="inline-flex items-center gap-2 rounded-xl bg-primary text-primary-foreground px-6 py-2.5 text-sm font-semibold hover:bg-primary/90 transition-colors"
+            >
+              Get in touch
+            </Link>
+          </div>
+        </div>
+      </section>
+
     </div>
   )
 }

@@ -1,12 +1,12 @@
 "use client"
 
 import { useState } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Mail, MapPin, CheckCircle2 } from "lucide-react"
+import { Mail, CheckCircle2, ArrowLeft, Sparkles, MessageSquare, Clock } from "lucide-react"
 
 export default function ContactPage() {
   const [form, setForm] = useState({ firstName: "", lastName: "", email: "", message: "" })
@@ -41,123 +41,172 @@ export default function ContactPage() {
   }
 
   return (
-    <div className="container mx-auto py-16 px-4 max-w-5xl">
-      <div className="text-center space-y-4 mb-16">
-        <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight">Get in Touch</h1>
-        <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-          Have questions about Ryzha? We'd love to hear from you. Send us a message and we'll respond as soon as possible.
-        </p>
-      </div>
+    <div className="flex flex-col items-center w-full">
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-        <div className="space-y-6">
-          <Card>
-            <CardHeader className="space-y-1">
-              <CardTitle className="text-xl flex items-center gap-2">
-                <Mail className="h-5 w-5 text-primary" />
-                Email
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="text-muted-foreground space-y-2">
-              <p>sushmit.ghosh@icloud.com</p>
-              <p>karyrocha3979@hotmail.com</p>
-            </CardContent>
-          </Card>
+      {/* ─── Hero ─── */}
+      <section className="w-full relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/8 via-transparent to-violet-500/5 pointer-events-none" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[400px] bg-primary/10 rounded-full blur-3xl opacity-40 pointer-events-none" />
 
-          <Card>
-            <CardHeader className="space-y-1">
-              <CardTitle className="text-xl flex items-center gap-2">
-                <MapPin className="h-5 w-5 text-primary" />
-                Office
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="text-muted-foreground space-y-1">
-            </CardContent>
-          </Card>
+        <div className="container relative px-4 md:px-6 pt-8 pb-20 lg:pb-24">
+          <Link href="/" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-10">
+            <ArrowLeft className="h-3.5 w-3.5" />
+            Back to Ryzha
+          </Link>
+
+          <div className="max-w-2xl space-y-6">
+            <div className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/8 px-3.5 py-1.5 text-xs font-semibold text-primary">
+              <Sparkles className="h-3 w-3" />
+              We read every message
+            </div>
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.08]">
+              Let's talk
+              <br />
+              <span className="text-primary">about Ryzha</span>
+            </h1>
+            <p className="text-lg text-muted-foreground max-w-[480px] leading-relaxed">
+              Have a question, want a demo, or just curious about what Ryzha can do for your startup? Drop us a message.
+            </p>
+          </div>
         </div>
+      </section>
 
-        <div className="md:col-span-2">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-2xl">Send us a message</CardTitle>
-              <CardDescription>
-                Fill out the form below and our team will get back to you shortly.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {success ? (
-                <div className="flex flex-col items-center justify-center py-12 gap-4 text-center">
-                  <CheckCircle2 className="h-12 w-12 text-green-500" />
-                  <h3 className="text-xl font-semibold">Message sent!</h3>
-                  <p className="text-muted-foreground">
-                    Thanks for reaching out. We'll get back to you as soon as possible.
-                  </p>
-                  <Button variant="outline" onClick={() => { setSuccess(false); setForm({ firstName: "", lastName: "", email: "", message: "" }) }}>
-                    Send another message
-                  </Button>
+      {/* ─── Content ─── */}
+      <section className="w-full py-16 bg-muted/50">
+        <div className="container px-4 md:px-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 max-w-5xl mx-auto">
+
+            {/* Left: info */}
+            <div className="space-y-6">
+              {[
+                {
+                  icon: Mail,
+                  color: "text-primary bg-primary/10",
+                  title: "Email us",
+                  lines: ["sushmit.ghosh@icloud.com", "karyrocha3979@hotmail.com"],
+                },
+                {
+                  icon: Clock,
+                  color: "text-emerald-600 bg-emerald-500/10 dark:text-emerald-400",
+                  title: "Response time",
+                  lines: ["We typically respond", "within 24 hours."],
+                },
+                {
+                  icon: MessageSquare,
+                  color: "text-violet-600 bg-violet-500/10 dark:text-violet-400",
+                  title: "What to ask",
+                  lines: ["Product questions, demos,", "pricing, or anything else."],
+                },
+              ].map(({ icon: Icon, color, title, lines }) => (
+                <div key={title} className="flex gap-4 p-5 rounded-2xl bg-background border">
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${color}`}>
+                    <Icon className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="font-bold text-sm mb-1">{title}</p>
+                    {lines.map((l) => (
+                      <p key={l} className="text-sm text-muted-foreground">{l}</p>
+                    ))}
+                  </div>
                 </div>
-              ) : (
-                <form className="space-y-6" onSubmit={handleSubmit}>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              ))}
+            </div>
+
+            {/* Right: form */}
+            <div className="lg:col-span-2">
+              <div className="rounded-2xl border bg-background shadow-sm p-8">
+                {success ? (
+                  <div className="flex flex-col items-center justify-center py-14 gap-5 text-center">
+                    <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 flex items-center justify-center">
+                      <CheckCircle2 className="h-7 w-7 text-emerald-500" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold mb-1">Message sent!</h3>
+                      <p className="text-muted-foreground text-sm">
+                        Thanks for reaching out. We'll get back to you as soon as possible.
+                      </p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      className="rounded-xl"
+                      onClick={() => { setSuccess(false); setForm({ firstName: "", lastName: "", email: "", message: "" }) }}
+                    >
+                      Send another message
+                    </Button>
+                  </div>
+                ) : (
+                  <form className="space-y-6" onSubmit={handleSubmit}>
+                    <div>
+                      <h2 className="text-xl font-bold mb-1">Send us a message</h2>
+                      <p className="text-sm text-muted-foreground">Fill out the form and our team will get back to you shortly.</p>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="first-name" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">First name</Label>
+                        <Input
+                          id="first-name"
+                          placeholder="Jane"
+                          required
+                          className="rounded-xl"
+                          value={form.firstName}
+                          onChange={(e) => setForm((f) => ({ ...f, firstName: e.target.value }))}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="last-name" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Last name</Label>
+                        <Input
+                          id="last-name"
+                          placeholder="Doe"
+                          required
+                          className="rounded-xl"
+                          value={form.lastName}
+                          onChange={(e) => setForm((f) => ({ ...f, lastName: e.target.value }))}
+                        />
+                      </div>
+                    </div>
+
                     <div className="space-y-2">
-                      <Label htmlFor="first-name">First name</Label>
+                      <Label htmlFor="email" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Email</Label>
                       <Input
-                        id="first-name"
-                        placeholder="Jane"
+                        id="email"
+                        type="email"
+                        placeholder="jane@company.com"
                         required
-                        value={form.firstName}
-                        onChange={(e) => setForm((f) => ({ ...f, firstName: e.target.value }))}
+                        className="rounded-xl"
+                        value={form.email}
+                        onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
                       />
                     </div>
+
                     <div className="space-y-2">
-                      <Label htmlFor="last-name">Last name</Label>
-                      <Input
-                        id="last-name"
-                        placeholder="Doe"
+                      <Label htmlFor="message" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Message</Label>
+                      <Textarea
+                        id="message"
+                        placeholder="How can we help you?"
+                        className="min-h-[140px] rounded-xl"
                         required
-                        value={form.lastName}
-                        onChange={(e) => setForm((f) => ({ ...f, lastName: e.target.value }))}
+                        value={form.message}
+                        onChange={(e) => setForm((f) => ({ ...f, message: e.target.value }))}
                       />
                     </div>
-                  </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="jane@company.com"
-                      required
-                      value={form.email}
-                      onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-                    />
-                  </div>
+                    {error && (
+                      <p className="text-sm text-destructive">{error}</p>
+                    )}
 
-                  <div className="space-y-2">
-                    <Label htmlFor="message">Message</Label>
-                    <Textarea
-                      id="message"
-                      placeholder="How can we help you?"
-                      className="min-h-[120px]"
-                      required
-                      value={form.message}
-                      onChange={(e) => setForm((f) => ({ ...f, message: e.target.value }))}
-                    />
-                  </div>
+                    <Button type="submit" size="lg" className="w-full sm:w-auto rounded-xl font-semibold" disabled={loading}>
+                      {loading ? "Sending…" : "Send Message"}
+                    </Button>
+                  </form>
+                )}
+              </div>
+            </div>
 
-                  {error && (
-                    <p className="text-sm text-destructive">{error}</p>
-                  )}
-
-                  <Button type="submit" className="w-full sm:w-auto" disabled={loading}>
-                    {loading ? "Sending…" : "Send Message"}
-                  </Button>
-                </form>
-              )}
-            </CardContent>
-          </Card>
+          </div>
         </div>
-      </div>
+      </section>
+
     </div>
   )
 }
