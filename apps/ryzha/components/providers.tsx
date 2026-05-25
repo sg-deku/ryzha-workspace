@@ -7,10 +7,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <SessionProvider>
       <ThemeProvider
         attribute="class"
-        defaultTheme="system"
+        defaultTheme="theme-amethyst"
         enableSystem
         disableTransitionOnChange
-        themes={["light", "dark", "system", "theme-warm-earth", "theme-new-authority", "theme-deep-amethyst", "theme-radioactive"]}
+        themes={["light", "dark", "system", "theme-amethyst", "theme-forge", "theme-vertex", "theme-quantum", "theme-void", "theme-oasis", "theme-azure", "theme-dune"]}
       >
         {children}
       </ThemeProvider>

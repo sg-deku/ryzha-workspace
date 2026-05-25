@@ -24,20 +24,32 @@ export function ThemeToggle() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => setTheme("theme-warm-earth")}>
-          Warm Earth
+        <DropdownMenuItem onClick={() => setTheme("theme-amethyst")}>
+          Amethyst (Default)
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme("theme-new-authority")}>
-          New Authority
+        <DropdownMenuItem onClick={() => setTheme("theme-forge")}>
+          Forge
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme("theme-deep-amethyst")}>
-          Deep Amethyst
+        <DropdownMenuItem onClick={() => setTheme("theme-vertex")}>
+          Vertex
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme("theme-radioactive")}>
-          Radioactive
+        <DropdownMenuItem onClick={() => setTheme("theme-quantum")}>
+          Quantum
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setTheme("theme-void")}>
+          Void
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setTheme("theme-oasis")}>
+          Oasis
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setTheme("theme-azure")}>
+          Azure
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setTheme("theme-dune")}>
+          Dune
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => setTheme("system")}>
-          Safe (Current Default)
+          System Default
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

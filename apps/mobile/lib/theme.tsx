@@ -4,7 +4,7 @@ import { Appearance } from "react-native"
 
 export type ColorScheme = "light" | "dark" | "system"
 
-export type AccentTheme = "default" | "warm-earth" | "new-authority" | "deep-amethyst" | "radioactive"
+export type AccentTheme = "amethyst" | "forge" | "vertex" | "quantum" | "void" | "oasis" | "azure" | "dune"
 
 export interface ThemeColors {
   primary: string
@@ -20,40 +20,61 @@ export interface ThemeColors {
 }
 
 export const ACCENT_THEMES: Record<AccentTheme, { name: string; primary: string; primaryLight: string; gradient: [string, string]; preview: string }> = {
-  "default": {
-    name: "Ryzha (Default)",
-    primary: "#4F46E5",
-    primaryLight: "#EEF2FF",
-    gradient: ["#1E1B4B", "#4F46E5"],
-    preview: "#4F46E5",
-  },
-  "warm-earth": {
-    name: "Warm Earth",
-    primary: "#C4863A",
-    primaryLight: "#FEF3C7",
-    gradient: ["#3D2B0E", "#C4863A"],
-    preview: "#C4863A",
-  },
-  "new-authority": {
-    name: "New Authority",
-    primary: "#FF6B00",
-    primaryLight: "#FFF1E6",
-    gradient: ["#1A0A00", "#FF6B00"],
-    preview: "#FF6B00",
-  },
-  "deep-amethyst": {
-    name: "Deep Amethyst",
+  "amethyst": {
+    name: "Amethyst",
     primary: "#7C3AED",
     primaryLight: "#F5F3FF",
-    gradient: ["#1E0B4B", "#7C3AED"],
+    gradient: ["#2E1065", "#7C3AED"],
     preview: "#7C3AED",
   },
-  "radioactive": {
-    name: "Radioactive",
-    primary: "#22C55E",
-    primaryLight: "#F0FDF4",
-    gradient: ["#052E16", "#22C55E"],
-    preview: "#22C55E",
+  "forge": {
+    name: "Forge",
+    primary: "#EA580C",
+    primaryLight: "#FFEDD5",
+    gradient: ["#431407", "#EA580C"],
+    preview: "#EA580C",
+  },
+  "vertex": {
+    name: "Vertex",
+    primary: "#10B981",
+    primaryLight: "#D1FAE5",
+    gradient: ["#022C22", "#10B981"],
+    preview: "#10B981",
+  },
+  "quantum": {
+    name: "Quantum",
+    primary: "#8B5CF6",
+    primaryLight: "#EDE9FE",
+    gradient: ["#2E1065", "#8B5CF6"],
+    preview: "#8B5CF6",
+  },
+  "void": {
+    name: "Void",
+    primary: "#E11D48",
+    primaryLight: "#FFE4E6",
+    gradient: ["#4C0519", "#E11D48"],
+    preview: "#E11D48",
+  },
+  "oasis": {
+    name: "Oasis",
+    primary: "#558F6A",
+    primaryLight: "#ECFDF5",
+    gradient: ["#064E3B", "#558F6A"],
+    preview: "#558F6A",
+  },
+  "azure": {
+    name: "Azure",
+    primary: "#3B82F6",
+    primaryLight: "#DBEAFE",
+    gradient: ["#1E3A8A", "#3B82F6"],
+    preview: "#3B82F6",
+  },
+  "dune": {
+    name: "Dune",
+    primary: "#F16345",
+    primaryLight: "#FFEDD5",
+    gradient: ["#7C2D12", "#F16345"],
+    preview: "#F16345",
   },
 }
 
@@ -87,15 +108,15 @@ interface ThemeContextValue {
 
 const ThemeContext = createContext<ThemeContextValue>({
   colorScheme: "system",
-  accentTheme: "default",
-  colors: { ...LIGHT_COLORS, primary: "#4F46E5", primaryLight: "#EEF2FF", gradient: ["#1E1B4B", "#4F46E5"] },
+  accentTheme: "amethyst",
+  colors: { ...LIGHT_COLORS, primary: "#7C3AED", primaryLight: "#F5F3FF", gradient: ["#2E1065", "#7C3AED"] },
   setColorScheme: () => {},
   setAccentTheme: () => {},
 })
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [colorScheme, setColorSchemeState] = useState<ColorScheme>("system")
-  const [accentTheme, setAccentThemeState] = useState<AccentTheme>("default")
+  const [accentTheme, setAccentThemeState] = useState<AccentTheme>("amethyst")
 
   useEffect(() => {
     AsyncStorage.multiGet(["ryzha_color_scheme", "ryzha_accent_theme"]).then(([[, cs], [, at]]) => {
