@@ -298,26 +298,7 @@ export default function AriaModeDetailPage() {
         </div>
       </section>
 
-      {/* ─── CTA ─── */}
-      <section className="w-full py-20 px-4">
-        <div className="max-w-4xl mx-auto bg-primary text-primary-foreground rounded-2xl p-8 md:p-12 text-center space-y-6 shadow-2xl">
-          <h2 className="text-3xl md:text-4xl font-bold">Aria is available the moment you sign in</h2>
-          <p className="text-primary-foreground/80 text-lg max-w-2xl mx-auto">
-            No extra steps. Once you're in Ryzha, the <strong>Launch Aria</strong> button is in the top bar — ready whenever you need it.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Button size="lg" variant="secondary" asChild className="font-bold">
-              <Link href="/signup">
-                Get started with Ryzha
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
-            <Button size="lg" variant="outline" asChild className="font-semibold border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10">
-              <Link href="/">Back to homepage</Link>
-            </Button>
-          </div>
-        </div>
-      </section>
+
 
     </div>
   )
