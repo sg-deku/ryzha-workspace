@@ -71,7 +71,7 @@ export default async function LandingPage() {
                 {[
                   { val: "$8.2M+", label: "Revenue processed" },
                   { val: "99.9%", label: "Reconciliation accuracy" },
-                  { val: "5 min", label: "Avg. setup time" },
+                  { val: "40+ hrs", label: "Saved per month" },
                 ].map(({ val, label }) => (
                   <div key={label}>
                     <p className="text-xl font-black text-foreground">{val}</p>
