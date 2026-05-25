@@ -31,11 +31,6 @@ const financialSettingsSchema = z.object({
   autoRejectUnverified: z.boolean(),
   targetMonthlyRevenue: z.number().min(0),
   lowRunwayAlertThreshold: z.number().min(1),
-  enableVoiceSummary: z.boolean(),
-  elevenLabsVoiceId: z.string(),
-  voiceScriptTemplate: z.string(),
-  enableSMS: z.boolean(),
-  smsRecipientNumber: z.string().nullable(),
   aiProvider: z.string().nullable(),
   aiModel: z.string().min(1),
   aiApiKey: z.string().nullable(),
@@ -139,11 +134,6 @@ export default function FinancialEngineClient({ initialData }: { initialData: an
       autoRejectUnverified: false,
       targetMonthlyRevenue: 10000,
       lowRunwayAlertThreshold: 3,
-      enableVoiceSummary: true,
-      elevenLabsVoiceId: "21m00Tcm4TlvDq8ikWAM",
-      voiceScriptTemplate: "Karina, a {{amount}} credit has been reconciled under ASC 606. This improves our net income for the quarter and extends our cash runway by {{runwayDays}} days, moving our 'Zero Cash Date' to {{zeroCashDate}}. We are currently {{percentAhead}}% ahead of our financial plan.",
-      enableSMS: false,
-      smsRecipientNumber: "",
       aiProvider: "groq",
       aiModel: "llama-3.3-70b-versatile",
       aiApiKey: "REDACTED_GROQ_KEY",
@@ -579,53 +569,6 @@ export default function FinancialEngineClient({ initialData }: { initialData: an
             </Card>
           </div>
 
-          <div className="break-inside-avoid">
-            <Card>
-              <CardHeader>
-                <CardTitle>Voice & SMS Notifications</CardTitle>
-                <CardDescription>Configure ElevenLabs and Twilio output for agent summaries.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between space-x-2">
-                  <div className="space-y-0.5">
-                    <Label>Enable Voice Summary</Label>
-                    <p className="text-sm text-muted-foreground">Generate audio briefings after significant transactions.</p>
-                  </div>
-                  <Switch 
-                    checked={form.watch("enableVoiceSummary")}
-                    onCheckedChange={(checked) => form.setValue("enableVoiceSummary", checked)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="elevenLabsVoiceId">ElevenLabs Voice ID</Label>
-                  <Input {...form.register("elevenLabsVoiceId")} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="voiceScriptTemplate">Voice Script Template</Label>
-                  <textarea 
-                    className="flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                    {...form.register("voiceScriptTemplate")} 
-                  />
-                  <p className="text-xs text-muted-foreground">Use placeholders: {"{{amount}}, {{runwayDays}}, {{zeroCashDate}}, {{percentAhead}}"}</p>
-                </div>
-                <Separator />
-                <div className="flex items-center justify-between space-x-2">
-                  <div className="space-y-0.5">
-                    <Label>Enable SMS Notifications</Label>
-                    <p className="text-sm text-muted-foreground">Send brief summaries via Twilio.</p>
-                  </div>
-                  <Switch 
-                    checked={form.watch("enableSMS")}
-                    onCheckedChange={(checked) => form.setValue("enableSMS", checked)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="smsRecipientNumber">SMS Recipient Number</Label>
-                  <Input placeholder="+1234567890" {...form.register("smsRecipientNumber")} />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
           <div className="break-inside-avoid">
             <Card>
               <CardHeader>

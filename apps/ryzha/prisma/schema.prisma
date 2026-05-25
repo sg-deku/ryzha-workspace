@@ -235,6 +235,14 @@ model FinancialSettings {
   stripeSecretKey              String?
   stripeWebhookSecret          String?
 
+  // ElevenLabs Integration
+  elevenLabsApiKey             String?
+
+  // Twilio Integration
+  twilioAccountSid             String?
+  twilioAuthToken              String?
+  twilioFromNumber             String?
+
   updatedAt                    DateTime @updatedAt
 
   organization Organization @relation(fields: [organizationId], references: [id])

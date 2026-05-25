@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Separator } from "@/components/ui/separator"
 import { toast } from "sonner"
-import { Trash2, Plus, Activity, CheckCircle2, XCircle, ArrowRight } from "lucide-react"
+import { Trash2, Plus, Activity, CheckCircle2, XCircle, ArrowRight, Mic, MessageSquare } from "lucide-react"
 import Link from "next/link"
 
 export const dynamic = 'force-dynamic'
@@ -19,6 +19,7 @@ export default function IntegrationsPage() {
   const [url, setUrl] = useState("")
   const [loading, setLoading] = useState(false)
   const [stripeConnected, setStripeConnected] = useState(false)
+  const [voiceSmsConnected, setVoiceSmsConnected] = useState(false)
 
   const fetchData = async () => {
     try {
@@ -31,9 +32,8 @@ export default function IntegrationsPage() {
       if (lRes.ok) setLogs(await lRes.json())
       if (sRes.ok) {
         const settings = await sRes.json()
-        if (settings.stripeSecretKey) {
-          setStripeConnected(true)
-        }
+        if (settings.stripeSecretKey) setStripeConnected(true)
+        if (settings.elevenLabsApiKey || settings.twilioAccountSid) setVoiceSmsConnected(true)
       }
     } catch {
       toast.error("Failed to fetch integration data")
@@ -119,6 +119,40 @@ export default function IntegrationsPage() {
                 </div>
                 <CardDescription className="pt-2">
                   Connect your Stripe account to receive payments and trigger the AI agent pipeline automatically.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex justify-end pb-4 pt-0">
+                <div className="flex items-center text-sm font-medium text-primary opacity-0 group-hover:opacity-100 transition-opacity">
+                  Configure <ArrowRight className="ml-1 h-4 w-4" />
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+
+          <Link href="/settings/integrations/voice-sms" className="block group">
+            <Card className="h-full transition-colors hover:border-primary/50">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center justify-center h-6 w-6 rounded bg-orange-100 dark:bg-orange-900/30">
+                      <Mic className="h-3.5 w-3.5 text-orange-600 dark:text-orange-400" />
+                    </div>
+                    <CardTitle className="text-lg">Voice & SMS</CardTitle>
+                  </div>
+                  {voiceSmsConnected ? (
+                    <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+                      <CheckCircle2 className="h-3 w-3 mr-1" />
+                      Connected
+                    </Badge>
+                  ) : (
+                    <Badge variant="secondary">
+                      <XCircle className="h-3 w-3 mr-1" />
+                      Not connected
+                    </Badge>
+                  )}
+                </div>
+                <CardDescription className="pt-2">
+                  Connect ElevenLabs for AI voice briefings and Twilio for SMS notifications after agent workflows.
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex justify-end pb-4 pt-0">
