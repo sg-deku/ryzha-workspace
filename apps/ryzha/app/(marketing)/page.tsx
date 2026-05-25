@@ -82,71 +82,74 @@ export default async function LandingPage() {
               </div>
             </div>
 
-            {/* Right: dashboard preview card */}
-            <div className="relative flex justify-center lg:justify-end">
-              <div className="absolute -inset-4 bg-primary/10 blur-3xl rounded-3xl opacity-30" />
-              <div className="relative w-full max-w-[420px] rounded-2xl border bg-card shadow-2xl overflow-hidden">
-                {/* Card header */}
-                <div className="flex items-center justify-between px-5 py-3.5 border-b bg-card/80 backdrop-blur">
-                  <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-md bg-primary flex items-center justify-center">
-                      <Zap className="h-3 w-3 text-primary-foreground" />
-                    </div>
-                    <span className="text-sm font-bold">Ryzha Dashboard</span>
-                  </div>
-                  <span className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
-                    <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                    Live
+            {/* Right: floating metric cards + pipeline */}
+            <div className="relative flex flex-col gap-8 justify-center">
+              <div className="absolute -inset-8 bg-primary/8 blur-3xl rounded-3xl opacity-60 pointer-events-none" />
+
+              {/* Floating metric cards (Option B) */}
+              <div className="relative h-[220px]">
+                {/* Card 1 — back-left */}
+                <div className="absolute top-0 left-0 w-[180px] -rotate-3 rounded-2xl border bg-card shadow-xl px-4 py-3.5 z-10">
+                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Cash Balance</p>
+                  <p className="text-xl font-black">$142,500</p>
+                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-500 mt-1">
+                    <TrendingUp className="h-3 w-3" /> +12.4% this month
                   </span>
                 </div>
+                {/* Card 2 — back-right */}
+                <div className="absolute top-2 right-0 w-[172px] rotate-2 rounded-2xl border bg-card shadow-xl px-4 py-3.5 z-10">
+                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Runway</p>
+                  <p className="text-xl font-black">5.0 months</p>
+                  <div className="flex gap-0.5 mt-2">
+                    {[7, 5, 6, 5, 4, 5, 4].map((h, i) => (
+                      <div key={i} className={`flex-1 rounded-sm ${i < 4 ? "bg-primary/60" : "bg-border"}`} style={{ height: `${h * 3}px` }} />
+                    ))}
+                  </div>
+                </div>
+                {/* Card 3 — front-center */}
+                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[200px] -rotate-1 rounded-2xl border bg-card shadow-2xl px-4 py-3.5 z-20 ring-1 ring-primary/20">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Revenue Recognised</p>
+                    <span className="text-[9px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded-full">ASC 606</span>
+                  </div>
+                  <p className="text-xl font-black">$1,041</p>
+                  <p className="text-[11px] text-muted-foreground mt-1">of $12,500 · deferred over 12 mo</p>
+                </div>
+              </div>
 
-                {/* KPI row */}
-                <div className="grid grid-cols-2 gap-px bg-border">
+              {/* O2C Pipeline diagram (Option C) */}
+              <div className="relative rounded-2xl border bg-card/80 backdrop-blur px-5 py-4 shadow-lg">
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-4">Order-to-Cash · Automated</p>
+                <div className="flex items-center gap-0">
                   {[
-                    { label: "Cash Balance", val: "$142,500", delta: "+12.4%", up: true },
-                    { label: "Monthly Burn", val: "$28,400", delta: "-3.1%", up: false },
-                    { label: "Runway", val: "5.0 months", delta: null, up: null },
-                    { label: "Overdue", val: "3 invoices", delta: null, up: null },
-                  ].map(({ label, val, delta, up }) => (
-                    <div key={label} className="bg-card px-4 py-3.5">
-                      <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider mb-1">{label}</p>
-                      <p className="text-base font-black">{val}</p>
-                      {delta && (
-                        <p className={`text-[11px] font-semibold mt-0.5 ${up ? "text-emerald-500" : "text-red-500"}`}>{delta}</p>
+                    { icon: FilePenLine, label: "Invoice", color: "text-primary bg-primary/10", active: true },
+                    { icon: ArrowLeftRight, label: "Payment", color: "text-blue-600 bg-blue-500/10 dark:text-blue-400", active: true },
+                    { icon: ShieldCheck, label: "Reconcile", color: "text-violet-600 bg-violet-500/10 dark:text-violet-400", active: true },
+                    { icon: TrendingUp, label: "Forecast", color: "text-emerald-600 bg-emerald-500/10 dark:text-emerald-400", active: false },
+                  ].map(({ icon: Icon, label, color, active }, i, arr) => (
+                    <div key={label} className="flex items-center flex-1 min-w-0">
+                      <div className="flex flex-col items-center gap-1.5 flex-shrink-0">
+                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${color} ${active ? "ring-2 ring-offset-2 ring-offset-card ring-current" : "opacity-50"}`}>
+                          <Icon className="h-4 w-4" />
+                        </div>
+                        <span className={`text-[10px] font-semibold ${active ? "text-foreground" : "text-muted-foreground"}`}>{label}</span>
+                        {active && <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />}
+                      </div>
+                      {i < arr.length - 1 && (
+                        <div className="flex-1 mx-1 flex items-center mb-5">
+                          <div className={`h-px flex-1 ${active ? "bg-primary/30" : "bg-border"}`} style={{ backgroundImage: active ? "repeating-linear-gradient(90deg,transparent,transparent 4px,currentColor 4px,currentColor 8px)" : undefined }} />
+                          <ArrowRight className={`h-3 w-3 flex-shrink-0 ${active ? "text-primary/50" : "text-border"}`} />
+                        </div>
                       )}
                     </div>
                   ))}
                 </div>
-
-                {/* Recent activity */}
-                <div className="px-5 py-4 space-y-3">
-                  <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Recent Activity</p>
-                  {[
-                    { label: "INV-0042 · Acme Corp paid", amount: "+$12,500", color: "text-emerald-500", bg: "bg-emerald-500/10", time: "2m ago" },
-                    { label: "Expense · AWS · categorised", amount: "-$890", color: "text-muted-foreground", bg: "bg-muted", time: "14m ago" },
-                    { label: "Revenue recognised (ASC 606)", amount: "$1,041", color: "text-primary", bg: "bg-primary/10", time: "1h ago" },
-                  ].map(({ label, amount, color, bg, time }) => (
-                    <div key={label} className="flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <div className={`w-7 h-7 rounded-lg ${bg} flex-shrink-0`} />
-                        <p className="text-xs font-medium truncate">{label}</p>
-                      </div>
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        <span className={`text-xs font-bold ${color}`}>{amount}</span>
-                        <span className="text-[10px] text-muted-foreground">{time}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Aria prompt bar */}
-                <div className="border-t px-5 py-3">
-                  <div className="flex items-center gap-2.5 bg-muted rounded-xl px-4 py-2.5 opacity-70">
-                    <Sparkles className="h-3.5 w-3.5 text-primary flex-shrink-0" />
-                    <span className="text-xs text-muted-foreground">Ask Aria — "What's our runway if we hire 2 engineers?"</span>
-                  </div>
+                <div className="flex items-center gap-1.5 mt-3 pt-3 border-t">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="text-[10px] text-muted-foreground">3 of 4 stages complete · Forecast updating…</span>
                 </div>
               </div>
+
             </div>
 
           </div>
