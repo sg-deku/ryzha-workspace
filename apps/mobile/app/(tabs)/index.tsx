@@ -148,7 +148,7 @@ export default function DashboardScreen() {
               </View>
               <View style={{ flexDirection: "row", gap: 10, alignItems: "center" }}>
                 <TouchableOpacity
-                  onPress={() => router.push("/(tabs)/notifications/index")}
+                  onPress={() => router.push("/(tabs)/notifications")}
                   style={{
                     width: 40, height: 40, borderRadius: 20,
                     backgroundColor: "rgba(255,255,255,0.12)",
@@ -277,13 +277,13 @@ export default function DashboardScreen() {
                     <QuickAction
                       icon="document-text-outline"
                       label="Invoices"
-                      onPress={() => router.push("/(tabs)/invoices/index")}
+                      onPress={() => router.push("/(tabs)/invoices")}
                       accent
                     />
                     <QuickAction
                       icon="receipt-outline"
                       label="Expenses"
-                      onPress={() => router.push("/(tabs)/expenses/index")}
+                      onPress={() => router.push("/(tabs)/expenses")}
                     />
                     <QuickAction
                       icon="sparkles-outline"
@@ -293,7 +293,7 @@ export default function DashboardScreen() {
                     <QuickAction
                       icon="bar-chart-outline"
                       label="Reports"
-                      onPress={() => router.push("/(tabs)/reports/index")}
+                      onPress={() => router.push("/(tabs)/reports")}
                     />
                   </View>
                 </View>
@@ -304,7 +304,7 @@ export default function DashboardScreen() {
                       <Text style={{ fontSize: 12, fontWeight: "700", color: "#94A3B8", textTransform: "uppercase", letterSpacing: 0.8 }}>
                         Recent Invoices
                       </Text>
-                      <TouchableOpacity onPress={() => router.push("/(tabs)/invoices/index")}>
+                      <TouchableOpacity onPress={() => router.push("/(tabs)/invoices")}>
                         <Text style={{ fontSize: 12, color: "#4F46E5", fontWeight: "700" }}>View all →</Text>
                       </TouchableOpacity>
                     </View>
@@ -369,7 +369,7 @@ export default function DashboardScreen() {
                       <Text style={{ fontSize: 12, fontWeight: "700", color: "#94A3B8", textTransform: "uppercase", letterSpacing: 0.8 }}>
                         Recent Expenses
                       </Text>
-                      <TouchableOpacity onPress={() => router.push("/(tabs)/expenses/index")}>
+                      <TouchableOpacity onPress={() => router.push("/(tabs)/expenses")}>
                         <Text style={{ fontSize: 12, color: "#4F46E5", fontWeight: "700" }}>View all →</Text>
                       </TouchableOpacity>
                     </View>

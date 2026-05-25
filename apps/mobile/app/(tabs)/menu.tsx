@@ -187,13 +187,13 @@ export default function MenuScreen() {
                 label: "Notifications",
                 sub: dashboard?.unreadNotifications > 0 ? `${dashboard.unreadNotifications} unread` : "All caught up",
                 badge: dashboard?.unreadNotifications,
-                onPress: () => router.push("/(tabs)/notifications/index"),
+                onPress: () => router.push("/(tabs)/notifications"),
               }} />
               <MenuRow item={{
                 icon: "bar-chart-outline",
                 label: "Reports",
                 sub: "P&L, cash flow, expenses",
-                onPress: () => router.push("/(tabs)/reports/index"),
+                onPress: () => router.push("/(tabs)/reports"),
               }} />
             </Section>
 
@@ -202,13 +202,13 @@ export default function MenuScreen() {
                 icon: "person-outline",
                 label: "Profile",
                 sub: `Signed in as ${firstName}`,
-                onPress: () => router.push("/(tabs)/settings/index"),
+                onPress: () => router.push("/(tabs)/settings"),
               }} />
               <MenuRow item={{
                 icon: "business-outline",
                 label: "Organisation",
                 sub: profile?.organization?.name ?? "—",
-                onPress: () => router.push("/(tabs)/settings/index"),
+                onPress: () => router.push("/(tabs)/settings"),
               }} />
             </Section>
 

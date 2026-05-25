@@ -72,21 +72,18 @@ export default function TabsLayout() {
         }}
       />
 
-      <Tabs.Screen name="reports/index" options={{ href: null }} />
-      <Tabs.Screen name="invoices/index" options={{ href: null }} />
-      <Tabs.Screen name="invoices/[id]" options={{ href: null }} />
-      <Tabs.Screen name="expenses/index" options={{ href: null }} />
-      <Tabs.Screen name="payments/index" options={{ href: null }} />
-      <Tabs.Screen name="vendor-invoices/index" options={{ href: null }} />
-      <Tabs.Screen name="transactions/index" options={{ href: null }} />
-      <Tabs.Screen name="customers/index" options={{ href: null }} />
-      <Tabs.Screen name="customers/[id]" options={{ href: null }} />
-      <Tabs.Screen name="vendors/index" options={{ href: null }} />
-      <Tabs.Screen name="vendors/[id]" options={{ href: null }} />
-      <Tabs.Screen name="sales-orders/index" options={{ href: null }} />
-      <Tabs.Screen name="purchases/index" options={{ href: null }} />
-      <Tabs.Screen name="notifications/index" options={{ href: null }} />
-      <Tabs.Screen name="settings/index" options={{ href: null }} />
+      <Tabs.Screen name="reports" options={{ href: null }} />
+      <Tabs.Screen name="invoices" options={{ href: null }} />
+      <Tabs.Screen name="expenses" options={{ href: null }} />
+      <Tabs.Screen name="payments" options={{ href: null }} />
+      <Tabs.Screen name="vendor-invoices" options={{ href: null }} />
+      <Tabs.Screen name="transactions" options={{ href: null }} />
+      <Tabs.Screen name="customers" options={{ href: null }} />
+      <Tabs.Screen name="vendors" options={{ href: null }} />
+      <Tabs.Screen name="sales-orders" options={{ href: null }} />
+      <Tabs.Screen name="purchases" options={{ href: null }} />
+      <Tabs.Screen name="notifications" options={{ href: null }} />
+      <Tabs.Screen name="settings" options={{ href: null }} />
     </Tabs>
   )
 }
