@@ -294,10 +294,7 @@ export default async function LandingPage() {
                   </div>
                 ))}
               </div>
-              <Link href="/signup" className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:text-primary/80 transition-colors">
-                Start automating your finances
-                <ArrowRight className="h-4 w-4" />
-              </Link>
+
             </div>
 
           </div>
