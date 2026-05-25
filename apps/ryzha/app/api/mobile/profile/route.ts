@@ -4,6 +4,24 @@ import { prisma } from "@/lib/prisma"
 
 export const dynamic = "force-dynamic"
 
+export async function PATCH(req: Request) {
+  const session = await getMobileSession(req)
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+
+  const body = await req.json()
+  const { name } = body
+
+  if (!name?.trim()) return NextResponse.json({ error: "name is required" }, { status: 400 })
+
+  const user = await prisma.user.update({
+    where: { id: session.userId },
+    data: { name: name.trim() },
+    select: { id: true, name: true, email: true },
+  })
+
+  return NextResponse.json(user)
+}
+
 export async function GET(req: Request) {
   const session = await getMobileSession(req)
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })

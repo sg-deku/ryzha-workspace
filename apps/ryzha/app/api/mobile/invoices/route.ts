@@ -38,3 +38,49 @@ export async function GET(req: Request) {
 
   return NextResponse.json(invoices)
 }
+
+export async function POST(req: Request) {
+  const session = await getMobileSession(req)
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+
+  const body = await req.json()
+  const { clientName, clientEmail, dueDate, lineItems, notes } = body
+
+  if (!clientName || !dueDate || !Array.isArray(lineItems) || lineItems.length === 0) {
+    return NextResponse.json({ error: "clientName, dueDate and lineItems are required" }, { status: 400 })
+  }
+
+  const subtotal = lineItems.reduce((s: number, l: any) => s + (l.quantity * l.unitPrice), 0)
+  const totalTax = lineItems.reduce((s: number, l: any) => s + ((l.taxRate ?? 0) / 100 * l.quantity * l.unitPrice), 0)
+  const total = subtotal + totalTax
+
+  const count = await prisma.invoice.count({ where: { organizationId: session.organizationId } })
+  const invoiceNumber = `INV-${String(count + 1).padStart(4, "0")}`
+
+  const invoice = await prisma.invoice.create({
+    data: {
+      organizationId: session.organizationId,
+      invoiceNumber,
+      issueDate: new Date(),
+      dueDate: new Date(dueDate),
+      clientName,
+      clientEmail: clientEmail ?? "",
+      subtotal,
+      totalTax,
+      total,
+      status: "DRAFT",
+      notes: notes ?? "",
+      lineItems: {
+        create: lineItems.map((l: any) => ({
+          description: l.description,
+          quantity: l.quantity,
+          unitPrice: l.unitPrice,
+          taxRate: l.taxRate ?? 0,
+          total: l.quantity * l.unitPrice * (1 + (l.taxRate ?? 0) / 100),
+        })),
+      },
+    },
+  })
+
+  return NextResponse.json(invoice, { status: 201 })
+}

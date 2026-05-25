@@ -1,4 +1,8 @@
-import { ScrollView, View, Text, TouchableOpacity, Alert, StatusBar, ActivityIndicator } from "react-native"
+import { useState } from "react"
+import {
+  View, Text, ScrollView, TouchableOpacity, ActivityIndicator,
+  Alert, StatusBar,
+} from "react-native"
 import { useQuery } from "@tanstack/react-query"
 import { apiFetch } from "@/lib/api"
 import { useAuth } from "@/lib/auth"
@@ -14,6 +18,7 @@ interface MenuItem {
   onPress: () => void
   danger?: boolean
   badge?: number
+  chevron?: boolean
 }
 
 function MenuRow({ item }: { item: MenuItem }) {
@@ -93,12 +98,6 @@ export default function MenuScreen() {
     queryFn: () => apiFetch<any>("/profile"),
   })
 
-  const { data: dashboard } = useQuery({
-    queryKey: ["mobile-dashboard"],
-    queryFn: () => apiFetch<any>("/dashboard"),
-    staleTime: 60_000,
-  })
-
   const handleLogout = () => {
     Alert.alert("Sign out", "Are you sure you want to sign out?", [
       { text: "Cancel", style: "cancel" },
@@ -106,7 +105,6 @@ export default function MenuScreen() {
     ])
   }
 
-  const firstName = profile?.name?.split(" ")[0] ?? "—"
   const initials = profile?.name
     ?.split(" ")
     .map((n: string) => n[0])
@@ -154,7 +152,11 @@ export default function MenuScreen() {
               {isLoading ? (
                 <ActivityIndicator color="#4F46E5" />
               ) : (
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 14 }}>
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  onPress={() => router.push("/(tabs)/settings")}
+                  style={{ flexDirection: "row", alignItems: "center", gap: 14 }}
+                >
                   <LinearGradient
                     colors={["#4F46E5", "#7C3AED"]}
                     style={{
@@ -177,38 +179,41 @@ export default function MenuScreen() {
                       </View>
                     )}
                   </View>
-                </View>
+                  <Ionicons name="chevron-forward" size={15} color="#CBD5E1" />
+                </TouchableOpacity>
               )}
             </View>
 
-            <Section title="Activity">
+            <Section title="Profile">
               <MenuRow item={{
-                icon: "notifications-outline",
-                label: "Notifications",
-                sub: dashboard?.unreadNotifications > 0 ? `${dashboard.unreadNotifications} unread` : "All caught up",
-                badge: dashboard?.unreadNotifications,
-                onPress: () => router.push("/(tabs)/notifications"),
-              }} />
-              <MenuRow item={{
-                icon: "bar-chart-outline",
-                label: "Reports",
-                sub: "P&L, cash flow, expenses",
-                onPress: () => router.push("/(tabs)/reports"),
+                icon: "person-circle-outline",
+                label: "Profile Settings",
+                sub: "Name, email, password",
+                onPress: () => router.push("/(tabs)/settings"),
               }} />
             </Section>
 
-            <Section title="Account">
-              <MenuRow item={{
-                icon: "person-outline",
-                label: "Profile",
-                sub: `Signed in as ${firstName}`,
-                onPress: () => router.push("/(tabs)/settings"),
-              }} />
+            <Section title="Organisation">
               <MenuRow item={{
                 icon: "business-outline",
-                label: "Organisation",
-                sub: profile?.organization?.name ?? "—",
-                onPress: () => router.push("/(tabs)/settings"),
+                label: "Organisation Settings",
+                sub: profile?.organization?.name ?? "Manage your workspace",
+                onPress: () => Alert.alert("Organisation", "Organisation settings coming soon."),
+              }} />
+            </Section>
+
+            <Section title="Preferences">
+              <MenuRow item={{
+                icon: "language-outline",
+                label: "Language",
+                sub: "English (US)",
+                onPress: () => Alert.alert("Language", "Language settings coming soon."),
+              }} />
+              <MenuRow item={{
+                icon: "color-palette-outline",
+                label: "Theme & Appearance",
+                sub: "Light mode",
+                onPress: () => Alert.alert("Appearance", "Theme settings coming soon."),
               }} />
             </Section>
 
@@ -222,8 +227,8 @@ export default function MenuScreen() {
               <MenuRow item={{
                 icon: "mail-outline",
                 label: "Contact Support",
-                sub: "sushmit.ghosh@icloud.com",
-                onPress: () => Alert.alert("Contact", "Email sushmit.ghosh@icloud.com for support."),
+                sub: "Get help from the team",
+                onPress: () => Alert.alert("Contact Support", "Email sushmit.ghosh@icloud.com for support."),
               }} />
             </Section>
 

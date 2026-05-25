@@ -363,7 +363,7 @@ export default function DashboardScreen() {
                   </View>
                 )}
 
-                {data?.aiUsage && (
+                {(data || !isLoading) && (
                   <View style={{ paddingHorizontal: 16, marginTop: 24 }}>
                     <Text style={{ fontSize: 12, fontWeight: "700", color: "#94A3B8", textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 12 }}>
                       Aria AI Usage · This Month
@@ -400,19 +400,19 @@ export default function DashboardScreen() {
                       </View>
                       <View style={{ flexDirection: "row", gap: 10 }}>
                         <View style={{ flex: 1, backgroundColor: "#F8FAFC", borderRadius: 10, padding: 12, alignItems: "center" }}>
-                          <Text style={{ fontSize: 20, fontWeight: "800", color: "#7C3AED" }}>{data.aiUsage.tokensFmt}</Text>
+                          <Text style={{ fontSize: 20, fontWeight: "800", color: "#7C3AED" }}>{data?.aiUsage?.tokensFmt ?? "0"}</Text>
                           <Text style={{ fontSize: 10, fontWeight: "600", color: "#94A3B8", marginTop: 2, textTransform: "uppercase", letterSpacing: 0.4 }}>Tokens</Text>
                         </View>
                         <View style={{ flex: 1, backgroundColor: "#F8FAFC", borderRadius: 10, padding: 12, alignItems: "center" }}>
-                          <Text style={{ fontSize: 20, fontWeight: "800", color: "#4F46E5" }}>{data.aiUsage.requests}</Text>
+                          <Text style={{ fontSize: 20, fontWeight: "800", color: "#4F46E5" }}>{data?.aiUsage?.requests ?? 0}</Text>
                           <Text style={{ fontSize: 10, fontWeight: "600", color: "#94A3B8", marginTop: 2, textTransform: "uppercase", letterSpacing: 0.4 }}>Requests</Text>
                         </View>
                         <View style={{ flex: 1, backgroundColor: "#F8FAFC", borderRadius: 10, padding: 12, alignItems: "center" }}>
-                          <Text style={{ fontSize: 20, fontWeight: "800", color: "#0F172A" }}>{data.aiUsage.chatMessages}</Text>
+                          <Text style={{ fontSize: 20, fontWeight: "800", color: "#0F172A" }}>{data?.aiUsage?.chatMessages ?? 0}</Text>
                           <Text style={{ fontSize: 10, fontWeight: "600", color: "#94A3B8", marginTop: 2, textTransform: "uppercase", letterSpacing: 0.4 }}>Messages</Text>
                         </View>
                       </View>
-                      {data.aiUsage.tokensThisMonth > 0 && (
+                      {(data?.aiUsage?.tokensThisMonth ?? 0) > 0 && (
                         <View style={{ flexDirection: "row", alignItems: "center", marginTop: 10, gap: 4 }}>
                           <Ionicons
                             name={data.aiUsage.positive ? "trending-down" : "trending-up"}

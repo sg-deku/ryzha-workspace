@@ -1,96 +1,296 @@
+import { useState, useEffect } from "react"
 import {
-  View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Alert,
+  View, Text, ScrollView, TouchableOpacity, ActivityIndicator,
+  Alert, TextInput, KeyboardAvoidingView, Platform, StatusBar,
 } from "react-native"
-import { useQuery } from "@tanstack/react-query"
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { apiFetch } from "@/lib/api"
 import { useAuth } from "@/lib/auth"
+import { useNavigation } from "expo-router"
 import { SafeAreaView } from "react-native-safe-area-context"
 import { Ionicons } from "@expo/vector-icons"
+import { LinearGradient } from "expo-linear-gradient"
 
-function SettingRow({ icon, label, onPress, danger }: { icon: string; label: string; onPress: () => void; danger?: boolean }) {
+function Field({
+  label, value, onChange, placeholder, keyboardType, secureTextEntry, editable = true,
+}: {
+  label: string; value: string; onChange?: (v: string) => void
+  placeholder?: string; keyboardType?: any; secureTextEntry?: boolean; editable?: boolean
+}) {
   return (
-    <TouchableOpacity
-      className="flex-row items-center px-4 py-4 border-b border-slate-100"
-      onPress={onPress}
-      activeOpacity={0.7}
-    >
-      <View className={`w-8 h-8 rounded-full items-center justify-center mr-3 ${danger ? "bg-red-100" : "bg-slate-100"}`}>
-        <Ionicons name={icon as any} size={16} color={danger ? "#dc2626" : "#64748b"} />
-      </View>
-      <Text className={`flex-1 text-base font-medium ${danger ? "text-red-600" : "text-slate-900"}`}>{label}</Text>
-      {!danger && <Ionicons name="chevron-forward" size={16} color="#cbd5e1" />}
-    </TouchableOpacity>
+    <View style={{ marginBottom: 16 }}>
+      <Text style={{ fontSize: 12, fontWeight: "700", color: "#64748B", marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.4 }}>
+        {label}
+      </Text>
+      <TextInput
+        style={{
+          borderWidth: 1,
+          borderColor: editable ? "#E2E8F0" : "#F1F5F9",
+          borderRadius: 12,
+          paddingHorizontal: 14,
+          paddingVertical: 12,
+          fontSize: 15,
+          color: editable ? "#0F172A" : "#94A3B8",
+          backgroundColor: editable ? "#fff" : "#F8FAFC",
+        }}
+        placeholder={placeholder}
+        placeholderTextColor="#CBD5E1"
+        value={value}
+        onChangeText={onChange}
+        keyboardType={keyboardType ?? "default"}
+        secureTextEntry={secureTextEntry}
+        editable={editable}
+        autoCapitalize="none"
+      />
+    </View>
   )
 }
 
-export default function SettingsScreen() {
+function SectionHeader({ title }: { title: string }) {
+  return (
+    <Text style={{
+      fontSize: 11, fontWeight: "700", color: "#94A3B8",
+      textTransform: "uppercase", letterSpacing: 0.8,
+      marginBottom: 12, marginTop: 4,
+    }}>
+      {title}
+    </Text>
+  )
+}
+
+export default function ProfileSettingsScreen() {
   const { logout } = useAuth()
+  const navigation = useNavigation()
+  const queryClient = useQueryClient()
 
   const { data: profile, isLoading } = useQuery({
     queryKey: ["mobile-profile"],
     queryFn: () => apiFetch<any>("/profile"),
   })
 
-  const handleLogout = () => {
-    Alert.alert("Sign Out", "Are you sure you want to sign out?", [
-      { text: "Cancel", style: "cancel" },
-      { text: "Sign Out", style: "destructive", onPress: logout },
-    ])
+  const [name, setName] = useState("")
+  const [email, setEmail] = useState("")
+  const [currentPassword, setCurrentPassword] = useState("")
+  const [newPassword, setNewPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
+  const [showPassword, setShowPassword] = useState(false)
+
+  useEffect(() => {
+    if (profile) {
+      setName(profile.name ?? "")
+      setEmail(profile.email ?? "")
+    }
+  }, [profile])
+
+  const updateMutation = useMutation({
+    mutationFn: (data: any) => apiFetch("/profile", { method: "PATCH", body: JSON.stringify(data) }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["mobile-profile"] })
+      Alert.alert("Saved", "Profile updated successfully.")
+    },
+    onError: (err: any) => Alert.alert("Error", err.message ?? "Failed to update profile."),
+  })
+
+  const passwordMutation = useMutation({
+    mutationFn: (data: any) => apiFetch("/profile/password", { method: "POST", body: JSON.stringify(data) }),
+    onSuccess: () => {
+      setCurrentPassword("")
+      setNewPassword("")
+      setConfirmPassword("")
+      Alert.alert("Password Changed", "Your password has been updated.")
+    },
+    onError: (err: any) => Alert.alert("Error", err.message ?? "Failed to change password."),
+  })
+
+  const handleSaveProfile = () => {
+    if (!name.trim()) return Alert.alert("Required", "Name cannot be empty.")
+    updateMutation.mutate({ name: name.trim() })
   }
 
-  return (
-    <SafeAreaView className="flex-1 bg-slate-50">
-      <View className="px-5 pt-4 pb-3">
-        <Text className="text-2xl font-bold text-slate-900">Settings</Text>
-      </View>
+  const handleChangePassword = () => {
+    if (!currentPassword || !newPassword || !confirmPassword)
+      return Alert.alert("Required", "Please fill in all password fields.")
+    if (newPassword !== confirmPassword)
+      return Alert.alert("Mismatch", "New passwords do not match.")
+    if (newPassword.length < 8)
+      return Alert.alert("Too Short", "Password must be at least 8 characters.")
+    passwordMutation.mutate({ currentPassword, newPassword })
+  }
 
-      <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
-        {isLoading ? (
-          <View className="items-center py-8">
-            <ActivityIndicator color="#2563eb" />
-          </View>
-        ) : (
-          <View className="bg-white mx-4 rounded-2xl mb-4 border border-slate-100 overflow-hidden">
-            <View className="px-4 py-4 flex-row items-center gap-3 border-b border-slate-100">
-              <View className="w-14 h-14 rounded-full bg-blue-100 items-center justify-center">
-                <Text className="text-blue-700 font-bold text-xl">
-                  {profile?.name?.charAt(0)?.toUpperCase() ?? "?"}
-                </Text>
-              </View>
-              <View>
-                <Text className="text-slate-900 font-bold text-base">{profile?.name ?? "—"}</Text>
-                <Text className="text-slate-500 text-sm">{profile?.email ?? "—"}</Text>
-                {profile?.organization && (
-                  <Text className="text-slate-400 text-xs mt-0.5">{profile.organization.name}</Text>
-                )}
-              </View>
+  const initials = profile?.name
+    ?.split(" ")
+    .map((n: string) => n[0])
+    .slice(0, 2)
+    .join("") ?? "?"
+
+  return (
+    <>
+      <StatusBar barStyle="light-content" />
+      <LinearGradient
+        colors={["#1E1B4B", "#3730A3", "#4F46E5"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={{ flex: 1 }}
+      >
+        <SafeAreaView style={{ flex: 1 }} edges={["top"]}>
+          <View style={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 24, flexDirection: "row", alignItems: "center" }}>
+            <TouchableOpacity
+              onPress={() => navigation.goBack()}
+              style={{
+                width: 36, height: 36, borderRadius: 10,
+                backgroundColor: "rgba(255,255,255,0.15)",
+                alignItems: "center", justifyContent: "center",
+                marginRight: 12,
+              }}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="chevron-back" size={20} color="#fff" />
+            </TouchableOpacity>
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: "rgba(255,255,255,0.65)", fontSize: 13, fontWeight: "600", textTransform: "uppercase", letterSpacing: 0.5 }}>
+                Account
+              </Text>
+              <Text style={{ color: "#fff", fontSize: 22, fontWeight: "900", letterSpacing: -0.5 }}>
+                Profile Settings
+              </Text>
             </View>
           </View>
-        )}
 
-        <View className="bg-white mx-4 rounded-2xl mb-4 border border-slate-100 overflow-hidden">
-          <Text className="text-xs font-semibold text-slate-400 uppercase px-4 pt-3 pb-1">Account</Text>
-          <SettingRow icon="person-outline" label="Profile" onPress={() => {}} />
-          <SettingRow icon="business-outline" label="Organisation" onPress={() => {}} />
-          <SettingRow icon="notifications-outline" label="Notifications" onPress={() => {}} />
-        </View>
+          <KeyboardAvoidingView
+            style={{ flex: 1, backgroundColor: "#F8FAFC", borderTopLeftRadius: 28, borderTopRightRadius: 28 }}
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+          >
+            <ScrollView
+              contentContainerStyle={{ padding: 20, paddingBottom: 100 }}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+            >
+              {isLoading ? (
+                <View style={{ alignItems: "center", paddingVertical: 32 }}>
+                  <ActivityIndicator size="large" color="#4F46E5" />
+                </View>
+              ) : (
+                <>
+                  <View style={{ alignItems: "center", marginBottom: 28 }}>
+                    <LinearGradient
+                      colors={["#4F46E5", "#7C3AED"]}
+                      style={{
+                        width: 80, height: 80, borderRadius: 26,
+                        alignItems: "center", justifyContent: "center",
+                        marginBottom: 12,
+                        shadowColor: "#4F46E5",
+                        shadowOffset: { width: 0, height: 6 },
+                        shadowOpacity: 0.3,
+                        shadowRadius: 12,
+                        elevation: 6,
+                      }}
+                    >
+                      <Text style={{ color: "#fff", fontSize: 28, fontWeight: "800" }}>{initials}</Text>
+                    </LinearGradient>
+                    <Text style={{ fontSize: 18, fontWeight: "800", color: "#0F172A" }}>{profile?.name ?? "—"}</Text>
+                    {profile?.organization && (
+                      <View style={{ backgroundColor: "#EEF2FF", paddingHorizontal: 12, paddingVertical: 4, borderRadius: 20, marginTop: 6 }}>
+                        <Text style={{ fontSize: 12, color: "#4F46E5", fontWeight: "700" }}>{profile.organization.name}</Text>
+                      </View>
+                    )}
+                  </View>
 
-        <View className="bg-white mx-4 rounded-2xl mb-4 border border-slate-100 overflow-hidden">
-          <Text className="text-xs font-semibold text-slate-400 uppercase px-4 pt-3 pb-1">Preferences</Text>
-          <SettingRow icon="moon-outline" label="Appearance" onPress={() => {}} />
-          <SettingRow icon="language-outline" label="Language" onPress={() => {}} />
-        </View>
+                  <View style={{ backgroundColor: "#fff", borderRadius: 20, padding: 20, marginBottom: 16, borderWidth: 1, borderColor: "#F1F5F9" }}>
+                    <SectionHeader title="Personal Info" />
+                    <Field label="Full Name" value={name} onChange={setName} placeholder="Your full name" />
+                    <Field label="Email" value={email} editable={false} placeholder="your@email.com" keyboardType="email-address" />
+                    {profile?.role && (
+                      <Field label="Role" value={profile.role} editable={false} />
+                    )}
+                    <TouchableOpacity
+                      onPress={handleSaveProfile}
+                      disabled={updateMutation.isPending}
+                      activeOpacity={0.85}
+                      style={{
+                        backgroundColor: "#4F46E5", borderRadius: 14, paddingVertical: 14,
+                        alignItems: "center", marginTop: 4,
+                        shadowColor: "#4F46E5", shadowOffset: { width: 0, height: 4 },
+                        shadowOpacity: 0.25, shadowRadius: 8, elevation: 3,
+                      }}
+                    >
+                      {updateMutation.isPending
+                        ? <ActivityIndicator color="#fff" />
+                        : <Text style={{ color: "#fff", fontSize: 15, fontWeight: "700" }}>Save Changes</Text>
+                      }
+                    </TouchableOpacity>
+                  </View>
 
-        <View className="bg-white mx-4 rounded-2xl mb-4 border border-slate-100 overflow-hidden">
-          <Text className="text-xs font-semibold text-slate-400 uppercase px-4 pt-3 pb-1">Support</Text>
-          <SettingRow icon="help-circle-outline" label="Help & FAQ" onPress={() => {}} />
-          <SettingRow icon="mail-outline" label="Contact Us" onPress={() => {}} />
-        </View>
+                  <View style={{ backgroundColor: "#fff", borderRadius: 20, padding: 20, marginBottom: 16, borderWidth: 1, borderColor: "#F1F5F9" }}>
+                    <SectionHeader title="Change Password" />
+                    <Field
+                      label="Current Password"
+                      value={currentPassword}
+                      onChange={setCurrentPassword}
+                      placeholder="Enter current password"
+                      secureTextEntry={!showPassword}
+                    />
+                    <Field
+                      label="New Password"
+                      value={newPassword}
+                      onChange={setNewPassword}
+                      placeholder="Min. 8 characters"
+                      secureTextEntry={!showPassword}
+                    />
+                    <Field
+                      label="Confirm New Password"
+                      value={confirmPassword}
+                      onChange={setConfirmPassword}
+                      placeholder="Repeat new password"
+                      secureTextEntry={!showPassword}
+                    />
+                    <TouchableOpacity
+                      onPress={() => setShowPassword(!showPassword)}
+                      style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 16 }}
+                    >
+                      <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={16} color="#64748B" />
+                      <Text style={{ fontSize: 13, color: "#64748B" }}>{showPassword ? "Hide passwords" : "Show passwords"}</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={handleChangePassword}
+                      disabled={passwordMutation.isPending}
+                      activeOpacity={0.85}
+                      style={{
+                        backgroundColor: "#0F172A", borderRadius: 14, paddingVertical: 14,
+                        alignItems: "center",
+                      }}
+                    >
+                      {passwordMutation.isPending
+                        ? <ActivityIndicator color="#fff" />
+                        : <Text style={{ color: "#fff", fontSize: 15, fontWeight: "700" }}>Update Password</Text>
+                      }
+                    </TouchableOpacity>
+                  </View>
 
-        <View className="bg-white mx-4 rounded-2xl border border-slate-100 overflow-hidden">
-          <SettingRow icon="log-out-outline" label="Sign Out" onPress={handleLogout} danger />
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+                  <View style={{ backgroundColor: "#FEF2F2", borderRadius: 20, padding: 20, borderWidth: 1, borderColor: "#FECACA" }}>
+                    <SectionHeader title="Danger Zone" />
+                    <TouchableOpacity
+                      onPress={() => Alert.alert("Sign out", "Are you sure you want to sign out?", [
+                        { text: "Cancel", style: "cancel" },
+                        { text: "Sign out", style: "destructive", onPress: logout },
+                      ])}
+                      activeOpacity={0.85}
+                      style={{
+                        flexDirection: "row", alignItems: "center", gap: 10,
+                        borderWidth: 1, borderColor: "#FECACA", borderRadius: 14,
+                        paddingVertical: 14, paddingHorizontal: 16,
+                        backgroundColor: "#fff",
+                      }}
+                    >
+                      <Ionicons name="log-out-outline" size={20} color="#EF4444" />
+                      <Text style={{ fontSize: 15, fontWeight: "600", color: "#EF4444" }}>Sign out of all devices</Text>
+                    </TouchableOpacity>
+                  </View>
+                </>
+              )}
+            </ScrollView>
+          </KeyboardAvoidingView>
+        </SafeAreaView>
+      </LinearGradient>
+    </>
   )
 }
