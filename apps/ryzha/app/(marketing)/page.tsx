@@ -314,7 +314,7 @@ export default async function LandingPage() {
                 Built into Ryzha
               </div>
               <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
-                Aria — Ryzha's AI mode
+                Meet Aria, Ryzha's AI mode
               </h2>
               <p className="text-muted-foreground text-lg">
                 Switch into Aria mode and run your entire accounting workflow through conversation. No forms, no menus — just tell Ryzha what needs to happen.

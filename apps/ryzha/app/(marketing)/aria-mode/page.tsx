@@ -65,7 +65,7 @@ export default function AriaModeDetailPage() {
 
               <div className="space-y-4">
                 <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.08]">
-                  Aria — Ryzha's
+                  Meet Aria, Ryzha's
                   <br />
                   <span className="text-primary">AI mode</span>
                 </h1>
