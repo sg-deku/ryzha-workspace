@@ -212,36 +212,12 @@ export default async function LandingPage() {
       </section>
 
       {/* Capabilities Section */}
-      <section className="w-full py-20">
-        <div className="container px-4 md:px-6 space-y-12">
-          <div className="text-center space-y-4 max-w-3xl mx-auto">
-            <h2 className="text-3xl md:text-4xl font-bold tracking-tight">An autonomous finance team</h2>
-            <p className="text-xl text-muted-foreground">
-              Ryzha replaces manual data entry with AI agents that handle your Procure-to-Pay and Order-to-Cash workflows end-to-end.
-            </p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-            <div className="space-y-6">
-              <div className="space-y-2">
-                <h3 className="text-2xl font-bold">Workflow Studio</h3>
-                <p className="text-muted-foreground">
-                  Visually build and monitor AI agent workflows. Watch as our bots match invoices, dispute anomalies, and predict churn risks in real-time.
-                </p>
-              </div>
-              <div className="space-y-2">
-                <h3 className="text-2xl font-bold">Natural Language Reports</h3>
-                <p className="text-muted-foreground">
-                  Stop wrestling with spreadsheets. Just ask "What's our runway if we hire two engineers?" and get an instant, data-backed answer and narrative.
-                </p>
-              </div>
-              <div className="space-y-2">
-                <h3 className="text-2xl font-bold">Continuous Reconciliation</h3>
-                <p className="text-muted-foreground">
-                  Connect Stripe and let Ryzha automatically recognize revenue, calculate deferred schedules, and reconcile every transaction against contracts.
-                </p>
-              </div>
-            </div>
-            <div className="rounded-xl border bg-background shadow-2xl overflow-hidden">
+      <section className="w-full py-20 bg-muted/50">
+        <div className="container px-4 md:px-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+
+            {/* Workflow timeline card */}
+            <div className="rounded-2xl border bg-background shadow-2xl overflow-hidden">
               <div className="flex items-center justify-between px-5 py-3.5 border-b bg-card">
                 <div>
                   <p className="text-sm font-semibold">Payment Received — $12,500</p>
@@ -277,12 +253,44 @@ export default async function LandingPage() {
                 ))}
               </div>
             </div>
+
+            {/* Copy */}
+            <div className="space-y-6">
+              <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-sm font-medium text-primary">
+                <Workflow className="h-3.5 w-3.5" />
+                Autonomous Workflows
+              </div>
+              <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
+                An autonomous finance team
+              </h2>
+              <p className="text-muted-foreground text-lg">
+                Ryzha replaces manual data entry with AI agents that handle your Procure-to-Pay and Order-to-Cash workflows end-to-end.
+              </p>
+              <div className="space-y-3">
+                {[
+                  "Visually build and monitor AI agent workflows in real-time",
+                  "Match invoices, dispute anomalies, and predict churn risks automatically",
+                  "Ask questions in plain English — get instant, data-backed answers",
+                  "Stripe-connected revenue recognition with ASC 606 compliance built in",
+                ].map((item) => (
+                  <div key={item} className="flex items-start gap-3">
+                    <CheckCircle2 className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                    <span className="text-sm text-muted-foreground">{item}</span>
+                  </div>
+                ))}
+              </div>
+              <Link href="/signup" className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:text-primary/80 transition-colors">
+                Start automating your finances
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+
           </div>
         </div>
       </section>
 
       {/* Mobile App Section */}
-      <section className="w-full py-20 bg-muted/50">
+      <section className="w-full py-20">
         <div className="container px-4 md:px-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
 
