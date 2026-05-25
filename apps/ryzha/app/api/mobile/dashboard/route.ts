@@ -41,6 +41,9 @@ export async function GET(req: Request) {
     recentExpenses,
     unreadNotifications,
     snapshot,
+    aiUsageMonth,
+    aiUsagePrevMonth,
+    chatMessageCount,
   ] = await Promise.all([
     prisma.financialSettings.findUnique({
       where: { organizationId: orgId },
@@ -89,6 +92,18 @@ export async function GET(req: Request) {
     }),
     prisma.notification.count({ where: { organizationId: orgId, read: false } }),
     prisma.financialSnapshot.findUnique({ where: { organizationId: orgId } }),
+    prisma.aIUsageLog.aggregate({
+      where: { organizationId: orgId, createdAt: { gte: monthStart(0) } },
+      _sum: { totalTokens: true },
+      _count: { id: true },
+    }),
+    prisma.aIUsageLog.aggregate({
+      where: { organizationId: orgId, createdAt: { gte: monthStart(1), lt: monthStart(0) } },
+      _sum: { totalTokens: true },
+    }),
+    prisma.chatMessage.count({
+      where: { organizationId: orgId, createdAt: { gte: monthStart(0) }, role: "user" },
+    }),
   ])
 
   const bankBalance = settings?.bankBalance ?? 0
@@ -114,6 +129,10 @@ export async function GET(req: Request) {
   const currentExpenses = monthlyExpenses[6]
   const prevExpenses = monthlyExpenses[5]
 
+  const tokensThisMonth = aiUsageMonth._sum.totalTokens ?? 0
+  const tokensPrevMonth = aiUsagePrevMonth._sum.totalTokens ?? 0
+  const aiRequestsThisMonth = aiUsageMonth._count.id ?? 0
+
   return NextResponse.json({
     cashBalance: bankBalance,
     cashBalanceFmt: fmt(bankBalance),
@@ -128,6 +147,14 @@ export async function GET(req: Request) {
       { title: "Outstanding AR", value: fmt(outstandingTotal), change: `${invoiceCount} open invoice${invoiceCount !== 1 ? "s" : ""}`, positive: null },
       { title: "Pending Expenses", value: `${expenseCount}`, change: "awaiting review", positive: expenseCount === 0 },
     ],
+    aiUsage: {
+      tokensThisMonth,
+      tokensFmt: tokensThisMonth >= 1000 ? `${(tokensThisMonth / 1000).toFixed(1)}K` : `${tokensThisMonth}`,
+      requests: aiRequestsThisMonth,
+      chatMessages: chatMessageCount,
+      tokenChange: pctChange(tokensThisMonth, tokensPrevMonth),
+      positive: tokensThisMonth <= tokensPrevMonth,
+    },
     recentInvoices,
     recentExpenses,
   })
