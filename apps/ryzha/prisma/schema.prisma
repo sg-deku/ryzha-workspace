@@ -213,7 +213,7 @@ model FinancialSettings {
   lowRunwayAlertThreshold      Int      @default(3)
   enableVoiceSummary           Boolean  @default(true)
   elevenLabsVoiceId            String   @default("21m00Tcm4TlvDq8ikWAM")
-  voiceScriptTemplate          String   @default("Karina, a {{amount}} credit has been reconciled under ASC 606. This improves our net income for the quarter and extends our cash runway by {{runwayDays}} days, moving our 'Zero Cash Date' to {{zeroCashDate}}. We are currently {{percentAhead}}% ahead of our financial plan.")
+  voiceScriptTemplate          String   @default("")
   enableSMS                    Boolean  @default(false)
   smsRecipientNumber           String?
   aiModel                      String   @default("gpt-4o-mini") // Can be configurable by user (e.g. gpt-4, claude-3-haiku)

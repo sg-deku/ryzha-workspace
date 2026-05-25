@@ -16,9 +16,7 @@ export const dynamic = "force-dynamic"
 export default function ElevenLabsPage() {
   const [apiKey, setApiKey] = useState("")
   const [voiceId, setVoiceId] = useState("21m00Tcm4TlvDq8ikWAM")
-  const [scriptTemplate, setScriptTemplate] = useState(
-    "Karina, a {{amount}} credit has been reconciled under ASC 606. This improves our net income for the quarter and extends our cash runway by {{runwayDays}} days, moving our 'Zero Cash Date' to {{zeroCashDate}}. We are currently {{percentAhead}}% ahead of our financial plan."
-  )
+  const [scriptTemplate, setScriptTemplate] = useState("")
   const [enabled, setEnabled] = useState(false)
   const [showKey, setShowKey] = useState(false)
   const [connected, setConnected] = useState(false)
