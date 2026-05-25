@@ -1,7 +1,12 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { getSession } from "@/lib/session"
-import { ArrowRight, BarChart3, ShieldCheck, Zap, Workflow, MessageSquareText, ArrowLeftRight, Tag, FilePenLine, BellRing, CheckCircle2, Sparkles, TrendingUp, Smartphone, Bell, LayoutDashboard, Wallet, Bot } from "lucide-react"
+import {
+  ArrowRight, BarChart3, ShieldCheck, Zap, Workflow, MessageSquareText,
+  ArrowLeftRight, Tag, FilePenLine, BellRing, CheckCircle2, Sparkles,
+  TrendingUp, Smartphone, Bell, LayoutDashboard, Wallet, Bot,
+  ChevronRight,
+} from "lucide-react"
 
 export const dynamic = 'force-dynamic'
 
@@ -10,108 +15,296 @@ export default async function LandingPage() {
 
   return (
     <div className="flex flex-col items-center">
-      {/* Hero Section */}
-      <section className="w-full py-20 lg:py-32 flex flex-col items-center text-center px-4">
-        <div className="max-w-3xl space-y-6 animate-fade-up">
-          <div className="flex justify-center mb-6">
-            <div className="h-32 w-32 md:h-48 md:w-48 bg-primary logo-mask" />
-          </div>
-          <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight">
-            Financial brain for <span className="text-primary">startups</span>
-          </h1>
-          <p className="text-xl text-muted-foreground max-w-[600px] mx-auto">
-            AI‑powered accounting, audit, and runway forecasting. 
-            Real-time financial intelligence for modern founders.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
-            {session ? (
-              <Button size="lg" asChild>
-                <Link href="/dashboard">
-                  Go to Dashboard
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Link>
-              </Button>
-            ) : (
-              <>
-                <Button size="lg" asChild>
-                  <Link href="/signup">
-                    Start free trial
-                    <ArrowRight className="ml-2 h-5 w-5" />
-                  </Link>
-                </Button>
-                <Button size="lg" variant="outline" asChild>
-                  <Link href="/login">Log in</Link>
-                </Button>
-              </>
-            )}
+
+      {/* ─── Hero ─── */}
+      <section className="w-full relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/8 via-transparent to-violet-500/5 pointer-events-none" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[500px] bg-primary/10 rounded-full blur-3xl opacity-40 pointer-events-none" />
+
+        <div className="container relative px-4 md:px-6 py-20 lg:py-28">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+
+            {/* Left: copy */}
+            <div className="space-y-7">
+              <div className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/8 px-3.5 py-1.5 text-xs font-semibold text-primary">
+                <Zap className="h-3 w-3" />
+                AI-powered financial intelligence
+                <ChevronRight className="h-3 w-3 opacity-60" />
+              </div>
+
+              <div className="space-y-4">
+                <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.08]">
+                  The financial brain
+                  <br />
+                  <span className="text-primary">for startups</span>
+                </h1>
+                <p className="text-lg text-muted-foreground max-w-[480px] leading-relaxed">
+                  Replace your finance team's manual work with AI agents that handle accounting, reconciliation, and runway forecasting — end to end.
+                </p>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-3">
+                {session ? (
+                  <Button size="lg" asChild className="font-semibold">
+                    <Link href="/dashboard">
+                      Go to Dashboard
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Link>
+                  </Button>
+                ) : (
+                  <>
+                    <Button size="lg" asChild className="font-semibold">
+                      <Link href="/signup">
+                        Start free trial
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                      </Link>
+                    </Button>
+                    <Button size="lg" variant="outline" asChild className="font-semibold">
+                      <Link href="/login">Log in</Link>
+                    </Button>
+                  </>
+                )}
+              </div>
+
+              {/* Stats strip */}
+              <div className="flex flex-wrap gap-6 pt-2">
+                {[
+                  { val: "$8.2M+", label: "Revenue processed" },
+                  { val: "99.9%", label: "Reconciliation accuracy" },
+                  { val: "5 min", label: "Avg. setup time" },
+                ].map(({ val, label }) => (
+                  <div key={label}>
+                    <p className="text-xl font-black text-foreground">{val}</p>
+                    <p className="text-xs text-muted-foreground font-medium">{label}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Right: dashboard preview card */}
+            <div className="relative flex justify-center lg:justify-end">
+              <div className="absolute -inset-4 bg-primary/10 blur-3xl rounded-3xl opacity-30" />
+              <div className="relative w-full max-w-[420px] rounded-2xl border bg-card shadow-2xl overflow-hidden">
+                {/* Card header */}
+                <div className="flex items-center justify-between px-5 py-3.5 border-b bg-card/80 backdrop-blur">
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-md bg-primary flex items-center justify-center">
+                      <Zap className="h-3 w-3 text-primary-foreground" />
+                    </div>
+                    <span className="text-sm font-bold">Ryzha Dashboard</span>
+                  </div>
+                  <span className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                    <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                    Live
+                  </span>
+                </div>
+
+                {/* KPI row */}
+                <div className="grid grid-cols-2 gap-px bg-border">
+                  {[
+                    { label: "Cash Balance", val: "$142,500", delta: "+12.4%", up: true },
+                    { label: "Monthly Burn", val: "$28,400", delta: "-3.1%", up: false },
+                    { label: "Runway", val: "5.0 months", delta: null, up: null },
+                    { label: "Overdue", val: "3 invoices", delta: null, up: null },
+                  ].map(({ label, val, delta, up }) => (
+                    <div key={label} className="bg-card px-4 py-3.5">
+                      <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider mb-1">{label}</p>
+                      <p className="text-base font-black">{val}</p>
+                      {delta && (
+                        <p className={`text-[11px] font-semibold mt-0.5 ${up ? "text-emerald-500" : "text-red-500"}`}>{delta}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Recent activity */}
+                <div className="px-5 py-4 space-y-3">
+                  <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Recent Activity</p>
+                  {[
+                    { label: "INV-0042 · Acme Corp paid", amount: "+$12,500", color: "text-emerald-500", bg: "bg-emerald-500/10", time: "2m ago" },
+                    { label: "Expense · AWS · categorised", amount: "-$890", color: "text-muted-foreground", bg: "bg-muted", time: "14m ago" },
+                    { label: "Revenue recognised (ASC 606)", amount: "$1,041", color: "text-primary", bg: "bg-primary/10", time: "1h ago" },
+                  ].map(({ label, amount, color, bg, time }) => (
+                    <div key={label} className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className={`w-7 h-7 rounded-lg ${bg} flex-shrink-0`} />
+                        <p className="text-xs font-medium truncate">{label}</p>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <span className={`text-xs font-bold ${color}`}>{amount}</span>
+                        <span className="text-[10px] text-muted-foreground">{time}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Aria prompt bar */}
+                <div className="border-t px-5 py-3">
+                  <div className="flex items-center gap-2.5 bg-muted rounded-xl px-4 py-2.5 opacity-70">
+                    <Sparkles className="h-3.5 w-3.5 text-primary flex-shrink-0" />
+                    <span className="text-xs text-muted-foreground">Ask Aria — "What's our runway if we hire 2 engineers?"</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
           </div>
         </div>
       </section>
 
-      {/* Features Section */}
+      {/* ─── Features grid ─── */}
       <section className="w-full py-20 bg-muted/50">
         <div className="container px-4 md:px-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <div className="flex flex-col items-center text-center space-y-4 p-6 bg-background rounded-xl shadow-sm border animate-fade-up" style={{ animationDelay: "0.1s" }}>
-              <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                <Workflow className="h-6 w-6" />
-              </div>
-              <h3 className="text-xl font-bold">Autonomous Workflows</h3>
-              <p className="text-muted-foreground">
-                Visual AI agents that automatically handle your Procure-to-Pay and Order-to-Cash pipelines from end to end.
-              </p>
+          <div className="text-center max-w-2xl mx-auto mb-14">
+            <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-sm font-medium text-primary mb-4">
+              <BarChart3 className="h-3.5 w-3.5" />
+              Everything in one platform
             </div>
-            <div className="flex flex-col items-center text-center space-y-4 p-6 bg-background rounded-xl shadow-sm border animate-fade-up" style={{ animationDelay: "0.2s" }}>
-              <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                <MessageSquareText className="h-6 w-6" />
+            <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-3">
+              Built for modern finance teams
+            </h2>
+            <p className="text-muted-foreground text-lg">
+              From invoices to audit trails — Ryzha's AI handles the entire financial stack so your team doesn't have to.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[
+              {
+                icon: Workflow,
+                color: "text-primary bg-primary/10",
+                title: "Autonomous Workflows",
+                desc: "Visual AI agents that automatically handle your Procure-to-Pay and Order-to-Cash pipelines from end to end.",
+              },
+              {
+                icon: MessageSquareText,
+                color: "text-violet-600 bg-violet-500/10 dark:text-violet-400",
+                title: "Natural Language Reporting",
+                desc: "Stop wrestling with spreadsheets. Ask complex financial questions in plain English and get instant, data-backed narratives.",
+              },
+              {
+                icon: ArrowLeftRight,
+                color: "text-blue-600 bg-blue-500/10 dark:text-blue-400",
+                title: "Continuous Reconciliation",
+                desc: "Connect Stripe and let Ryzha automatically recognize revenue, calculate deferred schedules, and match every transaction.",
+              },
+              {
+                icon: Tag,
+                color: "text-amber-600 bg-amber-500/10 dark:text-amber-400",
+                title: "Smart Expense Categorization",
+                desc: "AI automatically categorizes expenses, flags anomalies, and disputes invoice mismatches before they cost you money.",
+              },
+              {
+                icon: FilePenLine,
+                color: "text-emerald-600 bg-emerald-500/10 dark:text-emerald-400",
+                title: "Contract & Revenue Management",
+                desc: "Track deferred vs. recognized revenue effortlessly with built-in subscription and contract management.",
+              },
+              {
+                icon: BellRing,
+                color: "text-rose-600 bg-rose-500/10 dark:text-rose-400",
+                title: "Proactive Risk Alerts",
+                desc: "Stay ahead with AI-driven churn risk predictions and automated overdue invoice warnings.",
+              },
+            ].map(({ icon: Icon, color, title, desc }, i) => (
+              <div
+                key={title}
+                className="group flex flex-col gap-4 p-6 bg-background rounded-2xl border hover:border-primary/30 hover:shadow-lg transition-all duration-200"
+                style={{ animationDelay: `${i * 0.1}s` }}
+              >
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${color}`}>
+                  <Icon className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold mb-1.5">{title}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{desc}</p>
+                </div>
               </div>
-              <h3 className="text-xl font-bold">Natural Language Reporting</h3>
-              <p className="text-muted-foreground">
-                Stop wrestling with spreadsheets. Ask complex financial questions in plain English and get instant, data-backed narratives.
-              </p>
-            </div>
-            <div className="flex flex-col items-center text-center space-y-4 p-6 bg-background rounded-xl shadow-sm border animate-fade-up" style={{ animationDelay: "0.3s" }}>
-              <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                <ArrowLeftRight className="h-6 w-6" />
-              </div>
-              <h3 className="text-xl font-bold">Continuous Reconciliation</h3>
-              <p className="text-muted-foreground">
-                Connect Stripe and let Ryzha automatically recognize revenue, calculate deferred schedules, and match every transaction.
-              </p>
-            </div>
-            <div className="flex flex-col items-center text-center space-y-4 p-6 bg-background rounded-xl shadow-sm border animate-fade-up" style={{ animationDelay: "0.4s" }}>
-              <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                <Tag className="h-6 w-6" />
-              </div>
-              <h3 className="text-xl font-bold">Smart Expense Categorization</h3>
-              <p className="text-muted-foreground">
-                AI automatically categorizes expenses, flags anomalies, and disputes invoice mismatches before they cost you money.
-              </p>
-            </div>
-            <div className="flex flex-col items-center text-center space-y-4 p-6 bg-background rounded-xl shadow-sm border animate-fade-up" style={{ animationDelay: "0.5s" }}>
-              <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                <FilePenLine className="h-6 w-6" />
-              </div>
-              <h3 className="text-xl font-bold">Contract & Revenue Management</h3>
-              <p className="text-muted-foreground">
-                Track deferred vs. recognized revenue effortlessly with built-in subscription and contract management.
-              </p>
-            </div>
-            <div className="flex flex-col items-center text-center space-y-4 p-6 bg-background rounded-xl shadow-sm border animate-fade-up" style={{ animationDelay: "0.6s" }}>
-              <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                <BellRing className="h-6 w-6" />
-              </div>
-              <h3 className="text-xl font-bold">Proactive Risk Alerts</h3>
-              <p className="text-muted-foreground">
-                Stay ahead of the curve with AI-driven churn risk predictions and automated overdue invoice warnings.
-              </p>
-            </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* Aria Section */}
+      {/* ─── Autonomous Workflows (detail) ─── */}
       <section className="w-full py-20">
+        <div className="container px-4 md:px-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+
+            {/* Workflow timeline card */}
+            <div className="rounded-2xl border bg-background shadow-2xl overflow-hidden">
+              <div className="flex items-center justify-between px-5 py-3.5 border-b bg-card">
+                <div>
+                  <p className="text-sm font-semibold">Payment Received — $12,500</p>
+                  <p className="text-xs text-muted-foreground">Acme Corp · Stripe · just now</p>
+                </div>
+                <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/40 rounded-full px-2.5 py-1">
+                  <CheckCircle2 className="h-3 w-3" /> Processed
+                </span>
+              </div>
+              <div className="p-5 space-y-0">
+                {[
+                  { icon: Workflow,    color: "text-primary bg-primary/10 border-primary/20",                                                                                                   label: "Workflow Manager",     msg: "Payment received from Acme Corp · $12,500 · initiating processing" },
+                  { icon: TrendingUp,  color: "text-blue-600 bg-blue-50 border-blue-200 dark:text-blue-400 dark:bg-blue-950/40 dark:border-blue-800/40",                                        label: "Revenue Recording",    msg: "Revenue of $12,500 recorded · recognition type: deferred (12 months)" },
+                  { icon: BarChart3,   color: "text-violet-600 bg-violet-50 border-violet-200 dark:text-violet-400 dark:bg-violet-950/40 dark:border-violet-800/40",                            label: "Revenue Policy",       msg: "ASC 606 applied · $1,041.67 recognised · $11,458.33 deferred over contract" },
+                  { icon: ShieldCheck, color: "text-amber-600 bg-amber-50 border-amber-200 dark:text-amber-400 dark:bg-amber-950/40 dark:border-amber-800/40",                                  label: "Audit & Verification", msg: "Contract matched · audit hash verified · no discrepancies found" },
+                  { icon: TrendingUp,  color: "text-emerald-600 bg-emerald-50 border-emerald-200 dark:text-emerald-400 dark:bg-emerald-950/40 dark:border-emerald-800/40",                      label: "Financial Forecast",   msg: "Runway updated to 8.4 months · financial model refreshed" },
+                ].map(({ icon: Icon, color, label, msg }, i, arr) => (
+                  <div key={i} className="flex gap-3">
+                    <div className="flex flex-col items-center">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 border ${color}`}>
+                        <Icon className="h-3.5 w-3.5" />
+                      </div>
+                      {i < arr.length - 1 && <div className="w-px flex-1 bg-border my-1 min-h-[10px]" />}
+                    </div>
+                    <div className="pb-3.5 flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 mb-0.5">
+                        <span className="text-xs font-semibold">{label}</span>
+                        <CheckCircle2 className="h-3 w-3 text-emerald-500 flex-shrink-0" />
+                      </div>
+                      <p className="text-xs text-muted-foreground leading-relaxed">{msg}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Copy */}
+            <div className="space-y-6">
+              <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-sm font-medium text-primary">
+                <Workflow className="h-3.5 w-3.5" />
+                Autonomous Workflows
+              </div>
+              <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
+                An autonomous finance team
+              </h2>
+              <p className="text-muted-foreground text-lg">
+                Ryzha replaces manual data entry with AI agents that handle your Procure-to-Pay and Order-to-Cash workflows end-to-end.
+              </p>
+              <div className="space-y-3">
+                {[
+                  "Visually build and monitor AI agent workflows in real-time",
+                  "Match invoices, dispute anomalies, and predict churn risks automatically",
+                  "Ask questions in plain English — get instant, data-backed answers",
+                  "Stripe-connected revenue recognition with ASC 606 compliance built in",
+                ].map((item) => (
+                  <div key={item} className="flex items-start gap-3">
+                    <CheckCircle2 className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                    <span className="text-sm text-muted-foreground">{item}</span>
+                  </div>
+                ))}
+              </div>
+              <Link href="/signup" className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:text-primary/80 transition-colors">
+                Start automating your finances
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      {/* ─── Aria Section ─── */}
+      <section className="w-full py-20 bg-muted/50">
         <div className="container px-4 md:px-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div className="space-y-6">
@@ -211,85 +404,7 @@ export default async function LandingPage() {
         </div>
       </section>
 
-      {/* Capabilities Section */}
-      <section className="w-full py-20 bg-muted/50">
-        <div className="container px-4 md:px-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-
-            {/* Workflow timeline card */}
-            <div className="rounded-2xl border bg-background shadow-2xl overflow-hidden">
-              <div className="flex items-center justify-between px-5 py-3.5 border-b bg-card">
-                <div>
-                  <p className="text-sm font-semibold">Payment Received — $12,500</p>
-                  <p className="text-xs text-muted-foreground">Acme Corp · Stripe · just now</p>
-                </div>
-                <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/40 rounded-full px-2.5 py-1">
-                  <CheckCircle2 className="h-3 w-3" /> Processed
-                </span>
-              </div>
-              <div className="p-5 space-y-0">
-                {[
-                  { icon: Workflow,    color: "text-primary bg-primary/10 border-primary/20",           label: "Workflow Manager",     msg: "Payment received from Acme Corp · $12,500 · initiating processing", done: true },
-                  { icon: TrendingUp,  color: "text-blue-600 bg-blue-50 border-blue-200 dark:text-blue-400 dark:bg-blue-950/40 dark:border-blue-800/40",   label: "Revenue Recording",    msg: "Revenue of $12,500 recorded · recognition type: deferred (12 months)", done: true },
-                  { icon: BarChart3,   color: "text-violet-600 bg-violet-50 border-violet-200 dark:text-violet-400 dark:bg-violet-950/40 dark:border-violet-800/40", label: "Revenue Policy",       msg: "ASC 606 applied · $1,041.67 recognised · $11,458.33 deferred over contract", done: true },
-                  { icon: ShieldCheck, color: "text-amber-600 bg-amber-50 border-amber-200 dark:text-amber-400 dark:bg-amber-950/40 dark:border-amber-800/40",  label: "Audit & Verification", msg: "Contract matched · audit hash verified · no discrepancies found", done: true },
-                  { icon: TrendingUp,  color: "text-emerald-600 bg-emerald-50 border-emerald-200 dark:text-emerald-400 dark:bg-emerald-950/40 dark:border-emerald-800/40", label: "Financial Forecast",   msg: "Runway updated to 8.4 months · financial model refreshed", done: true },
-                ].map(({ icon: Icon, color, label, msg, done }, i, arr) => (
-                  <div key={i} className="flex gap-3">
-                    <div className="flex flex-col items-center">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 border ${color}`}>
-                        <Icon className="h-3.5 w-3.5" />
-                      </div>
-                      {i < arr.length - 1 && <div className="w-px flex-1 bg-border my-1 min-h-[10px]" />}
-                    </div>
-                    <div className="pb-3.5 flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5 mb-0.5">
-                        <span className="text-xs font-semibold">{label}</span>
-                        {done && <CheckCircle2 className="h-3 w-3 text-emerald-500 flex-shrink-0" />}
-                      </div>
-                      <p className="text-xs text-muted-foreground leading-relaxed">{msg}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Copy */}
-            <div className="space-y-6">
-              <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-sm font-medium text-primary">
-                <Workflow className="h-3.5 w-3.5" />
-                Autonomous Workflows
-              </div>
-              <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
-                An autonomous finance team
-              </h2>
-              <p className="text-muted-foreground text-lg">
-                Ryzha replaces manual data entry with AI agents that handle your Procure-to-Pay and Order-to-Cash workflows end-to-end.
-              </p>
-              <div className="space-y-3">
-                {[
-                  "Visually build and monitor AI agent workflows in real-time",
-                  "Match invoices, dispute anomalies, and predict churn risks automatically",
-                  "Ask questions in plain English — get instant, data-backed answers",
-                  "Stripe-connected revenue recognition with ASC 606 compliance built in",
-                ].map((item) => (
-                  <div key={item} className="flex items-start gap-3">
-                    <CheckCircle2 className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-                    <span className="text-sm text-muted-foreground">{item}</span>
-                  </div>
-                ))}
-              </div>
-              <Link href="/signup" className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:text-primary/80 transition-colors">
-                Start automating your finances
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-            </div>
-
-          </div>
-        </div>
-      </section>
-
-      {/* Mobile App Section */}
+      {/* ─── Mobile App Section ─── */}
       <section className="w-full py-20">
         <div className="container px-4 md:px-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
@@ -297,15 +412,10 @@ export default async function LandingPage() {
             {/* Phone mockup */}
             <div className="flex justify-center order-2 lg:order-1">
               <div className="relative">
-                {/* Glow */}
                 <div className="absolute inset-0 bg-primary/20 blur-3xl rounded-full scale-75 translate-y-8" />
-                {/* Phone shell */}
                 <div className="relative w-[260px] rounded-[44px] border-[7px] border-foreground/10 bg-[#0F172A] shadow-2xl overflow-hidden">
-                  {/* Notch */}
                   <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-6 bg-[#0F172A] rounded-b-2xl z-10" />
-                  {/* Screen */}
                   <div className="bg-[#0F172A] min-h-[520px] pt-8 pb-16 flex flex-col">
-                    {/* Status bar */}
                     <div className="flex items-center justify-between px-6 pb-3">
                       <span className="text-[10px] text-white/60 font-medium">9:41</span>
                       <div className="flex items-center gap-1">
@@ -314,12 +424,10 @@ export default async function LandingPage() {
                         <div className="w-4 h-1.5 bg-white/70 rounded-[2px]" />
                       </div>
                     </div>
-                    {/* Header */}
                     <div className="px-5 pb-4">
                       <p className="text-[10px] text-white/50 uppercase tracking-widest font-semibold">Good morning</p>
                       <p className="text-white text-lg font-black tracking-tight leading-tight">Alex Johnson</p>
                     </div>
-                    {/* KPI cards */}
                     <div className="grid grid-cols-2 gap-2 px-4 mb-3">
                       {[
                         { label: "Cash Balance", val: "$142.5K", up: true },
@@ -338,7 +446,6 @@ export default async function LandingPage() {
                         </div>
                       ))}
                     </div>
-                    {/* Aria card */}
                     <div className="mx-4 mb-3 bg-gradient-to-r from-primary/30 to-violet-600/20 rounded-2xl p-3 border border-primary/30">
                       <div className="flex items-center gap-2 mb-1.5">
                         <div className="w-5 h-5 rounded-md bg-primary flex items-center justify-center">
@@ -355,7 +462,6 @@ export default async function LandingPage() {
                         ))}
                       </div>
                     </div>
-                    {/* Recent invoices */}
                     <div className="mx-4">
                       <p className="text-[9px] text-white/40 uppercase tracking-wider font-semibold mb-1.5">Recent Invoices</p>
                       {[
@@ -371,7 +477,6 @@ export default async function LandingPage() {
                         </div>
                       ))}
                     </div>
-                    {/* Bottom nav */}
                     <div className="absolute bottom-0 left-0 right-0 flex items-center justify-around px-4 py-2.5 border-t border-white/10 bg-[#0F172A]">
                       {[
                         { icon: LayoutDashboard, label: "Home", active: true },
@@ -387,7 +492,6 @@ export default async function LandingPage() {
                     </div>
                   </div>
                 </div>
-                {/* Home indicator */}
                 <div className="absolute bottom-[18px] left-1/2 -translate-x-1/2 w-20 h-1 bg-white/20 rounded-full" />
               </div>
             </div>
@@ -413,7 +517,7 @@ export default async function LandingPage() {
                 ].map(({ icon: Icon, title, desc }) => (
                   <div key={title} className="flex items-start gap-4">
                     <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center text-primary flex-shrink-0 mt-0.5">
-                      <Icon className="h-4.5 w-4.5 h-[18px] w-[18px]" />
+                      <Icon className="h-[18px] w-[18px]" />
                     </div>
                     <div>
                       <p className="font-semibold text-sm">{title}</p>
@@ -422,7 +526,6 @@ export default async function LandingPage() {
                   </div>
                 ))}
               </div>
-              {/* Store buttons — disabled */}
               <div className="flex flex-wrap gap-3 pt-2">
                 <div className="flex items-center gap-3 border rounded-xl px-4 py-3 bg-foreground/5 opacity-60 cursor-not-allowed select-none">
                   <svg viewBox="0 0 24 24" className="h-6 w-6 fill-current"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
@@ -445,9 +548,9 @@ export default async function LandingPage() {
         </div>
       </section>
 
-      {/* CTA Section */}
+      {/* ─── CTA ─── */}
       <section className="w-full py-20 px-4">
-        <div className="max-w-4xl mx-auto bg-primary text-primary-foreground rounded-2xl p-8 md:p-12 text-center space-y-6 shadow-2xl animate-fade-up">
+        <div className="max-w-4xl mx-auto bg-primary text-primary-foreground rounded-2xl p-8 md:p-12 text-center space-y-6 shadow-2xl">
           <h2 className="text-3xl md:text-4xl font-bold">Ready to scale smarter?</h2>
           <p className="text-primary-foreground/80 text-lg max-w-2xl mx-auto">
             Startups trust Ryzha's AI brain to manage their finances.
@@ -457,6 +560,7 @@ export default async function LandingPage() {
           </Button>
         </div>
       </section>
+
     </div>
   )
 }
