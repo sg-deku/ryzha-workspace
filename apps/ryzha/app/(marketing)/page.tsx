@@ -66,17 +66,18 @@ export default async function LandingPage() {
                 )}
               </div>
 
-              {/* Stats strip */}
-              <div className="flex flex-wrap gap-6 pt-2">
+              {/* Trust badges */}
+              <div className="flex flex-wrap gap-2 pt-2">
                 {[
-                  { val: "$8.2M+", label: "Revenue processed" },
-                  { val: "99.9%", label: "Reconciliation accuracy" },
-                  { val: "40+ hrs", label: "Saved per month" },
-                ].map(({ val, label }) => (
-                  <div key={label}>
-                    <p className="text-xl font-black text-foreground">{val}</p>
-                    <p className="text-xs text-muted-foreground font-medium">{label}</p>
-                  </div>
+                  "Stripe native",
+                  "ASC 606 built in",
+                  "SOC 2 ready",
+                  "GDPR compliant",
+                ].map((badge) => (
+                  <span key={badge} className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/60 px-3 py-1 text-xs font-medium text-muted-foreground">
+                    <CheckCircle2 className="h-3 w-3 text-primary" />
+                    {badge}
+                  </span>
                 ))}
               </div>
             </div>
