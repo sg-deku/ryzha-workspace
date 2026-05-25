@@ -1,7 +1,6 @@
-import { useState } from "react"
 import {
   View, Text, ScrollView, TouchableOpacity, ActivityIndicator,
-  Alert, StatusBar,
+  Alert, StatusBar, Image,
 } from "react-native"
 import { useQuery } from "@tanstack/react-query"
 import { apiFetch } from "@/lib/api"
@@ -10,6 +9,7 @@ import { useRouter } from "expo-router"
 import { SafeAreaView } from "react-native-safe-area-context"
 import { Ionicons } from "@expo/vector-icons"
 import { LinearGradient } from "expo-linear-gradient"
+import { useTheme, ACCENT_THEMES } from "@/lib/theme"
 
 interface MenuItem {
   icon: string
@@ -18,7 +18,6 @@ interface MenuItem {
   onPress: () => void
   danger?: boolean
   badge?: number
-  chevron?: boolean
 }
 
 function MenuRow({ item }: { item: MenuItem }) {
@@ -92,6 +91,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 export default function MenuScreen() {
   const { logout } = useAuth()
   const router = useRouter()
+  const { colors, accentTheme } = useTheme()
 
   const { data: profile, isLoading } = useQuery({
     queryKey: ["mobile-profile"],
@@ -115,19 +115,26 @@ export default function MenuScreen() {
     <>
       <StatusBar barStyle="light-content" />
       <LinearGradient
-        colors={["#1E1B4B", "#3730A3", "#4F46E5"]}
+        colors={colors.gradient}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={{ flex: 1 }}
       >
         <SafeAreaView style={{ flex: 1 }} edges={["top"]}>
-          <View style={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 24 }}>
-            <Text style={{ color: "rgba(255,255,255,0.65)", fontSize: 13, fontWeight: "600", textTransform: "uppercase", letterSpacing: 0.5 }}>
-              Workspace
-            </Text>
-            <Text style={{ color: "#fff", fontSize: 26, fontWeight: "900", marginTop: 4, letterSpacing: -0.5 }}>
-              Menu
-            </Text>
+          <View style={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 20, flexDirection: "row", alignItems: "center" }}>
+            <Image
+              source={require("../../assets/logo.png")}
+              style={{ width: 28, height: 28, tintColor: "#fff", marginRight: 10, opacity: 0.9 }}
+              resizeMode="contain"
+            />
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: "rgba(255,255,255,0.65)", fontSize: 13, fontWeight: "600", textTransform: "uppercase", letterSpacing: 0.5 }}>
+                Workspace
+              </Text>
+              <Text style={{ color: "#fff", fontSize: 26, fontWeight: "900", letterSpacing: -0.5 }}>
+                Menu
+              </Text>
+            </View>
           </View>
 
           <ScrollView
@@ -143,14 +150,14 @@ export default function MenuScreen() {
               padding: 16,
               borderWidth: 1,
               borderColor: "#F1F5F9",
-              shadowColor: "#4F46E5",
+              shadowColor: colors.primary,
               shadowOffset: { width: 0, height: 4 },
               shadowOpacity: 0.08,
               shadowRadius: 12,
               elevation: 2,
             }}>
               {isLoading ? (
-                <ActivityIndicator color="#4F46E5" />
+                <ActivityIndicator color={colors.primary} />
               ) : (
                 <TouchableOpacity
                   activeOpacity={0.8}
@@ -158,7 +165,7 @@ export default function MenuScreen() {
                   style={{ flexDirection: "row", alignItems: "center", gap: 14 }}
                 >
                   <LinearGradient
-                    colors={["#4F46E5", "#7C3AED"]}
+                    colors={colors.gradient}
                     style={{
                       width: 56, height: 56, borderRadius: 18,
                       alignItems: "center", justifyContent: "center",
@@ -171,8 +178,8 @@ export default function MenuScreen() {
                     <Text style={{ fontSize: 13, color: "#64748B", marginTop: 1 }}>{profile?.email ?? "—"}</Text>
                     {profile?.organization && (
                       <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: 4 }}>
-                        <View style={{ backgroundColor: "#EEF2FF", paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6 }}>
-                          <Text style={{ fontSize: 11, color: "#4F46E5", fontWeight: "700" }}>
+                        <View style={{ backgroundColor: colors.primaryLight, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6 }}>
+                          <Text style={{ fontSize: 11, color: colors.primary, fontWeight: "700" }}>
                             {profile.organization.name}
                           </Text>
                         </View>
@@ -198,7 +205,7 @@ export default function MenuScreen() {
                 icon: "business-outline",
                 label: "Organisation Settings",
                 sub: profile?.organization?.name ?? "Manage your workspace",
-                onPress: () => Alert.alert("Organisation", "Organisation settings coming soon."),
+                onPress: () => router.push("/(tabs)/settings/organization"),
               }} />
             </Section>
 
@@ -212,8 +219,8 @@ export default function MenuScreen() {
               <MenuRow item={{
                 icon: "color-palette-outline",
                 label: "Theme & Appearance",
-                sub: "Light mode",
-                onPress: () => Alert.alert("Appearance", "Theme settings coming soon."),
+                sub: ACCENT_THEMES[accentTheme].name,
+                onPress: () => router.push("/(tabs)/settings/appearance"),
               }} />
             </Section>
 
@@ -241,9 +248,16 @@ export default function MenuScreen() {
               }} />
             </Section>
 
-            <Text style={{ textAlign: "center", color: "#CBD5E1", fontSize: 11, marginTop: 12, marginBottom: 8 }}>
-              Ryzha Financial Intelligence · v1.0.0
-            </Text>
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 12, marginBottom: 8 }}>
+              <Image
+                source={require("../../assets/logo.png")}
+                style={{ width: 14, height: 14, tintColor: "#CBD5E1" }}
+                resizeMode="contain"
+              />
+              <Text style={{ color: "#CBD5E1", fontSize: 11 }}>
+                Ryzha Financial Intelligence · v1.0.0
+              </Text>
+            </View>
           </ScrollView>
         </SafeAreaView>
       </LinearGradient>

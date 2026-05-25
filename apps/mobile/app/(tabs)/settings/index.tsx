@@ -10,6 +10,7 @@ import { useNavigation } from "expo-router"
 import { SafeAreaView } from "react-native-safe-area-context"
 import { Ionicons } from "@expo/vector-icons"
 import { LinearGradient } from "expo-linear-gradient"
+import { useTheme } from "@/lib/theme"
 
 function Field({
   label, value, onChange, placeholder, keyboardType, secureTextEntry, editable = true,
@@ -62,6 +63,7 @@ export default function ProfileSettingsScreen() {
   const { logout } = useAuth()
   const navigation = useNavigation()
   const queryClient = useQueryClient()
+  const { colors } = useTheme()
 
   const { data: profile, isLoading } = useQuery({
     queryKey: ["mobile-profile"],
@@ -127,7 +129,7 @@ export default function ProfileSettingsScreen() {
     <>
       <StatusBar barStyle="light-content" />
       <LinearGradient
-        colors={["#1E1B4B", "#3730A3", "#4F46E5"]}
+        colors={colors.gradient}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={{ flex: 1 }}
@@ -173,12 +175,12 @@ export default function ProfileSettingsScreen() {
                 <>
                   <View style={{ alignItems: "center", marginBottom: 28 }}>
                     <LinearGradient
-                      colors={["#4F46E5", "#7C3AED"]}
+                      colors={colors.gradient}
                       style={{
                         width: 80, height: 80, borderRadius: 26,
                         alignItems: "center", justifyContent: "center",
                         marginBottom: 12,
-                        shadowColor: "#4F46E5",
+                        shadowColor: colors.primary,
                         shadowOffset: { width: 0, height: 6 },
                         shadowOpacity: 0.3,
                         shadowRadius: 12,
@@ -189,8 +191,8 @@ export default function ProfileSettingsScreen() {
                     </LinearGradient>
                     <Text style={{ fontSize: 18, fontWeight: "800", color: "#0F172A" }}>{profile?.name ?? "—"}</Text>
                     {profile?.organization && (
-                      <View style={{ backgroundColor: "#EEF2FF", paddingHorizontal: 12, paddingVertical: 4, borderRadius: 20, marginTop: 6 }}>
-                        <Text style={{ fontSize: 12, color: "#4F46E5", fontWeight: "700" }}>{profile.organization.name}</Text>
+                      <View style={{ backgroundColor: colors.primaryLight, paddingHorizontal: 12, paddingVertical: 4, borderRadius: 20, marginTop: 6 }}>
+                        <Text style={{ fontSize: 12, color: colors.primary, fontWeight: "700" }}>{profile.organization.name}</Text>
                       </View>
                     )}
                   </View>
@@ -207,9 +209,9 @@ export default function ProfileSettingsScreen() {
                       disabled={updateMutation.isPending}
                       activeOpacity={0.85}
                       style={{
-                        backgroundColor: "#4F46E5", borderRadius: 14, paddingVertical: 14,
+                        backgroundColor: colors.primary, borderRadius: 14, paddingVertical: 14,
                         alignItems: "center", marginTop: 4,
-                        shadowColor: "#4F46E5", shadowOffset: { width: 0, height: 4 },
+                        shadowColor: colors.primary, shadowOffset: { width: 0, height: 4 },
                         shadowOpacity: 0.25, shadowRadius: 8, elevation: 3,
                       }}
                     >
