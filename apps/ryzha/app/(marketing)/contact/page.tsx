@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Mail, CheckCircle2, ArrowLeft, MessageSquare, Clock } from "lucide-react"
+import { Mail, CheckCircle2, Clock } from "lucide-react"
 
 export default function ContactPage() {
   const [form, setForm] = useState({ firstName: "", lastName: "", email: "", message: "" })
@@ -43,19 +43,21 @@ export default function ContactPage() {
   return (
     <div className="flex flex-col items-center w-full">
 
-      {/* ─── Narrow centered header ─── */}
-      <section className="w-full border-b">
-        <div className="container px-4 md:px-6 py-10">
-          <Link href="/" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-8">
-            <ArrowLeft className="h-3.5 w-3.5" />
-            Back to Ryzha
-          </Link>
-          <div className="max-w-xl space-y-2">
-            <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Contact</p>
-            <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">Get in touch</h1>
-            <p className="text-muted-foreground">
-              Have a question, want a demo, or just curious? We read every message.
-            </p>
+      {/* ─── Hero ─── */}
+      <section className="w-full relative overflow-hidden bg-background text-center border-b">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/8 via-transparent to-violet-500/5 pointer-events-none" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[500px] bg-primary/10 rounded-full blur-3xl opacity-40 pointer-events-none" />
+
+        <div className="container relative px-4 md:px-6 py-20 lg:py-28 flex flex-col items-center">
+          <div className="space-y-7 max-w-3xl flex flex-col items-center">
+            <div className="space-y-4">
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.08]">
+                Get in <span className="text-primary">touch</span>
+              </h1>
+              <p className="text-lg text-muted-foreground max-w-[580px] leading-relaxed mx-auto">
+                Have a question, want a demo, or just curious? We read every message.
+              </p>
+            </div>
           </div>
         </div>
       </section>
@@ -79,12 +81,6 @@ export default function ContactPage() {
                   color: "text-emerald-600 bg-emerald-500/10 dark:text-emerald-400",
                   title: "Response time",
                   lines: ["We typically respond", "within 24 hours."],
-                },
-                {
-                  icon: MessageSquare,
-                  color: "text-violet-600 bg-violet-500/10 dark:text-violet-400",
-                  title: "What to ask",
-                  lines: ["Product questions, demos,", "pricing, or anything else."],
                 },
               ].map(({ icon: Icon, color, title, lines }) => (
                 <div key={title} className="flex gap-4 p-5 rounded-2xl bg-background border">
