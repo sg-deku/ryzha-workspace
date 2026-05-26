@@ -9,6 +9,7 @@ import { runGLCodingAgent } from "./p2p/gl-coding"
 import { runCollectionsAgent } from "./o2c/collections"
 import { runCashApplicationAgent } from "./o2c/cash-application"
 import { runCreditNoteAgent } from "./o2c/credit-note"
+import { runInvoiceGenerationAgent } from "./o2c/invoice-generation"
 import { runPaymentSchedulerAgent } from "./p2p/payment-scheduler"
 import { sendVoiceSummary, sendSMSNotification, createNotification } from "@/lib/notifications"
 import { publishEvent } from "@/lib/events"
@@ -337,7 +338,25 @@ export async function startO2CWorkflow(salesOrderId: string, scenario?: string) 
 
     await appendO2CLog("Orchestrator", `O2C Workflow started | Sales Order ID: ${salesOrderId} | Order #: ${order.orderNumber} | Customer: ${order.customer.name} (${order.customer.email ?? "no email"}) | Amount: $${order.totalAmount} | Status: ${order.status}`)
 
-    if (order.status === "PAID") {
+    if (order.status === "APPROVED") {
+      await appendO2CLog("Orchestrator", `[1/1] Order is APPROVED — triggering Invoice Generation Agent...`)
+      try {
+        const invResult = await runInvoiceGenerationAgent(salesOrderId, orgId)
+        await appendO2CLog("InvoiceGen", invResult.message)
+      } catch (err: any) {
+        await appendO2CLog("InvoiceGen", `FAILED — ${err.message}`)
+        throw err
+      }
+      await prisma.salesOrder.update({ where: { id: salesOrderId }, data: { workflowStatus: "completed", agentLogs: [...currentLogs, ...logs] } })
+      
+      await createNotification({
+        organizationId: orgId,
+        type: "SUCCESS",
+        title: "Invoice Generated",
+        message: `Invoice generated for Order #${order.orderNumber}.`,
+        link: `/sales-orders/${salesOrderId}`
+      })
+    } else if (order.status === "PAID") {
       const invoiceId = (order as any).invoiceId;
       if (invoiceId) {
         const existingTx = await prisma.transaction.findFirst({

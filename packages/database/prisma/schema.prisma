@@ -232,11 +232,13 @@ model SalesOrder {
   agentLogs      Json?    @default("[]")
   workflowStatus String?
   organizationId String
+  invoiceId      String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
   customer     Customer         @relation(fields: [customerId], references: [id])
   organization Organization     @relation(fields: [organizationId], references: [id])
+  invoice      Invoice?         @relation(fields: [invoiceId], references: [id])
   lineItems    SalesOrderLine[]
 }
 
@@ -315,6 +317,7 @@ model Invoice {
   payments     Payment[]
   creditNotes  CreditNote[]
   transactions Transaction[]
+  salesOrders  SalesOrder[]
   organization Organization      @relation(fields: [organizationId], references: [id])
 }
 

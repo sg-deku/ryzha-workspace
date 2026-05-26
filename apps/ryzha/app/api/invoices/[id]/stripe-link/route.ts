@@ -4,13 +4,13 @@ import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { getStripeForOrg } from "@/lib/stripe"
 
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions)
   if (!session?.user?.organizationId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const { id } = params
+  const { id } = await params
   const orgId = session.user.organizationId
 
   const invoice = await prisma.invoice.findUnique({

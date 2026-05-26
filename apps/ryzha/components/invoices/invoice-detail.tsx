@@ -133,6 +133,9 @@ export function InvoiceDetail({ invoice: initialInvoice }: { invoice: Invoice })
   const [creditNoteDialogOpen, setCreditNoteDialogOpen] = useState(false)
   const [submittingPayment, setSubmittingPayment] = useState(false)
   const [submittingCreditNote, setSubmittingCreditNote] = useState(false)
+  const [disputeDialogOpen, setDisputeDialogOpen] = useState(false)
+  const [submittingDispute, setSubmittingDispute] = useState(false)
+  const [disputeReason, setDisputeReason] = useState("")
 
   const [paymentForm, setPaymentForm] = useState({
     amount: "",
@@ -271,6 +274,33 @@ export function InvoiceDetail({ invoice: initialInvoice }: { invoice: Invoice })
     }
   }
 
+  const handleRaiseDispute = async () => {
+    if (!disputeReason.trim()) {
+      toast.error("Reason is required")
+      return
+    }
+    setSubmittingDispute(true)
+    try {
+      const res = await fetch(`/api/invoices/${invoice.id}/dispute`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason: disputeReason }),
+      })
+      if (res.ok) {
+        toast.success("Dispute raised and analyzed by AI")
+        setDisputeDialogOpen(false)
+        setDisputeReason("")
+      } else {
+        const err = await res.json()
+        toast.error(err.error || "Failed to raise dispute")
+      }
+    } catch {
+      toast.error("An error occurred")
+    } finally {
+      setSubmittingDispute(false)
+    }
+  }
+
   const canIssueCredit = totalPaid > 0
 
   return (
@@ -325,6 +355,9 @@ export function InvoiceDetail({ invoice: initialInvoice }: { invoice: Invoice })
               )}
               <DropdownMenuItem onClick={handleMarkAsPaid} disabled={isUpdating || invoice.status === "PAID"}>
                 Mark as Paid (manual)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setDisputeDialogOpen(true)}>
+                Raise Dispute
               </DropdownMenuItem>
               <DropdownMenuItem className="text-destructive">Delete Invoice</DropdownMenuItem>
             </DropdownMenuContent>
@@ -693,6 +726,29 @@ export function InvoiceDetail({ invoice: initialInvoice }: { invoice: Invoice })
         pdfUrl={invoice.pdfUrl || ""}
         invoiceNumber={invoice.invoiceNumber}
       />
+      <Dialog open={disputeDialogOpen} onOpenChange={setDisputeDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Raise Dispute</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Reason for Dispute</Label>
+              <Textarea 
+                placeholder="Describe the customer's dispute..." 
+                value={disputeReason} 
+                onChange={(e) => setDisputeReason(e.target.value)} 
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDisputeDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleRaiseDispute} disabled={submittingDispute}>
+              {submittingDispute ? "Analyzing..." : "Submit Dispute"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
