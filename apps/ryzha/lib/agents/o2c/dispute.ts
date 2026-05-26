@@ -5,7 +5,7 @@ export async function runDisputeAgent(invoiceId: string, reason: string, organiz
   const response = await callLLM(organizationId, [
     { role: "system", content: "Classify the dispute reason and suggest a resolution strategy. Respond ONLY with JSON: { \"classification\": \"string\", \"suggested_action\": \"string\", \"urgency\": \"low|medium|high\", \"reasoning\": \"string\" }" },
     { role: "user", content: `Invoice ID: ${invoiceId}, Reason: ${reason}` }
-  ], "agent_o2c_dispute", { modelName: "gpt-4o-mini", temperature: 0 })
+  ], "agent_o2c_dispute", { temperature: 0 })
 
   let parsed: any = {}
   try {

@@ -4,7 +4,7 @@ export async function runInvoiceCaptureAgent(invoiceImage: string, organizationI
   const response = await callLLM(organizationId, [
     { role: "system", content: "Extract vendor, amount, date, and line items from this invoice image data." },
     { role: "user", content: `Invoice Image Data: ${invoiceImage}` }
-  ], "agent_p2p_invoice_capture", { modelName: "gpt-4o-mini", temperature: 0 })
+  ], "agent_p2p_invoice_capture", { temperature: 0 })
 
   return {
     agent: "Invoice Capture Agent",

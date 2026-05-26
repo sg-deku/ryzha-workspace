@@ -13,7 +13,7 @@ export async function runVendorIntakeAgent(organizationId: string, input: { name
       const response = await callLLM(organizationId, [
         { role: "system", content: "Extract vendor details (name, email, taxId, address) from the provided text. Respond in JSON." },
         { role: "user", content: input.text }
-      ], "agent_p2p_vendor", { modelName: "gpt-4o-mini", temperature: 0 })
+      ], "agent_p2p_vendor", { temperature: 0 })
 
       try {
         const parsed = parseAIJson(response.content as string)

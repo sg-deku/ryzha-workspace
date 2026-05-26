@@ -7,7 +7,7 @@ export async function runOrderIntakeAgent(organizationId: string, input: { text:
     const response = await callLLM(organizationId, [
       { role: "system", content: "Extract sales order details (customer_name, customer_email, items: [{ description, quantity, price }]) from text. Respond in JSON." },
       { role: "user", content: input.text }
-    ], "agent_o2c_order_intake", { modelName: "gpt-4o-mini", temperature: 0 })
+    ], "agent_o2c_order_intake", { temperature: 0 })
 
     const parsed = parseAIJson(response.content as string)
     

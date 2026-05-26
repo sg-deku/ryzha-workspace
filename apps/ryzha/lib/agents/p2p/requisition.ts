@@ -11,7 +11,7 @@ export async function runRequisitionAgent(requisitionData: any, organizationId: 
     Check if the request is within typical budget patterns.
   `),
     new HumanMessage(`Organization ID: ${organizationId}\nRequest: ${JSON.stringify(requisitionData)}`)
-  ], "agent_p2p_requisition", { modelName: "gpt-4o-mini", temperature: 0 })
+  ], "agent_p2p_requisition", { temperature: 0 })
 
   // Simple mock of structured extraction for now
   const parsedData = {

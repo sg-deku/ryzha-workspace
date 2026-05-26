@@ -30,7 +30,7 @@ export async function runR2RAgent(transactionId: string) {
           role: "user",
           content: transaction.description
         }
-      ], "agent_r2r", { modelName: "gpt-4o-mini", temperature: 0 })
+      ], "agent_r2r", { temperature: 0 })
 
       // In a real implementation with structured output:
       // const result = await model.withStructuredOutput(extractionSchema).invoke(...)

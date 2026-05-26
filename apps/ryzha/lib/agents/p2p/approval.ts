@@ -13,7 +13,7 @@ export async function runApprovalAgent(poId: string, organizationId: string) {
   const response = await callLLM(organizationId, [
     { role: "system", content: `You are an AI Approval Routing Agent. Analyze purchase orders and decide who needs to approve them based on amount, category, and historical data. Respond ONLY with JSON: { "approvers": ["Role 1", "Role 2"], "threshold": 1000, "reasoning": "string" }` },
     { role: "user", content: `PO ID: ${poId}, Vendor: ${po.vendor.name}, Total: ${po.totalAmount}, Items: ${JSON.stringify(po.lineItems)}` }
-  ], "agent_p2p_approval", { modelName: "gpt-4o-mini", temperature: 0 })
+  ], "agent_p2p_approval", { temperature: 0 })
 
   let parsed: any = {}
   try {

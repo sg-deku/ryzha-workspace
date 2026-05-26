@@ -39,7 +39,7 @@ export async function runOMAgent(transactionId: string) {
           role: "user",
           content: `Transaction: ${tx.description}, Amount: ${tx.amount}`
         }
-      ], "agent_om", { modelName: "gpt-4o-mini", temperature: 0 })
+      ], "agent_om", { temperature: 0 })
 
       try {
         const result = parseAIJson(response.content as string) as any

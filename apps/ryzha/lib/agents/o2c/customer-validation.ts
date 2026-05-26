@@ -4,7 +4,7 @@ export async function runCustomerValidationAgent(customerData: any, organization
   const response = await callLLM(organizationId, [
     { role: "system", content: "Validate the customer data for completeness and potential fraud risk." },
     { role: "user", content: `Customer Data: ${JSON.stringify(customerData)}` }
-  ], "agent_o2c_validation", { modelName: "gpt-4o-mini", temperature: 0 })
+  ], "agent_o2c_validation", { temperature: 0 })
 
   return {
     agent: "Customer Validation Agent",
