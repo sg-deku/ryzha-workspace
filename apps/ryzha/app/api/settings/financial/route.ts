@@ -46,6 +46,13 @@ export async function PUT(req: Request) {
       }
     }
 
+    if (updateData.stripeWebhookSecret) {
+      const secret = updateData.stripeWebhookSecret.trim()
+      if (!secret.startsWith("whsec_")) {
+        return NextResponse.json({ error: "Invalid Webhook Signing Secret. It must start with 'whsec_'" }, { status: 400 })
+      }
+    }
+
     const updated = await prisma.financialSettings.upsert({
       where: { organizationId: session.user.organizationId },
       update: updateData,
