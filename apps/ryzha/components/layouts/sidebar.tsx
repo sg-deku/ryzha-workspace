@@ -24,6 +24,7 @@ import {
   Banknote,
   FileX,
   BookOpen,
+  Zap,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -173,6 +174,12 @@ export function Sidebar() {
             href="/reports"
             icon={BarChart}
             label="Reports"
+            collapsed={collapsed}
+          />
+          <SidebarItem
+            href="/settings/ai-usage"
+            icon={Zap}
+            label="AI Usage"
             collapsed={collapsed}
           />
           <SidebarItem

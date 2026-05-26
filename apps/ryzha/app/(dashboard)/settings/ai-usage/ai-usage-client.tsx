@@ -272,18 +272,18 @@ export function AIUsagePage() {
             <Card className="card-elevated">
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2">
-                  <Server className="h-4 w-4" />
-                  By Provider (All Time)
+                  <Bot className="h-4 w-4" />
+                  Usage per Agent / Feature
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {data.byProvider.length === 0 ? (
+                {data.byFeature.length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center py-4">No data</p>
                 ) : (
                   <ResponsiveContainer width="100%" height={180}>
                     <PieChart>
                       <Pie
-                        data={data.byProvider.map((p) => ({ name: p.provider, value: p.totalTokens }))}
+                        data={data.byFeature.map((f) => ({ name: featureLabel(f.feature), value: f.totalTokens, feature: f.feature }))}
                         cx="50%"
                         cy="50%"
                         innerRadius={50}
@@ -293,8 +293,8 @@ export function AIUsagePage() {
                         label={((props: any) => `${props.name ?? ""} ${(((props.percent as number) ?? 0) * 100).toFixed(0)}%`) as any}
                         labelLine={false}
                       >
-                        {data.byProvider.map((p) => (
-                          <Cell key={p.provider} fill={PROVIDER_COLORS[p.provider] ?? "#94a3b8"} />
+                        {data.byFeature.map((f) => (
+                          <Cell key={f.feature} fill={featureColor(f.feature)} />
                         ))}
                       </Pie>
                       <Tooltip formatter={((v: any) => [fmt(Number(v)), "Tokens"]) as any} />
