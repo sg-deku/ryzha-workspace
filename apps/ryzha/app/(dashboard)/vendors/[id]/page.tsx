@@ -80,6 +80,16 @@ export default async function VendorDetailsPage({ params }: { params: Promise<{ 
                 <p className="text-sm font-medium text-muted-foreground">Payment Terms</p>
                 <p>{vendor.paymentTerms || "N/A"}</p>
               </div>
+              <div className="col-span-2">
+                <p className="text-sm font-medium text-muted-foreground">Address</p>
+                <p className="whitespace-pre-wrap">
+                  {vendor.address
+                    ? typeof vendor.address === "string"
+                      ? vendor.address
+                      : Object.values(vendor.address as Record<string, string>).filter(Boolean).join(", ")
+                    : "N/A"}
+                </p>
+              </div>
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Created</p>
                 <p>{new Date(vendor.createdAt).toLocaleDateString()}</p>

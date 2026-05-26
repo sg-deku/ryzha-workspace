@@ -304,7 +304,7 @@ export default async function LandingPage() {
         </div>
       </section>
 
-      {/* ─── Aria Section ─── */}
+      {/* ─── Lyla Section ─── */}
       <section className="w-full py-20 bg-muted/50">
         <div className="container px-4 md:px-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
@@ -314,17 +314,17 @@ export default async function LandingPage() {
                 Built into Ryzha
               </div>
               <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
-                Meet Aria, Ryzha's AI mode
+                Meet Lyla, Ryzha's AI mode
               </h2>
               <p className="text-muted-foreground text-lg">
-                Switch into Aria mode and run your entire accounting workflow through conversation. No forms, no menus — just tell Ryzha what needs to happen.
+                Switch into Lyla mode and run your entire accounting workflow through conversation. No forms, no menus — just tell Ryzha what needs to happen.
               </p>
               <div className="space-y-3">
                 {[
                   "Create invoices, expenses, and orders in plain language",
                   "Query live financial data — overdue invoices, burn rate, runway",
                   "Every action links directly to the created record",
-                  "Persistent session memory — Aria follows the conversation",
+                  "Persistent session memory — Lyla follows the conversation",
                 ].map((item) => (
                   <div key={item} className="flex items-start gap-3">
                     <CheckCircle2 className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
@@ -332,8 +332,8 @@ export default async function LandingPage() {
                   </div>
                 ))}
               </div>
-              <Link href="/aria-mode" className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:text-primary/80 transition-colors">
-                See everything Aria can do
+              <Link href="/lyla-mode" className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:text-primary/80 transition-colors">
+                See everything Lyla can do
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
@@ -348,7 +348,7 @@ export default async function LandingPage() {
                     <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-emerald-500 rounded-full border-2 border-card" />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold">Aria</p>
+                    <p className="text-sm font-semibold">Lyla</p>
                     <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Ryzha AI Mode</p>
                   </div>
                 </div>
@@ -397,7 +397,7 @@ export default async function LandingPage() {
               <div className="border-t bg-card px-4 py-3">
                 <div className="flex items-center gap-3 bg-background border rounded-xl px-4 py-2 opacity-50">
                   <Sparkles className="h-4 w-4 text-primary/50" />
-                  <span className="text-xs text-muted-foreground">Tell Aria what to do...</span>
+                  <span className="text-xs text-muted-foreground">Tell Lyla what to do...</span>
                 </div>
               </div>
             </div>
@@ -452,7 +452,7 @@ export default async function LandingPage() {
                         <div className="w-5 h-5 rounded-md bg-primary flex items-center justify-center">
                           <Zap className="h-2.5 w-2.5 text-white" />
                         </div>
-                        <p className="text-white text-xs font-bold">Aria AI · This Month</p>
+                        <p className="text-white text-xs font-bold">Lyla AI · This Month</p>
                       </div>
                       <div className="flex gap-2">
                         {[["14.2K", "Tokens"], ["48", "Requests"], ["31", "Messages"]].map(([v, l]) => (
@@ -482,7 +482,7 @@ export default async function LandingPage() {
                       {[
                         { icon: LayoutDashboard, label: "Home", active: true },
                         { icon: Wallet, label: "Finance", active: false },
-                        { icon: Bot, label: "Aria", active: false },
+                        { icon: Bot, label: "Lyla", active: false },
                         { icon: Bell, label: "Menu", active: false },
                       ].map(({ icon: Icon, label, active }) => (
                         <div key={label} className="flex flex-col items-center gap-0.5">
@@ -507,13 +507,13 @@ export default async function LandingPage() {
                 Ryzha in your pocket
               </h2>
               <p className="text-muted-foreground text-lg">
-                The full power of Ryzha's financial intelligence, now on mobile. Monitor runway, manage invoices, chat with Aria, and stay on top of your finances — anywhere.
+                The full power of Ryzha's financial intelligence, now on mobile. Monitor runway, manage invoices, chat with Lyla, and stay on top of your finances — anywhere.
               </p>
               <div className="space-y-4">
                 {[
                   { icon: LayoutDashboard, title: "Live Dashboard", desc: "Cash balance, burn rate, runway, and KPIs at a glance with real-time data." },
                   { icon: Wallet, title: "Finance & Operations", desc: "Create invoices, manage customers, vendors, expenses and payments on the go." },
-                  { icon: Bot, title: "Aria on Mobile", desc: "Chat with Aria for instant financial insights, queries, and AI-assisted actions." },
+                  { icon: Bot, title: "Lyla on Mobile", desc: "Chat with Lyla for instant financial insights, queries, and AI-assisted actions." },
                   { icon: Bell, title: "Smart Notifications", desc: "Instant alerts for overdue invoices, payment receipts, and runway warnings." },
                 ].map(({ icon: Icon, title, desc }) => (
                   <div key={title} className="flex items-start gap-4">

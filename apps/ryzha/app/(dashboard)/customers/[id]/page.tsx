@@ -69,7 +69,21 @@ export default async function CustomerDetailsPage({ params }: { params: Promise<
               </div>
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Credit Limit</p>
-                <p>${customer.creditLimit.toFixed(2)}</p>
+                <p>${customer.creditLimit?.toFixed(2) || "0.00"}</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Payment Terms</p>
+                <p>{customer.paymentTerms || "N/A"}</p>
+              </div>
+              <div className="col-span-2">
+                <p className="text-sm font-medium text-muted-foreground">Address</p>
+                <p className="whitespace-pre-wrap">
+                  {customer.address
+                    ? typeof customer.address === "string"
+                      ? customer.address
+                      : Object.values(customer.address as Record<string, string>).filter(Boolean).join(", ")
+                    : "N/A"}
+                </p>
               </div>
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Created</p>

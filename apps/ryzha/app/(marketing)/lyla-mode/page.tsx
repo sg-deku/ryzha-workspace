@@ -11,34 +11,34 @@ const capabilities = [
   { icon: DollarSign,    color: "text-emerald-600 bg-emerald-500/10 dark:text-emerald-400",        label: "Log Expenses",                desc: "Record and categorise expenses instantly without navigating any form." },
   { icon: Users,         color: "text-blue-600 bg-blue-500/10 dark:text-blue-400",                label: "Manage Customers & Vendors",  desc: "Add new customers or vendors with payment terms in a single sentence." },
   { icon: Package,       color: "text-violet-600 bg-violet-500/10 dark:text-violet-400",          label: "Purchase & Sales Orders",     desc: "Draft purchase orders and sales orders linked to existing vendors and customers." },
-  { icon: Search,        color: "text-amber-600 bg-amber-500/10 dark:text-amber-400",             label: "Query Financial Data",        desc: "Ask for overdue invoices, expense lists, or vendor data — Aria fetches real data live." },
+  { icon: Search,        color: "text-amber-600 bg-amber-500/10 dark:text-amber-400",             label: "Query Financial Data",        desc: "Ask for overdue invoices, expense lists, or vendor data — Lyla fetches real data live." },
   { icon: BarChart3,     color: "text-rose-600 bg-rose-500/10 dark:text-rose-400",               label: "Financial Overview",          desc: "Get a snapshot of cash balance, outstanding AR, monthly burn rate, and runway on demand." },
   { icon: ShoppingCart,  color: "text-indigo-600 bg-indigo-500/10 dark:text-indigo-400",         label: "Revenue & Cost Analysis",     desc: "Understand where money comes from and where it goes, without opening a single report." },
-  { icon: MessageSquare, color: "text-teal-600 bg-teal-500/10 dark:text-teal-400",               label: "Persistent Conversation",     desc: "Aria remembers context for your entire session — no re-explaining, no context loss." },
+  { icon: MessageSquare, color: "text-teal-600 bg-teal-500/10 dark:text-teal-400",               label: "Persistent Conversation",     desc: "Lyla remembers context for your entire session — no re-explaining, no context loss." },
 ]
 
 const howItWorks = [
   {
     step: "01",
-    title: "Switch into Aria mode",
-    desc: "Hit the Launch Aria button in the top bar from anywhere inside Ryzha. The full-screen AI mode opens instantly — no setup, no configuration.",
+    title: "Switch into Lyla mode",
+    desc: "Hit the Launch Lyla button in the top bar from anywhere inside Ryzha. The full-screen AI mode opens instantly — no setup, no configuration.",
     example: "Available on every page via the header — included in your Ryzha account.",
   },
   {
     step: "02",
-    title: "Tell Aria what you need",
-    desc: "Type in plain language. No forms, no menus. Aria parses your intent and executes directly against your live financial data.",
+    title: "Tell Lyla what you need",
+    desc: "Type in plain language. No forms, no menus. Lyla parses your intent and executes directly against your live financial data.",
     example: "\"Create an invoice for Acme Corp — 5 hours consulting at $200/hr, due in 30 days\"",
   },
   {
     step: "03",
     title: "Review and continue",
-    desc: "Aria confirms every action with a direct link to the created record. Follow up, query related data, or jump to the next task — the conversation flows naturally.",
+    desc: "Lyla confirms every action with a direct link to the created record. Follow up, query related data, or jump to the next task — the conversation flows naturally.",
     example: "✓  Invoice INV-0004 created — $1,000 due 23 Jun 2026  →  View Invoice",
   },
 ]
 
-export default function AriaModeDetailPage() {
+export default function LylaModeDetailPage() {
   return (
     <div className="flex flex-col items-center w-full">
 
@@ -65,12 +65,12 @@ export default function AriaModeDetailPage() {
 
               <div className="space-y-4">
                 <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.08]">
-                  Meet Aria, Ryzha's
+                  Meet Lyla, Ryzha's
                   <br />
                   <span className="text-primary">AI mode</span>
                 </h1>
                 <p className="text-lg text-muted-foreground max-w-[480px] leading-relaxed">
-                  Aria is not a separate product. It's how you interact with Ryzha when you want to move faster — run your entire accounting workflow through a single conversation.
+                  Lyla is not a separate product. It's how you interact with Ryzha when you want to move faster — run your entire accounting workflow through a single conversation.
                 </p>
               </div>
 
@@ -96,7 +96,7 @@ export default function AriaModeDetailPage() {
               </div>
             </div>
 
-            {/* Right: Aria chat mockup */}
+            {/* Right: Lyla chat mockup */}
             <div className="relative flex justify-center lg:justify-end">
               <div className="absolute -inset-4 bg-primary/10 blur-3xl rounded-3xl opacity-30" />
               <div className="relative w-full max-w-[420px] rounded-2xl border bg-background shadow-2xl overflow-hidden">
@@ -109,7 +109,7 @@ export default function AriaModeDetailPage() {
                       <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-card" />
                     </div>
                     <div>
-                      <p className="text-sm font-bold">Aria</p>
+                      <p className="text-sm font-bold">Lyla</p>
                       <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Ryzha AI Mode · Active</p>
                     </div>
                   </div>
@@ -170,7 +170,7 @@ export default function AriaModeDetailPage() {
                 <div className="border-t bg-card px-4 py-3">
                   <div className="flex items-center gap-3 bg-background border rounded-xl px-4 py-2 opacity-50">
                     <Sparkles className="h-4 w-4 text-primary/50" />
-                    <span className="text-xs text-muted-foreground">Tell Aria what to do...</span>
+                    <span className="text-xs text-muted-foreground">Tell Lyla what to do...</span>
                   </div>
                 </div>
               </div>
@@ -192,7 +192,7 @@ export default function AriaModeDetailPage() {
               Three steps to zero friction
             </h2>
             <p className="text-muted-foreground text-lg">
-              Launch Aria from anywhere inside Ryzha. No separate account, no configuration.
+              Launch Lyla from anywhere inside Ryzha. No separate account, no configuration.
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
@@ -219,7 +219,7 @@ export default function AriaModeDetailPage() {
               Full capabilities
             </div>
             <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-3">
-              What you can do with Aria
+              What you can do with Lyla
             </h2>
             <p className="text-muted-foreground text-lg">
               Every core accounting action, accessible through a single conversational interface.
@@ -254,11 +254,11 @@ export default function AriaModeDetailPage() {
               </h2>
               <div className="space-y-5">
                 {[
-                  { title: "Full-screen focus mode",     desc: "Aria takes over the screen so you can focus entirely on your finances without distractions." },
+                  { title: "Full-screen focus mode",     desc: "Lyla takes over the screen so you can focus entirely on your finances without distractions." },
                   { title: "Persistent session memory",  desc: "Your conversation persists for the duration of your session — follow-up questions just work." },
                   { title: "Embedded entity links",      desc: "Every created record includes a direct link so you can jump to the invoice, expense, or customer immediately." },
-                  { title: "Uses your org's AI provider",desc: "Aria runs on the AI provider configured by your admin — no separate key or setup needed." },
-                  { title: "No training required",       desc: "Just describe what you want in plain English. Aria handles the rest." },
+                  { title: "Uses your org's AI provider",desc: "Lyla runs on the AI provider configured by your admin — no separate key or setup needed." },
+                  { title: "No training required",       desc: "Just describe what you want in plain English. Lyla handles the rest." },
                 ].map(({ title, desc }) => (
                   <div key={title} className="flex gap-3">
                     <CheckCircle2 className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />

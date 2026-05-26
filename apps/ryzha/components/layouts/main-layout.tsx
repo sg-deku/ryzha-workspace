@@ -17,7 +17,6 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { CommandPalette } from "@/components/ui/command-palette"
-import { FloatingAIChat } from "@/components/chat/floating-ai-chat"
 import { NotificationBell } from "@/components/dashboard/notification-bell"
 import { cn } from "@/lib/utils"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
@@ -32,18 +31,18 @@ interface MainLayoutProps {
 
 export function MainLayout({ children, session }: MainLayoutProps) {
   const router = useRouter()
-  const [ariaLaunching, setAriaLaunching] = useState(false)
+  const [lylaLaunching, setLylaLaunching] = useState(false)
 
   const userInitials = session?.user?.name
     ? session.user.name.split(" ").map((n) => n[0]).join("").toUpperCase()
     : "U"
 
-  const launchAria = () => {
-    if (ariaLaunching) return
-    setAriaLaunching(true)
+  const launchLyla = () => {
+    if (lylaLaunching) return
+    setLylaLaunching(true)
     setTimeout(() => {
-      router.push("/aria")
-      setAriaLaunching(false)
+      router.push("/lyla")
+      setLylaLaunching(false)
     }, 350)
   }
 
@@ -72,21 +71,21 @@ export function MainLayout({ children, session }: MainLayoutProps) {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button
-                    onClick={launchAria}
+                    onClick={launchLyla}
                     className={cn(
                       "relative flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium transition-all duration-300 overflow-hidden group",
                       "bg-gradient-to-r from-violet-600/90 to-indigo-600/90 hover:from-violet-500 hover:to-indigo-500",
                       "text-white shadow-md shadow-violet-500/20 hover:shadow-violet-500/40",
                       "hover:scale-[1.02] active:scale-[0.98]",
-                      ariaLaunching && "opacity-80 scale-95"
+                      lylaLaunching && "opacity-80 scale-95"
                     )}
                   >
                     <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
-                    {ariaLaunching
+                    {lylaLaunching
                       ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
                       : <Zap className="h-3.5 w-3.5" />
                     }
-                    <span className="hidden sm:inline">{ariaLaunching ? "Launching..." : "Launch Aria"}</span>
+                    <span className="hidden sm:inline">{lylaLaunching ? "Launching..." : "Launch Lyla"}</span>
                   </button>
                 </TooltipTrigger>
                 <TooltipContent>AI Accounting Co-pilot</TooltipContent>
@@ -136,7 +135,6 @@ export function MainLayout({ children, session }: MainLayoutProps) {
       </div>
       <CommandPalette />
       <BottomNav />
-      <FloatingAIChat />
     </div>
   )
 }

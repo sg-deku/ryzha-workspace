@@ -88,6 +88,7 @@ export async function startAgentWorkflow(transactionId: string) {
       afterAuditor = await runAuditorAgent(transactionId)
     } catch (err: any) {
       await logAndPublish("Auditor", `FAILED — unexpected error: ${err.message}`)
+      await logAndPublish("Orchestrator", `Workflow ERROR | Auditor failed.`)
       await prisma.transaction.update({ where: { id: transactionId }, data: { workflowStatus: "error", agentLogs: [...currentLogs, ...logs] } })
       return
     }
@@ -95,6 +96,7 @@ export async function startAgentWorkflow(transactionId: string) {
     if (!afterAuditor || afterAuditor.auditStatus === "rejected") {
       const status = afterAuditor?.auditStatus ?? "unknown"
       await logAndPublish("Auditor", `FAILED — audit status: ${status}. No signed contract found matching Payment Intent ${transaction.stripePaymentIntentId}. Create a contract record under Contracts and re-run.`)
+      await logAndPublish("Orchestrator", `Workflow ERROR | Auditor rejected transaction.`)
       await prisma.transaction.update({ where: { id: transactionId }, data: { workflowStatus: "error", agentLogs: [...currentLogs, ...logs] } })
       return
     }
@@ -127,12 +129,12 @@ export async function startAgentWorkflow(transactionId: string) {
       link: `/transactions/${transactionId}`
     })
 
+    await logAndPublish("Orchestrator", `Workflow COMPLETED | Transaction ID: ${transactionId} | $${transaction.amount} from ${transaction.customerEmail ?? "unknown"} fully processed.`)
+
     await prisma.transaction.update({
       where: { id: transactionId },
       data: { workflowStatus: "completed", agentLogs: [...currentLogs, ...logs] },
     })
-
-    await logAndPublish("Orchestrator", `Workflow COMPLETED | Transaction ID: ${transactionId} | $${transaction.amount} from ${transaction.customerEmail ?? "unknown"} fully processed.`)
 
     await publishEvent(`org:${orgId}:events`, {
       type: "workflow_completed",
@@ -143,6 +145,7 @@ export async function startAgentWorkflow(transactionId: string) {
   } catch (error) {
     const errMsg = error instanceof Error ? error.message : "Unknown error"
     console.error("Workflow error:", error)
+    await logAndPublish("Orchestrator", `Workflow ERROR | ${errMsg}`)
     await prisma.transaction.update({
       where: { id: transactionId },
       data: { workflowStatus: "error", agentLogs: [...currentLogs, ...logs] },
@@ -274,7 +277,7 @@ export async function startP2PWorkflow(vendorInvoiceId: string) {
         link: `/vendor-invoices/${vendorInvoiceId}`
       })
     } else {
-      await appendP2PLog("Orchestrator", `P2P Workflow STOPPED | Invoice #${updated.invoiceNumber} status is "${updated.status}". Manual review required before expense is created.`)
+      await appendP2PLog("Orchestrator", `P2P Workflow ERROR | STOPPED | Invoice #${updated.invoiceNumber} status is "${updated.status}". Manual review required before expense is created.`)
       await prisma.vendorInvoice.update({ where: { id: vendorInvoiceId }, data: { workflowStatus: "error", agentLogs: [...currentLogs, ...logs] } })
 
       await createNotification({
@@ -347,6 +350,7 @@ export async function startO2CWorkflow(salesOrderId: string, scenario?: string) 
         await appendO2CLog("InvoiceGen", `FAILED — ${err.message}`)
         throw err
       }
+      await appendO2CLog("Orchestrator", `O2C Workflow COMPLETED | Invoice Generated.`)
       await prisma.salesOrder.update({ where: { id: salesOrderId }, data: { workflowStatus: "completed", agentLogs: [...currentLogs, ...logs] } })
       
       await createNotification({
@@ -396,6 +400,7 @@ export async function startO2CWorkflow(salesOrderId: string, scenario?: string) 
         },
       })
       await appendO2CLog("Orchestrator", `[2/2] Transaction created | Transaction ID: ${transaction.id} | Handing off to R2R → O&M → Auditor → FP&A pipeline...`)
+      await appendO2CLog("Orchestrator", `O2C Workflow COMPLETED | Handed off to financial pipeline.`)
       await prisma.salesOrder.update({ where: { id: salesOrderId }, data: { workflowStatus: "completed", agentLogs: [...currentLogs, ...logs] } })
 
       after(startAgentWorkflow(transaction.id).catch(console.error))
@@ -424,6 +429,7 @@ export async function startO2CWorkflow(salesOrderId: string, scenario?: string) 
       })
     } else {
       await appendO2CLog("Orchestrator", `O2C Workflow SKIPPED | Order #${order.orderNumber} is in status "${order.status}" — expected PAID or INVOICED. No action taken.`)
+      await appendO2CLog("Orchestrator", `O2C Workflow ERROR | Invalid order status.`)
       await prisma.salesOrder.update({ where: { id: salesOrderId }, data: { workflowStatus: "error", agentLogs: [...currentLogs, ...logs] } })
     }
 

@@ -41,7 +41,7 @@ function MessageBubble({ message }: { message: ChatMessage }) {
 
 export default function ChatScreen() {
   const [messages, setMessages] = useState<ChatMessage[]>([
-    { role: "assistant", content: "Hi! I'm Aria, your Ryzha financial assistant. Ask me anything about your finances." },
+    { role: "assistant", content: "Hi! I'm Lyla, your Ryzha financial assistant. Ask me anything about your finances." },
   ])
   const [input, setInput] = useState("")
   const [loading, setLoading] = useState(false)
@@ -86,7 +86,7 @@ export default function ChatScreen() {
           <Text className="text-white font-bold text-sm">A</Text>
         </View>
         <View>
-          <Text className="text-base font-bold text-slate-900">Aria</Text>
+          <Text className="text-base font-bold text-slate-900">Lyla</Text>
           <Text className="text-xs text-slate-400">Financial AI Assistant</Text>
         </View>
       </View>
@@ -137,7 +137,7 @@ export default function ChatScreen() {
         <View className="flex-row items-end gap-2 px-4 pb-4 pt-2 bg-white border-t border-slate-100">
           <TextInput
             className="flex-1 border border-slate-200 rounded-2xl px-4 py-3 text-sm text-slate-900 bg-slate-50 max-h-28"
-            placeholder="Ask Aria anything…"
+            placeholder="Ask Lyla anything…"
             placeholderTextColor="#94a3b8"
             value={input}
             onChangeText={setInput}

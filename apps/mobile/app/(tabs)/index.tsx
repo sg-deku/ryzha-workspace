@@ -287,7 +287,7 @@ export default function DashboardScreen() {
                     />
                     <QuickAction
                       icon="sparkles-outline"
-                      label="Ask Aria"
+                      label="Ask Lyla"
                       onPress={() => router.push("/(tabs)/chat")}
                     />
                     <QuickAction
@@ -366,7 +366,7 @@ export default function DashboardScreen() {
                 {(data || !isLoading) && (
                   <View style={{ paddingHorizontal: 16, marginTop: 24 }}>
                     <Text style={{ fontSize: 12, fontWeight: "700", color: "#94A3B8", textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 12 }}>
-                      Aria AI Usage · This Month
+                      Lyla AI Usage · This Month
                     </Text>
                     <TouchableOpacity
                       onPress={() => router.push("/(tabs)/chat")}
@@ -393,7 +393,7 @@ export default function DashboardScreen() {
                           <Ionicons name="sparkles" size={20} color="#7C3AED" />
                         </View>
                         <View style={{ flex: 1 }}>
-                          <Text style={{ fontSize: 15, fontWeight: "700", color: "#0F172A" }}>Aria Assistant</Text>
+                          <Text style={{ fontSize: 15, fontWeight: "700", color: "#0F172A" }}>Lyla Assistant</Text>
                           <Text style={{ fontSize: 12, color: "#94A3B8", marginTop: 1 }}>AI-powered financial insights</Text>
                         </View>
                         <Ionicons name="chevron-forward" size={15} color="#CBD5E1" />

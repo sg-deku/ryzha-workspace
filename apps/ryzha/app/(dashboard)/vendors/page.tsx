@@ -42,6 +42,7 @@ export default async function VendorsPage() {
                 <TableHead>Name</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Tax ID</TableHead>
                 <TableHead>Payment Terms</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -56,6 +57,7 @@ export default async function VendorsPage() {
                       {vendor.status}
                     </Badge>
                   </TableCell>
+                  <TableCell>{vendor.taxId || "N/A"}</TableCell>
                   <TableCell>{vendor.paymentTerms}</TableCell>
                   <TableCell className="text-right">
                     <Button variant="ghost" size="sm" asChild>

@@ -29,7 +29,7 @@ const quickFacts = [
   { label: "Transport", value: "REST + webhooks" },
   { label: "Payloads", value: "JSON" },
   { label: "Auth", value: "Bearer tokens" },
-  { label: "Automation", value: "Aria actions" },
+  { label: "Automation", value: "Lyla actions" },
 ]
 
 const sidebarSections = [
@@ -188,8 +188,8 @@ const groups = [
     endpoints: [
       {
         method: "POST",
-        path: "/api/aria",
-        description: "Send a prompt to Aria and receive a structured action.",
+        path: "/api/lyla",
+        description: "Send a prompt to Lyla and receive a structured action.",
         request: `{
   "message": "Create an invoice for Acme Corp for 5 hours of consulting at $200/hr"
 }`,
@@ -389,7 +389,7 @@ export default function ApiDocsPage() {
             {[
               { icon: KeyRound, title: "Authentication", text: "Bearer tokens or session cookies for secure server-to-server and browser usage." },
               { icon: Webhook, title: "Webhooks", text: "Ingest Stripe and event-driven finance updates in real time." },
-              { icon: Bot, title: "AI actions", text: "Aria and AI Suggest expose natural-language automation endpoints." },
+              { icon: Bot, title: "AI actions", text: "Lyla and AI Suggest expose natural-language automation endpoints." },
               { icon: Gauge, title: "Insight APIs", text: "Dashboards, usage metrics, and reports are available from dedicated routes." },
             ].map(({ icon: Icon, title, text }) => (
               <Card key={title} className="border-border/70 bg-background/90 shadow-sm rounded-2xl">

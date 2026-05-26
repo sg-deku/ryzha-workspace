@@ -46,7 +46,7 @@ function ThemeShowcase({ name, themeClass, desc }: { name: string, themeClass: s
                   <span className="text-xs font-bold px-2.5 py-1 bg-primary/10 text-primary rounded-full">New</span>
                 </div>
                 <div className="flex gap-4 mb-8">
-                  <Input placeholder="Ask Aria anything..." className="rounded-xl bg-background border-border" />
+                  <Input placeholder="Ask Lyla anything..." className="rounded-xl bg-background border-border" />
                   <Button className="rounded-xl px-6">Send</Button>
                 </div>
                 <div className="flex flex-wrap gap-3">

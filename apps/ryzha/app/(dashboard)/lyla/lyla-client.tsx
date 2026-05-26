@@ -15,9 +15,9 @@ const sectionVariant = (delay: number): any => ({
   animate: { opacity: 1, y: 0, transition: { duration: 0.35, delay, ease: [0.22, 1, 0.36, 1] } },
 })
 
-interface AriaMessage {
+interface LylaMessage {
   id: string
-  role: "user" | "aria"
+  role: "user" | "lyla"
   content: string
   action?: string
   result?: {
@@ -65,7 +65,7 @@ const SUGGESTIONS = [
   "Create a vendor: AWS cloud services, NET30 payment terms",
 ]
 
-function AriaMarkdown({ content, onLinkClick }: { content: string; onLinkClick?: (href: string) => void }) {
+function LylaMarkdown({ content, onLinkClick }: { content: string; onLinkClick?: (href: string) => void }) {
   const lines = content.split("\n")
   return (
     <>
@@ -110,7 +110,7 @@ function AriaMarkdown({ content, onLinkClick }: { content: string; onLinkClick?:
   )
 }
 
-function AriaMessageBubble({ msg, onLinkClick }: { msg: AriaMessage; onLinkClick?: (href: string) => void }) {
+function LylaMessageBubble({ msg, onLinkClick }: { msg: LylaMessage; onLinkClick?: (href: string) => void }) {
   const isUser = msg.role === "user"
 
   return (
@@ -131,7 +131,7 @@ function AriaMessageBubble({ msg, onLinkClick }: { msg: AriaMessage; onLinkClick
             {msg.pending ? (
               <div className="flex items-center gap-2 text-muted-foreground">
                 <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                <span className="italic text-sm">Aria is thinking...</span>
+                <span className="italic text-sm">Lyla is thinking...</span>
               </div>
             ) : (
               <>
@@ -142,7 +142,7 @@ function AriaMessageBubble({ msg, onLinkClick }: { msg: AriaMessage; onLinkClick
                   </div>
                 )}
                 <div className="space-y-1 text-sm leading-relaxed">
-                  <AriaMarkdown content={msg.content} onLinkClick={onLinkClick} />
+                  <LylaMarkdown content={msg.content} onLinkClick={onLinkClick} />
                 </div>
 
                 {msg.result?.success && msg.result.link && (
@@ -179,16 +179,16 @@ function AriaMessageBubble({ msg, onLinkClick }: { msg: AriaMessage; onLinkClick
   )
 }
 
-const WELCOME_MSG = (userName?: string | null): AriaMessage => ({
+const WELCOME_MSG = (userName?: string | null): LylaMessage => ({
   id: "welcome",
-  role: "aria",
-  content: `Hello${userName ? `, **${userName.split(" ")[0]}**` : ""}. I'm **Aria**, your AI accounting co-pilot.\n\nI can create invoices, log expenses, add customers and vendors, query your financial data, and more — all through conversation.\n\nWhat would you like to do?`,
+  role: "lyla",
+  content: `Hello${userName ? `, **${userName.split(" ")[0]}**` : ""}. I'm **Lyla**, your AI accounting co-pilot.\n\nI can create invoices, log expenses, add customers and vendors, query your financial data, and more — all through conversation.\n\nWhat would you like to do?`,
   timestamp: new Date(),
 })
 
-export function AriaClient({ userName }: { userName?: string | null }) {
+export function LylaClient({ userName }: { userName?: string | null }) {
   const router = useRouter()
-  const [messages, setMessages] = useState<AriaMessage[]>([WELCOME_MSG(userName)])
+  const [messages, setMessages] = useState<LylaMessage[]>([WELCOME_MSG(userName)])
   const [input, setInput] = useState("")
   const [loading, setLoading] = useState(false)
   const [historyLoaded, setHistoryLoaded] = useState(false)
@@ -196,13 +196,13 @@ export function AriaClient({ userName }: { userName?: string | null }) {
   const inputRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
-    fetch("/api/aria")
+    fetch("/api/lyla")
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         if (data?.messages?.length) {
-          const restored: AriaMessage[] = data.messages.map((m: any) => ({
+          const restored: LylaMessage[] = data.messages.map((m: any) => ({
             id: m.id,
-            role: m.role === "aria_user" ? "user" : "aria",
+            role: m.role === "lyla_user" ? "user" : "lyla",
             content: m.content,
             timestamp: new Date(m.createdAt),
           }))
@@ -219,22 +219,22 @@ export function AriaClient({ userName }: { userName?: string | null }) {
 
   const history = messages
     .filter((m) => !m.pending)
-    .map((m) => ({ role: m.role === "aria" ? "assistant" : "user", content: m.content }))
+    .map((m) => ({ role: m.role === "lyla" ? "assistant" : "user", content: m.content }))
 
   const sendMessage = useCallback(async (text: string) => {
     if (!text.trim() || loading) return
     setInput("")
 
-    const userMsg: AriaMessage = {
+    const userMsg: LylaMessage = {
       id: `u-${Date.now()}`,
       role: "user",
       content: text.trim(),
       timestamp: new Date(),
     }
 
-    const pendingMsg: AriaMessage = {
+    const pendingMsg: LylaMessage = {
       id: `pending-${Date.now()}`,
-      role: "aria",
+      role: "lyla",
       content: "",
       timestamp: new Date(),
       pending: true,
@@ -244,13 +244,13 @@ export function AriaClient({ userName }: { userName?: string | null }) {
     setLoading(true)
 
     try {
-      const res = await fetch("/api/aria", {
+      const res = await fetch("/api/lyla", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: text.trim(), history }),
       })
 
-      if (!res.ok) throw new Error("Aria is unavailable — please contact your administrator to configure the AI provider")
+      if (!res.ok) throw new Error("Lyla is unavailable — please contact your administrator to configure the AI provider")
 
       const data = await res.json()
 
@@ -258,20 +258,20 @@ export function AriaClient({ userName }: { userName?: string | null }) {
         ? `${data.message}\n\n${data.result.summary}`
         : data.message || "Done."
 
-      const ariaMsg: AriaMessage = {
+      const lylaMsg: LylaMessage = {
         id: `a-${Date.now()}`,
-        role: "aria",
+        role: "lyla",
         content: replyContent,
         action: data.action,
         result: data.result,
         timestamp: new Date(),
       }
 
-      setMessages((prev) => prev.filter((m) => !m.pending).concat(ariaMsg))
+      setMessages((prev) => prev.filter((m) => !m.pending).concat(lylaMsg))
     } catch (err: any) {
-      const errMsg: AriaMessage = {
+      const errMsg: LylaMessage = {
         id: `err-${Date.now()}`,
-        role: "aria",
+        role: "lyla",
         content: `⚠️ ${err.message}`,
         timestamp: new Date(),
       }
@@ -283,7 +283,7 @@ export function AriaClient({ userName }: { userName?: string | null }) {
   }, [loading, history])
 
   const handleClear = async () => {
-    await fetch("/api/aria", { method: "DELETE" })
+    await fetch("/api/lyla", { method: "DELETE" })
     setMessages([WELCOME_MSG(userName)])
   }
 
@@ -316,7 +316,7 @@ export function AriaClient({ userName }: { userName?: string | null }) {
             <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-emerald-500 rounded-full border-2 border-card" />
           </div>
           <div>
-            <h1 className="font-semibold text-sm">Aria</h1>
+            <h1 className="font-semibold text-sm">Lyla</h1>
             <p className="text-[10px] text-muted-foreground uppercase tracking-wider">AI Accounting Co-pilot</p>
           </div>
         </div>
@@ -355,7 +355,7 @@ export function AriaClient({ userName }: { userName?: string | null }) {
             </div>
           ) : (
             messages.map((msg) => (
-              <AriaMessageBubble key={msg.id} msg={msg} onLinkClick={handleLinkClick} />
+              <LylaMessageBubble key={msg.id} msg={msg} onLinkClick={handleLinkClick} />
             ))
           )}
           <div ref={bottomRef} />
@@ -401,7 +401,7 @@ export function AriaClient({ userName }: { userName?: string | null }) {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Tell Aria what to do... (Enter to send, Shift+Enter for new line)"
+              placeholder="Tell Lyla what to do... (Enter to send, Shift+Enter for new line)"
               disabled={loading}
               rows={1}
               className="flex-1 bg-transparent border-none shadow-none resize-none text-foreground placeholder:text-muted-foreground text-sm focus-visible:ring-0 focus-visible:ring-offset-0 min-h-0 max-h-32 overflow-auto p-0"
@@ -426,7 +426,7 @@ export function AriaClient({ userName }: { userName?: string | null }) {
             </Button>
           </div>
           <p className="text-center text-[10px] text-muted-foreground/60 mt-2">
-            Aria can make mistakes. Review created records before sharing.
+            Lyla can make mistakes. Review created records before sharing.
           </p>
         </div>
       </motion.div>

@@ -6,7 +6,7 @@ import { getAIClientConfig, parseAIJson } from "@/lib/ai/client"
 
 export const dynamic = "force-dynamic"
 
-const ARIA_SYSTEM_PROMPT = `You are Aria, Ryzha's intelligent accounting co-pilot. You execute real financial actions on behalf of the user.
+const ARIA_SYSTEM_PROMPT = `You are Lyla, Ryzha's intelligent accounting co-pilot. You execute real financial actions on behalf of the user.
 
 When the user gives you an instruction, respond with a JSON object describing what action to take.
 
@@ -434,8 +434,8 @@ export async function POST(req: Request) {
     const { client, model, provider } = await getAIClientConfig(orgId)
 
     const roleMap: Record<string, string> = {
-      aria_user: "user",
-      aria_assistant: "assistant",
+      lyla_user: "user",
+      lyla_assistant: "assistant",
       user: "user",
       assistant: "assistant",
     }
@@ -471,15 +471,15 @@ export async function POST(req: Request) {
 
     await Promise.all([
       prisma.chatMessage.create({
-        data: { userId, organizationId: orgId, role: "aria_user", content: message },
+        data: { userId, organizationId: orgId, role: "lyla_user", content: message },
       }),
       prisma.chatMessage.create({
-        data: { userId, organizationId: orgId, role: "aria_assistant", content: replyContent },
+        data: { userId, organizationId: orgId, role: "lyla_assistant", content: replyContent },
       }),
       prisma.aIUsageLog.create({
         data: {
           organizationId: orgId,
-          feature: "aria",
+          feature: "lyla",
           model,
           provider,
           promptTokens: completion.usage?.prompt_tokens || 0,
@@ -495,7 +495,7 @@ export async function POST(req: Request) {
       result,
     })
   } catch (err: any) {
-    console.error("[aria] error:", err)
+    console.error("[lyla] error:", err)
     return NextResponse.json({ error: err.message }, { status: 500 })
   }
 }
@@ -512,7 +512,7 @@ export async function GET(req: Request) {
     where: {
       userId,
       organizationId: orgId,
-      role: { in: ["aria_user", "aria_assistant"] },
+      role: { in: ["lyla_user", "lyla_assistant"] },
     },
     orderBy: { createdAt: "asc" },
     take: 100,
@@ -531,7 +531,7 @@ export async function DELETE(req: Request) {
   if (!orgId) return NextResponse.json({ success: true })
 
   await prisma.chatMessage.deleteMany({
-    where: { userId, organizationId: orgId, role: { in: ["aria_user", "aria_assistant"] } },
+    where: { userId, organizationId: orgId, role: { in: ["lyla_user", "lyla_assistant"] } },
   })
 
   return NextResponse.json({ success: true })

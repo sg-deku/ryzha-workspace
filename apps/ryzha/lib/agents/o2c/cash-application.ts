@@ -4,7 +4,7 @@ import { callLLM } from "@/lib/ai/llm"
 import { parseAIJson } from "@/lib/ai/client"
 import { startAgentWorkflow } from "@/lib/agents/orchestrator"
 
-async function recalculateInvoiceStatus(invoiceId: string) {
+export async function recalculateInvoiceStatus(invoiceId: string) {
   const invoice = await prisma.invoice.findUnique({
     where: { id: invoiceId },
     include: {
@@ -106,5 +106,3 @@ export async function runCashApplicationAgent(paymentId: string, organizationId:
     message: `$${payment.amount} applied to Invoice ${invoice.invoiceNumber}. ${isPartial ? `Invoice now ${(paymentFraction * 100).toFixed(0)}% paid.` : "Invoice fully paid."} Revenue pipeline triggered.`,
   }
 }
-
-export { recalculateInvoiceStatus }

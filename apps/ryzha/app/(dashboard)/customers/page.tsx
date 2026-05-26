@@ -43,6 +43,7 @@ export default async function CustomersPage() {
                 <TableHead>Email</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Credit Limit</TableHead>
+                <TableHead>Payment Terms</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -56,7 +57,8 @@ export default async function CustomersPage() {
                       {customer.status}
                     </Badge>
                   </TableCell>
-                  <TableCell>${customer.creditLimit.toLocaleString()}</TableCell>
+                  <TableCell>${customer.creditLimit?.toLocaleString() || "0"}</TableCell>
+                  <TableCell>{customer.paymentTerms || "N/A"}</TableCell>
                   <TableCell className="text-right">
                     <Button variant="ghost" size="sm" asChild>
                       <Link href={`/customers/${customer.id}`}>View</Link>
