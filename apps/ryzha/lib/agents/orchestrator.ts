@@ -4,6 +4,7 @@ import { runOMAgent } from "./om"
 import { runAuditorAgent } from "./auditor"
 import { runFPAgent } from "./fpna"
 import { runMatchingAgent } from "./p2p/matching"
+import { runGLCodingAgent } from "./p2p/gl-coding"
 import { runCollectionsAgent } from "./o2c/collections"
 import { runCashApplicationAgent } from "./o2c/cash-application"
 import { runCreditNoteAgent } from "./o2c/credit-note"
@@ -204,16 +205,59 @@ export async function startP2PWorkflow(vendorInvoiceId: string) {
     await appendP2PLog("Orchestrator", `[2/2] Processing matched invoice — creating expense record...`)
 
     if (updated.status === "MATCHED") {
+      let category = "Software & SaaS" // fallback
+      try {
+        await appendP2PLog("GL Coding", `[2a/2] Starting GL Coding Agent to determine expense account...`)
+        const glResult = await runGLCodingAgent(
+          `Vendor Invoice: ${updated.invoiceNumber} from ${invoice.vendor?.name ?? "unknown"}`,
+          orgId
+        )
+        category = glResult.suggestedCategory || category
+        await appendP2PLog("GL Coding", `AI suggests category: ${category}`)
+      } catch (err: any) {
+        await appendP2PLog("GL Coding", `AI fallback — using default. Error: ${err.message}`)
+      }
+
       const expense = await prisma.expense.create({
         data: {
           date: new Date(),
           description: `Vendor Invoice: ${updated.invoiceNumber}`,
           amount: updated.amount,
-          category: "Accounts Payable",
+          category,
           organizationId: orgId,
           status: "REVIEWED",
         },
       })
+      
+      await prisma.generalLedgerEntry.createMany({
+        data: [
+          {
+            date: new Date(),
+            accountType: "Expenses",
+            accountName: category,
+            debit: updated.amount,
+            credit: 0,
+            amount: updated.amount,
+            description: `AP Voucher — ${updated.invoiceNumber} from ${invoice.vendor?.name ?? "unknown"}`,
+            sourceType: "vendor_invoice",
+            sourceId: vendorInvoiceId,
+            organizationId: orgId,
+          },
+          {
+            date: new Date(),
+            accountType: "Liabilities",
+            accountName: "Accounts Payable",
+            debit: 0,
+            credit: updated.amount,
+            amount: -updated.amount,
+            description: `AP Voucher — ${updated.invoiceNumber} from ${invoice.vendor?.name ?? "unknown"}`,
+            sourceType: "vendor_invoice",
+            sourceId: vendorInvoiceId,
+            organizationId: orgId,
+          }
+        ]
+      })
+
       await appendP2PLog("Orchestrator", `Expense record created | Expense ID: ${expense.id} | Amount: $${expense.amount} | Category: ${expense.category}`)
       await appendP2PLog("Orchestrator", `P2P Workflow COMPLETED | Invoice #${updated.invoiceNumber} from ${invoice.vendor?.name ?? "vendor"} approved and expensed.`)
       await prisma.vendorInvoice.update({ where: { id: vendorInvoiceId }, data: { workflowStatus: "completed" } })

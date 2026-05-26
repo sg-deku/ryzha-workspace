@@ -202,50 +202,128 @@ async function syncTransactions(organizationId: string) {
   for (const tx of transactions) {
     const recognized = tx.recognizedRevenue ?? tx.amount
     const deferred = tx.deferredRevenue ?? 0
+    const stripeNet = tx.stripeNet ?? tx.amount
+    const stripeFee = tx.stripeFee ?? 0
+    const fxFee = tx.fxFee ?? 0
 
-    await upsertGLEntry({
-      organizationId,
-      sourceType: "StripeTransaction",
-      sourceId: tx.id,
-      date: tx.createdAt,
-      accountType: "Assets",
-      accountName: "Cash",
-      debit: tx.amount,
-      credit: 0,
-      amount: tx.amount,
-      description: tx.description ?? `Stripe payment – ${tx.customerEmail ?? "unknown"}`,
-    })
+    // Stage 2
+    if (tx.clearingStatus === "pending" || tx.clearingStatus === "paid_out") {
+      await upsertGLEntry({
+        organizationId,
+        sourceType: "StripeTransaction",
+        sourceId: `${tx.id}-clearing`,
+        date: tx.createdAt,
+        accountType: "Assets",
+        accountName: "Stripe Clearing Account",
+        debit: stripeNet,
+        credit: 0,
+        amount: stripeNet,
+        description: tx.description ?? `Stripe payment clearing – ${tx.customerEmail ?? "unknown"}`,
+      })
 
-    if (!tx.invoiceId) {
-      if (recognized > 0) {
+      if (stripeFee > 0) {
         await upsertGLEntry({
           organizationId,
           sourceType: "StripeTransaction",
-          sourceId: `${tx.id}-rev`,
+          sourceId: `${tx.id}-fee`,
           date: tx.createdAt,
-          accountType: "Revenue",
-          accountName: "Subscription Revenue",
-          debit: 0,
-          credit: recognized,
-          amount: -recognized,
-          description: `${tx.description ?? "Stripe payment"} – recognized revenue`,
+          accountType: "Expenses",
+          accountName: "Merchant Processing Fees",
+          debit: stripeFee,
+          credit: 0,
+          amount: stripeFee,
+          description: `Stripe processing fee – ${tx.id}`,
         })
       }
 
-      if (deferred > 0) {
+      if (fxFee > 0) {
         await upsertGLEntry({
           organizationId,
           sourceType: "StripeTransaction",
-          sourceId: `${tx.id}-def`,
+          sourceId: `${tx.id}-fx`,
           date: tx.createdAt,
-          accountType: "Liabilities",
-          accountName: "Deferred Revenue",
-          debit: 0,
-          credit: deferred,
-          amount: -deferred,
-          description: `${tx.description ?? "Stripe payment"} – deferred revenue`,
+          accountType: "Expenses",
+          accountName: "Foreign Exchange Expense",
+          debit: fxFee,
+          credit: 0,
+          amount: fxFee,
+          description: `Stripe FX fee – ${tx.id}`,
         })
       }
+
+      if (tx.invoiceId) {
+        await upsertGLEntry({
+          organizationId,
+          sourceType: "StripeTransaction",
+          sourceId: `${tx.id}-ar-clear`,
+          date: tx.createdAt,
+          accountType: "Assets",
+          accountName: "Accounts Receivable",
+          debit: 0,
+          credit: tx.amount,
+          amount: -tx.amount,
+          description: `AR clearing – ${tx.id}`,
+        })
+      } else {
+        if (recognized > 0) {
+          await upsertGLEntry({
+            organizationId,
+            sourceType: "StripeTransaction",
+            sourceId: `${tx.id}-rev`,
+            date: tx.createdAt,
+            accountType: "Revenue",
+            accountName: "Subscription Revenue",
+            debit: 0,
+            credit: recognized,
+            amount: -recognized,
+            description: `${tx.description ?? "Stripe payment"} – recognized revenue`,
+          })
+        }
+
+        if (deferred > 0) {
+          await upsertGLEntry({
+            organizationId,
+            sourceType: "StripeTransaction",
+            sourceId: `${tx.id}-def`,
+            date: tx.createdAt,
+            accountType: "Liabilities",
+            accountName: "Deferred Revenue",
+            debit: 0,
+            credit: deferred,
+            amount: -deferred,
+            description: `${tx.description ?? "Stripe payment"} – deferred revenue`,
+          })
+        }
+      }
+    }
+
+    // Stage 3
+    if (tx.clearingStatus === "paid_out" && tx.payoutDate) {
+      await upsertGLEntry({
+        organizationId,
+        sourceType: "StripeTransaction",
+        sourceId: `${tx.id}-payout`,
+        date: tx.payoutDate,
+        accountType: "Assets",
+        accountName: "Cash",
+        debit: stripeNet,
+        credit: 0,
+        amount: stripeNet,
+        description: `Stripe payout – ${tx.payoutId}`,
+      })
+
+      await upsertGLEntry({
+        organizationId,
+        sourceType: "StripeTransaction",
+        sourceId: `${tx.id}-payout-clear`,
+        date: tx.payoutDate,
+        accountType: "Assets",
+        accountName: "Stripe Clearing Account",
+        debit: 0,
+        credit: stripeNet,
+        amount: -stripeNet,
+        description: `Stripe payout clearing – ${tx.payoutId}`,
+      })
     }
   }
 }

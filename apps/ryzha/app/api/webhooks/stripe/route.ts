@@ -1,27 +1,37 @@
 import { NextResponse, after } from "next/server"
 import Stripe from "stripe"
-import { getStripe } from "@/lib/stripe"
+import { getStripe, getStripeForOrg } from "@/lib/stripe"
 import { prisma } from "@/lib/prisma"
 import { startAgentWorkflow } from "@/lib/agents/orchestrator"
+import { syncGLForOrganization } from "@/lib/reports/general-ledger/sync"
 
 export const dynamic = "force-dynamic"
 
-async function resolveWebhookSecret(): Promise<string | null> {
-  if (process.env.STRIPE_WEBHOOK_SECRET) return process.env.STRIPE_WEBHOOK_SECRET
-
-  const settings = await prisma.financialSettings.findFirst({
-    where: { stripeWebhookSecret: { not: null } },
-    select: { stripeWebhookSecret: true },
-  })
-  return settings?.stripeWebhookSecret ?? null
-}
-
 export async function POST(req: Request) {
-  const stripe = getStripe()
-  const body = await req.text()
-  const sig = req.headers.get("stripe-signature")!
+  const url = new URL(req.url)
+  const queryOrgId = url.searchParams.get("orgId")
 
-  const webhookSecret = await resolveWebhookSecret()
+  let webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
+  let stripe = getStripe()
+
+  if (queryOrgId) {
+    const settings = await prisma.financialSettings.findUnique({
+      where: { organizationId: queryOrgId },
+      select: { stripeWebhookSecret: true, stripeSecretKey: true }
+    })
+    
+    if (settings?.stripeWebhookSecret) {
+      webhookSecret = settings.stripeWebhookSecret
+    }
+    
+    if (settings?.stripeSecretKey) {
+      stripe = new Stripe(settings.stripeSecretKey, {
+        apiVersion: "2025-01-27.acacia" as any,
+        typescript: true,
+      })
+    }
+  }
+
   if (!webhookSecret) {
     console.error("[stripe webhook] No webhook secret configured")
     return NextResponse.json(
@@ -29,6 +39,9 @@ export async function POST(req: Request) {
       { status: 500 }
     )
   }
+
+  const body = await req.text()
+  const sig = req.headers.get("stripe-signature")!
 
   let event: Stripe.Event
   try {
@@ -38,14 +51,45 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: `Webhook Error: ${err.message}` }, { status: 400 })
   }
 
-  if (event.type === "payment_intent.succeeded") {
-    const paymentIntent = event.data.object as any
-    const { id, amount, currency, description, customer_email, metadata } = paymentIntent
+  const stripeOrgId = queryOrgId // It may be from URL
 
-    const orgId = metadata?.organizationId
+  if (event.type === "payment_intent.succeeded") {
+    const paymentIntent = event.data.object as Stripe.PaymentIntent
+    const { id, amount, currency, description, metadata, latest_charge } = paymentIntent
+
+    const orgId = stripeOrgId || metadata?.organizationId
     if (!orgId) {
       console.error("[stripe webhook] Missing organizationId in payment_intent metadata. Event ignored.")
-      return NextResponse.json({ received: true, warning: "Missing organizationId in metadata" })
+      return NextResponse.json({ received: true, warning: "Missing organizationId in metadata or query" })
+    }
+
+    let stripeFee = 0
+    let fxFee = 0
+    let stripeNet = amount / 100
+    let stripeChargeId = undefined
+
+    if (latest_charge) {
+      try {
+        const charge = await stripe.charges.retrieve(latest_charge as string)
+        stripeChargeId = charge.id
+        if (charge.balance_transaction) {
+          const balanceTx = await stripe.balanceTransactions.retrieve(charge.balance_transaction as string, {
+            expand: ['fee_details']
+          })
+          
+          stripeFee = balanceTx.fee / 100
+          
+          if (balanceTx.fee_details) {
+            fxFee = balanceTx.fee_details
+              .filter(f => f.type === "application_fee") // or currency conversion
+              .reduce((s, f) => s + f.amount, 0) / 100
+          }
+          
+          stripeNet = balanceTx.net / 100
+        }
+      } catch (e) {
+        console.error("[stripe webhook] Failed to fetch charge details:", e)
+      }
     }
 
     const transaction = await prisma.transaction.create({
@@ -54,15 +98,106 @@ export async function POST(req: Request) {
         amount: amount / 100,
         currency,
         description: description || metadata?.product_description || "Stripe payment",
-        customerEmail: customer_email || metadata?.customer_email,
+        customerEmail: metadata?.customer_email || (event.data.object as any).customer_email,
         organizationId: orgId,
         workflowStatus: "running",
         agentLogs: [],
+        stripeChargeId,
+        stripeFee,
+        fxFee,
+        stripeNet,
+        clearingStatus: "pending"
       },
     })
 
     console.log(`[stripe webhook] Transaction ${transaction.id} created for org ${orgId}. Starting agent workflow.`)
     after(startAgentWorkflow(transaction.id).catch(console.error))
+  } 
+  else if (event.type === "payout.paid") {
+    const payout = event.data.object as Stripe.Payout
+    
+    try {
+      const balanceTransactions = await stripe.balanceTransactions.list({ payout: payout.id, limit: 100 })
+      
+      const chargeIds = balanceTransactions.data
+        .filter(bt => bt.type === "charge")
+        .map(bt => bt.source as string)
+        .filter(Boolean)
+
+      if (chargeIds.length > 0 || payout.id) {
+        const transactions = await prisma.transaction.findMany({
+          where: {
+            OR: [
+              { payoutId: payout.id },
+              { stripeChargeId: { in: chargeIds } }
+            ]
+          }
+        })
+        
+        const orgIdsToSync = new Set<string>()
+
+        for (const tx of transactions) {
+          await prisma.transaction.update({
+            where: { id: tx.id },
+            data: { 
+              clearingStatus: "paid_out",
+              payoutDate: new Date(payout.arrival_date * 1000),
+              payoutId: payout.id
+            }
+          })
+          orgIdsToSync.add(tx.organizationId)
+        }
+
+        // Trigger GL sync for each affected org
+        for (const org of Array.from(orgIdsToSync)) {
+          after(syncGLForOrganization(org).catch(console.error))
+        }
+      }
+    } catch (e) {
+      console.error("[stripe webhook] Error processing payout.paid:", e)
+    }
+  }
+  else if (event.type === "charge.refunded") {
+    const charge = event.data.object as Stripe.Charge
+    try {
+      const transaction = await prisma.transaction.findFirst({
+        where: { stripeChargeId: charge.id }
+      })
+      
+      if (transaction) {
+        // Reverse Stage 2 entries and create CreditNote record if not already present
+        // First check if a CreditNote exists for this transaction
+        const existingCreditNote = await prisma.creditNote.findFirst({
+          where: { transactionId: transaction.id }
+        })
+        
+        if (!existingCreditNote && transaction.invoiceId) {
+          // If no credit note exists, create one (this is a direct Stripe refund)
+          const invoice = await prisma.invoice.findUnique({
+            where: { id: transaction.invoiceId }
+          })
+          
+          if (invoice) {
+            await prisma.creditNote.create({
+              data: {
+                invoiceId: invoice.id,
+                amount: (charge.amount_refunded || charge.amount) / 100,
+                reason: "Refunded via Stripe",
+                reasonCategory: "other",
+                transactionId: transaction.id,
+                organizationId: transaction.organizationId,
+                refundMethod: "stripe"
+              }
+            })
+            
+            // Revert invoice status back if needed, or sync GL
+            after(syncGLForOrganization(transaction.organizationId).catch(console.error))
+          }
+        }
+      }
+    } catch (e) {
+      console.error("[stripe webhook] Error processing charge.refunded:", e)
+    }
   }
 
   return NextResponse.json({ received: true })
