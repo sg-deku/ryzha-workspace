@@ -844,88 +844,6 @@ export default function DocsPage() {
           <section id="agents">
             <SectionTitle icon={Brain} title="AI Agents" subtitle="6 specialized agents — each owns a complete ERP process end-to-end" />
 
-            <div className="mb-6">
-              <Card>
-                <CardHeader><CardTitle className="text-base">Orchestrator — The Central Coordinator</CardTitle></CardHeader>
-                <CardContent className="space-y-6">
-                  <p className="text-sm text-muted-foreground">
-                    The Orchestrator (<code className="text-xs bg-muted px-1 rounded">lib/agents/orchestrator.ts</code>) is the entry point for all agent workflows. It sequences all 6 agents, posts GL journal entries, calculates financial metrics, handles error isolation, and fires notifications. All agent pipelines run via <code className="text-xs bg-muted px-1 rounded">after()</code> to avoid blocking HTTP responses.
-                  </p>
-
-                  <div>
-                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">All 6 Agents — Overview</p>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                      {[
-                        { dot: "bg-violet-500", name: "O2C Agent", file: "lib/agents/o2c/", trigger: "SalesOrder created / Stripe webhook", owns: "Customer revenue cycle — order → invoice → cash collected", subs: "9 sub-agents: OrderIntake, InvoiceGen, CashApp, Collections, CreditNote, CustomerValidation, Credit, Dispute, Pricing", border: "border-violet-200 dark:border-violet-800", bg: "bg-violet-50/40 dark:bg-violet-950/20" },
-                        { dot: "bg-orange-500", name: "P2P Agent", file: "lib/agents/p2p/", trigger: "Vendor created / PO submitted", owns: "Vendor spend cycle — requisition → PO → invoice → payment", subs: "9 sub-agents: VendorIntake, Requisition, POCreation, Approval, InvoiceCapture, Matching, Receiving, GLCoding, PaymentScheduler", border: "border-orange-200 dark:border-orange-800", bg: "bg-orange-50/40 dark:bg-orange-950/20" },
-                        { dot: "bg-cyan-500", name: "R2R Agent", file: "lib/agents/r2r.ts", trigger: "Month-end close · on-demand sync", owns: "Books closure — GL sync, trial balance, deferred revenue release", subs: "Single-file agent: AI extraction → GL journal → Stripe clearing reconciliation → snapshot", border: "border-cyan-200 dark:border-cyan-800", bg: "bg-cyan-50/40 dark:bg-cyan-950/20" },
-                        { dot: "bg-teal-500", name: "O&M Agent", file: "lib/agents/om.ts", trigger: "Every transaction via orchestrator", owns: "ASC 606 compliance — deferred vs immediate revenue decision", subs: "Single-file agent: keyword detection → RAG context → AI ASC 606 decision → deferred schedule", border: "border-teal-200 dark:border-teal-800", bg: "bg-teal-50/40 dark:bg-teal-950/20" },
-                        { dot: "bg-indigo-500", name: "FP&A Agent", file: "lib/agents/fpna.ts", trigger: "Post-transaction · weekly CRON", owns: "AI CFO — runway, burn rate, zero-cash date, voice + SMS alerts", subs: "Single-file agent: GL aggregation → burn rate → forecast → AI narrative → ElevenLabs + Twilio", border: "border-indigo-200 dark:border-indigo-800", bg: "bg-indigo-50/40 dark:bg-indigo-950/20" },
-                        { dot: "bg-red-500", name: "Auditor Agent", file: "lib/agents/auditor.ts", trigger: "Every transaction · month-end audit", owns: "Forensic audit — contract match, anomaly detection, SHA-256 seal", subs: "Single-file agent: contract match → threshold check → AI investigation → audit hash → status", border: "border-red-200 dark:border-red-800", bg: "bg-red-50/40 dark:bg-red-950/20" },
-                      ].map((a) => (
-                        <div key={a.name} className={cn("rounded-lg border p-3 space-y-2", a.border, a.bg)}>
-                          <div className="flex items-center gap-2">
-                            <div className={cn("h-3 w-3 rounded-full flex-shrink-0", a.dot)} />
-                            <span className="font-semibold text-sm">{a.name}</span>
-                          </div>
-                          <p className="text-[10px] font-mono text-muted-foreground/70">{a.file}</p>
-                          <p className="text-xs text-muted-foreground"><span className="font-medium text-foreground/60">Trigger:</span> {a.trigger}</p>
-                          <p className="text-xs text-muted-foreground"><span className="font-medium text-foreground/60">Owns:</span> {a.owns}</p>
-                          <p className="text-xs text-muted-foreground italic">{a.subs}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2.5">Per-transaction pipeline (sequential, blocking)</p>
-                      <div className="space-y-1.5">
-                        {[
-                          { n: 1, agent: "R2R Agent", desc: "Record revenue, post GL entries", dot: "bg-cyan-500" },
-                          { n: 2, agent: "O&M Agent", desc: "Apply ASC 606 deferral policy", dot: "bg-teal-500" },
-                          { n: 3, agent: "FP&A Agent", desc: "Update runway, burn rate, snapshot", dot: "bg-indigo-500" },
-                          { n: 4, agent: "Auditor Agent", desc: "Anomaly detection, risk flags", dot: "bg-red-500" },
-                        ].map((item, idx, arr) => (
-                          <div key={item.n} className="flex gap-3">
-                            <div className="flex flex-col items-center flex-shrink-0">
-                              <div className={cn("h-7 w-7 rounded-full flex items-center justify-center text-white text-xs font-bold", item.dot)}>{item.n}</div>
-                              {idx < arr.length - 1 && <div className="w-px flex-1 bg-border mt-1 h-3" />}
-                            </div>
-                            <div className="flex-1 flex items-center gap-2 rounded-md border bg-muted/20 px-3 py-2 mb-1.5">
-                              <span className="text-sm font-semibold">{item.agent}</span>
-                              <ArrowRight className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-                              <span className="text-xs text-muted-foreground">{item.desc}</span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                    <div>
-                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2.5">Separate workflows (non-blocking via after())</p>
-                      <div className="space-y-2">
-                        {[
-                          { fn: "startO2CWorkflow()", label: "Full O2C pipeline", detail: "9 sub-agents: OrderIntake → InvoiceGen → ... → Pricing", dot: "bg-violet-500" },
-                          { fn: "startCashApplicationWorkflow()", label: "Stripe payment matching", detail: "Runs after payment webhook — matches payment to invoice", dot: "bg-violet-400" },
-                          { fn: "startP2PWorkflow()", label: "Full P2P pipeline", detail: "9 sub-agents: VendorIntake → Requisition → ... → PaymentScheduler", dot: "bg-orange-500" },
-                          { fn: "startCollectionsWorkflow()", label: "Overdue invoice scan", detail: "Scheduled job — emails at 7/14/30 days, escalates at 60", dot: "bg-orange-400" },
-                        ].map((item) => (
-                          <div key={item.fn} className="rounded-md border bg-muted/20 px-3 py-2 space-y-0.5">
-                            <div className="flex items-center gap-2">
-                              <div className={cn("h-2 w-2 rounded-full flex-shrink-0", item.dot)} />
-                              <code className="text-xs text-primary font-mono">{item.fn}</code>
-                            </div>
-                            <p className="text-xs font-medium pl-4">{item.label}</p>
-                            <p className="text-xs text-muted-foreground pl-4">{item.detail}</p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
             <div className="space-y-6">
 
               {/* O2C Agent */}
@@ -1007,10 +925,7 @@ export default function DocsPage() {
                       },
                     ].map((sub) => (
                       <div key={sub.name} className="rounded-md border bg-muted/20 p-3 space-y-2">
-                        <div>
-                          <p className="text-sm font-semibold">{sub.name}</p>
-                          <p className="text-[10px] font-mono text-muted-foreground/70">{sub.file}</p>
-                        </div>
+                        <p className="text-sm font-semibold">{sub.name}</p>
                         <p className="text-xs text-muted-foreground"><span className="font-medium text-foreground/70">Trigger:</span> {sub.trigger}</p>
                         <ul className="space-y-0.5">
                           {sub.actions.map((a, i) => (
@@ -1106,10 +1021,7 @@ export default function DocsPage() {
                       },
                     ].map((sub) => (
                       <div key={sub.name} className="rounded-md border bg-muted/20 p-3 space-y-2">
-                        <div>
-                          <p className="text-sm font-semibold">{sub.name}</p>
-                          <p className="text-[10px] font-mono text-muted-foreground/70">{sub.file}</p>
-                        </div>
+                        <p className="text-sm font-semibold">{sub.name}</p>
                         <p className="text-xs text-muted-foreground"><span className="font-medium text-foreground/70">Trigger:</span> {sub.trigger}</p>
                         <ul className="space-y-0.5">
                           {sub.actions.map((a, i) => (
@@ -1137,7 +1049,6 @@ export default function DocsPage() {
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-2 pt-1">
-                    <Badge variant="outline" className="text-xs font-mono">lib/agents/r2r.ts</Badge>
                     <Badge variant="secondary" className="text-xs">Trigger: month-end close · on-demand sync · post every transaction</Badge>
                   </div>
                 </CardHeader>
@@ -1210,7 +1121,6 @@ export default function DocsPage() {
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-2 pt-1">
-                    <Badge variant="outline" className="text-xs font-mono">lib/agents/om.ts</Badge>
                     <Badge variant="secondary" className="text-xs">Trigger: every transaction — runs as step 2 of orchestrator pipeline</Badge>
                   </div>
                 </CardHeader>
@@ -1284,7 +1194,6 @@ export default function DocsPage() {
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-2 pt-1">
-                    <Badge variant="outline" className="text-xs font-mono">lib/agents/fpna.ts</Badge>
                     <Badge variant="secondary" className="text-xs">Trigger: post-transaction · weekly CRON</Badge>
                   </div>
                 </CardHeader>
@@ -1405,7 +1314,6 @@ export default function DocsPage() {
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-2 pt-1">
-                    <Badge variant="outline" className="text-xs font-mono">lib/agents/auditor.ts</Badge>
                     <Badge variant="secondary" className="text-xs">Trigger: every transaction · month-end audit run</Badge>
                   </div>
                 </CardHeader>
