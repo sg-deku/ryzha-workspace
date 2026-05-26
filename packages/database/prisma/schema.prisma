@@ -9,55 +9,55 @@ datasource db {
 }
 
 model Organization {
-  id        String   @id @default(cuid())
-  name      String
-  slug      String   @unique
-  plan      Plan     @default(FREE)
-  status    OrgStatus @default(ACTIVE)
+  id         String    @id @default(cuid())
+  name       String
+  slug       String    @unique
+  plan       Plan      @default(FREE)
+  status     OrgStatus @default(ACTIVE)
   approvedAt DateTime?
   approvedBy String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
 
   legalName           String?
-  address             Json?    // { street, city, country, postalCode }
+  address             Json? // { street, city, country, postalCode }
   taxId               String?
   logoUrl             String?
-  defaultTaxRate      Float    @default(0)
-  currency            String   @default("USD")
-  onboardingCompleted Boolean  @default(false)
+  defaultTaxRate      Float   @default(0)
+  currency            String  @default("USD")
+  onboardingCompleted Boolean @default(false)
 
-  users    UserOrganization[]
-  taxRules TaxRule[]
-  expenses Expense[]
-  invoices Invoice[]
-  anomalies ExpenseAnomaly[]
-  webhooks  Webhook[]
-  reportSchedules ReportSchedule[]
-  transactions    Transaction[]
-  contracts       Contract[]
-  roles           Role[]
+  users             UserOrganization[]
+  taxRules          TaxRule[]
+  expenses          Expense[]
+  invoices          Invoice[]
+  anomalies         ExpenseAnomaly[]
+  webhooks          Webhook[]
+  reportSchedules   ReportSchedule[]
+  transactions      Transaction[]
+  contracts         Contract[]
+  roles             Role[]
   financialSnapshot FinancialSnapshot?
   financialSettings FinancialSettings?
-  notifications    Notification[]
-  
+  notifications     Notification[]
+
   // P2P Models
-  vendors          Vendor[]
-  purchaseOrders   PurchaseOrder[]
-  vendorInvoices   VendorInvoice[]
-  p2pSettings      P2PSettings?
-  
+  vendors        Vendor[]
+  purchaseOrders PurchaseOrder[]
+  vendorInvoices VendorInvoice[]
+  p2pSettings    P2PSettings?
+
   // O2C Models
-  customers        Customer[]
-  salesOrders      SalesOrder[]
-  o2cSettings      O2CSettings?
+  customers   Customer[]
+  salesOrders SalesOrder[]
+  o2cSettings O2CSettings?
 
   dashboardLayouts DashboardLayout[]
   aiUsageLogs      AIUsageLog[]
 
   // GL Models
-  glEntries        GeneralLedgerEntry[]
-  chartOfAccounts  ChartOfAccounts[]
+  glEntries       GeneralLedgerEntry[]
+  chartOfAccounts ChartOfAccounts[]
 
   // Payment Models
   payments         Payment[]
@@ -66,81 +66,81 @@ model Organization {
   bankTransactions BankTransaction[]
 
   // Admin Models
-  license          License?
-  usageMetrics     UsageMetrics[]
+  license      License?
+  usageMetrics UsageMetrics[]
 }
 
 model P2PSettings {
-  id               String   @id @default(cuid())
-  organizationId   String   @unique
-  autoApproveLimit Float    @default(500)
-  requireThreeWayMatch Boolean @default(true)
-  earlyPaymentDiscount Boolean @default(true)
-  organization     Organization @relation(fields: [organizationId], references: [id])
+  id                   String       @id @default(cuid())
+  organizationId       String       @unique
+  autoApproveLimit     Float        @default(500)
+  requireThreeWayMatch Boolean      @default(true)
+  earlyPaymentDiscount Boolean      @default(true)
+  organization         Organization @relation(fields: [organizationId], references: [id])
 }
 
 model Vendor {
-  id               String   @id @default(cuid())
-  name             String
-  email            String?
-  taxId            String?
-  address          Json?
-  paymentTerms     String?  @default("NET30")
-  status           String   @default("ACTIVE")
-  organizationId   String
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  id             String   @id @default(cuid())
+  name           String
+  email          String?
+  taxId          String?
+  address        Json?
+  paymentTerms   String?  @default("NET30")
+  status         String   @default("ACTIVE")
+  organizationId String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
-  organization     Organization @relation(fields: [organizationId], references: [id])
-  purchaseOrders   PurchaseOrder[]
-  invoices         VendorInvoice[]
+  organization   Organization    @relation(fields: [organizationId], references: [id])
+  purchaseOrders PurchaseOrder[]
+  invoices       VendorInvoice[]
 }
 
 model PurchaseOrder {
-  id               String   @id @default(cuid())
-  poNumber         String   @unique
-  vendorId         String
-  status           String   @default("DRAFT") // DRAFT, PENDING_APPROVAL, APPROVED, ORDERED, RECEIVED, CLOSED
-  totalAmount      Float
-  organizationId   String
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  id             String   @id @default(cuid())
+  poNumber       String   @unique
+  vendorId       String
+  status         String   @default("DRAFT") // DRAFT, PENDING_APPROVAL, APPROVED, ORDERED, RECEIVED, CLOSED
+  totalAmount    Float
+  organizationId String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
-  vendor           Vendor   @relation(fields: [vendorId], references: [id])
-  organization     Organization @relation(fields: [organizationId], references: [id])
-  lineItems        PurchaseOrderLine[]
-  vendorInvoices   VendorInvoice[]
+  vendor         Vendor              @relation(fields: [vendorId], references: [id])
+  organization   Organization        @relation(fields: [organizationId], references: [id])
+  lineItems      PurchaseOrderLine[]
+  vendorInvoices VendorInvoice[]
 }
 
 model PurchaseOrderLine {
-  id               String   @id @default(cuid())
-  description      String
-  quantity         Float
-  unitPrice        Float
-  amount           Float
-  purchaseOrderId  String
-  purchaseOrder    PurchaseOrder @relation(fields: [purchaseOrderId], references: [id])
+  id              String        @id @default(cuid())
+  description     String
+  quantity        Float
+  unitPrice       Float
+  amount          Float
+  purchaseOrderId String
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id])
 }
 
 model VendorInvoice {
-  id               String   @id @default(cuid())
-  invoiceNumber    String
-  vendorId         String
-  purchaseOrderId  String?
-  status           String   @default("RECEIVED") // RECEIVED, MATCHED, APPROVED, PAID, DISPUTED
-  amount           Float
-  dueDate          DateTime
-  agentLogs        Json?    @default("[]")
-  workflowStatus   String?
-  organizationId   String
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  id              String   @id @default(cuid())
+  invoiceNumber   String
+  vendorId        String
+  purchaseOrderId String?
+  status          String   @default("RECEIVED") // RECEIVED, MATCHED, APPROVED, PAID, DISPUTED
+  amount          Float
+  dueDate         DateTime
+  agentLogs       Json?    @default("[]")
+  workflowStatus  String?
+  organizationId  String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
-  vendor           Vendor   @relation(fields: [vendorId], references: [id])
-  purchaseOrder    PurchaseOrder? @relation(fields: [purchaseOrderId], references: [id])
-  organization     Organization @relation(fields: [organizationId], references: [id])
-  lineItems        VendorInvoiceLine[]
-  vendorPayments   VendorPayment[]
+  vendor         Vendor              @relation(fields: [vendorId], references: [id])
+  purchaseOrder  PurchaseOrder?      @relation(fields: [purchaseOrderId], references: [id])
+  organization   Organization        @relation(fields: [organizationId], references: [id])
+  lineItems      VendorInvoiceLine[]
+  vendorPayments VendorPayment[]
 }
 
 model VendorPayment {
@@ -157,8 +157,8 @@ model VendorPayment {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  vendorInvoice   VendorInvoice @relation(fields: [vendorInvoiceId], references: [id])
-  organization    Organization  @relation(fields: [organizationId], references: [id])
+  vendorInvoice VendorInvoice @relation(fields: [vendorInvoiceId], references: [id])
+  organization  Organization  @relation(fields: [organizationId], references: [id])
 
   @@index([vendorInvoiceId])
   @@index([organizationId, paymentDate])
@@ -183,112 +183,112 @@ model BankTransaction {
   createdAt              DateTime @default(now())
   updatedAt              DateTime @updatedAt
 
-  organization    Organization @relation(fields: [organizationId], references: [id])
+  organization Organization @relation(fields: [organizationId], references: [id])
 
   @@index([organizationId, date])
   @@index([organizationId, matchStatus])
 }
 
 model VendorInvoiceLine {
-  id               String   @id @default(cuid())
-  description      String
-  quantity         Float
-  unitPrice        Float
-  amount           Float
-  vendorInvoiceId  String
-  vendorInvoice    VendorInvoice @relation(fields: [vendorInvoiceId], references: [id])
+  id              String        @id @default(cuid())
+  description     String
+  quantity        Float
+  unitPrice       Float
+  amount          Float
+  vendorInvoiceId String
+  vendorInvoice   VendorInvoice @relation(fields: [vendorInvoiceId], references: [id])
 }
 
 model O2CSettings {
-  id               String   @id @default(cuid())
-  organizationId   String   @unique
-  creditLimitDefault Float  @default(5000)
-  autoDunning      Boolean  @default(true)
-  organization     Organization @relation(fields: [organizationId], references: [id])
+  id                 String       @id @default(cuid())
+  organizationId     String       @unique
+  creditLimitDefault Float        @default(5000)
+  autoDunning        Boolean      @default(true)
+  organization       Organization @relation(fields: [organizationId], references: [id])
 }
 
 model Customer {
-  id               String   @id @default(cuid())
-  name             String
-  email            String?
-  taxId            String?
-  address          Json?
-  creditLimit      Float    @default(5000)
-  status           String   @default("ACTIVE")
-  organizationId   String
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  id             String   @id @default(cuid())
+  name           String
+  email          String?
+  taxId          String?
+  address        Json?
+  creditLimit    Float    @default(5000)
+  status         String   @default("ACTIVE")
+  organizationId String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
-  organization     Organization @relation(fields: [organizationId], references: [id])
-  salesOrders      SalesOrder[]
+  organization Organization @relation(fields: [organizationId], references: [id])
+  salesOrders  SalesOrder[]
 }
 
 model SalesOrder {
-  id               String   @id @default(cuid())
-  orderNumber      String   @unique
-  customerId       String
-  status           String   @default("DRAFT") // DRAFT, APPROVED, INVOICED, PAID, SHIPPED
-  totalAmount      Float
-  agentLogs        Json?    @default("[]")
-  workflowStatus   String?
-  organizationId   String
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  id             String   @id @default(cuid())
+  orderNumber    String   @unique
+  customerId     String
+  status         String   @default("DRAFT") // DRAFT, APPROVED, INVOICED, PAID, SHIPPED
+  totalAmount    Float
+  agentLogs      Json?    @default("[]")
+  workflowStatus String?
+  organizationId String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
-  customer         Customer @relation(fields: [customerId], references: [id])
-  organization     Organization @relation(fields: [organizationId], references: [id])
-  lineItems        SalesOrderLine[]
+  customer     Customer         @relation(fields: [customerId], references: [id])
+  organization Organization     @relation(fields: [organizationId], references: [id])
+  lineItems    SalesOrderLine[]
 }
 
 model SalesOrderLine {
-  id               String   @id @default(cuid())
-  description      String
-  quantity         Float
-  unitPrice        Float
-  amount           Float
-  salesOrderId     String
-  salesOrder       SalesOrder @relation(fields: [salesOrderId], references: [id])
+  id           String     @id @default(cuid())
+  description  String
+  quantity     Float
+  unitPrice    Float
+  amount       Float
+  salesOrderId String
+  salesOrder   SalesOrder @relation(fields: [salesOrderId], references: [id])
 }
 
 model FinancialSettings {
-  id                           String   @id @default(cuid())
-  organizationId               String   @unique
-  baseCurrency                 String   @default("USD")
-  fiscalYearStart              String   @default("January")
-  bankBalance                  Float    @default(0)
-  averageMonthlyExpenses       Float?
-  deferredRevenueRules         Json     // ["annual", "yearly", "subscription"]
-  deferralPeriodMonths         Int      @default(12)
-  contractVerificationSource   String   @default("manual")
-  requireAuditSeal             Boolean  @default(true)
-  autoRejectUnverified         Boolean  @default(false)
-  targetMonthlyRevenue         Float    @default(10000)
-  lowRunwayAlertThreshold      Int      @default(3)
-  enableVoiceSummary           Boolean  @default(true)
-  elevenLabsVoiceId            String   @default("21m00Tcm4TlvDq8ikWAM")
-  voiceScriptTemplate          String   @default("Karina, a {{amount}} credit has been reconciled under ASC 606. This improves our net income for the quarter and extends our cash runway by {{runwayDays}} days, moving our 'Zero Cash Date' to {{zeroCashDate}}. We are currently {{percentAhead}}% ahead of our financial plan.")
-  enableSMS                    Boolean  @default(false)
-  smsRecipientNumber           String?
-  aiModel                      String   @default("gpt-4o-mini") // Can be configurable by user (e.g. gpt-4, claude-3-haiku)
-  aiApiKey                     String?  // Optional user-provided API key for their preferred provider
-  aiProvider                   String?  @default("openai")
-  embeddingProvider            String?  @default("openai")
-  embeddingModel               String?  @default("text-embedding-3-small")
-  expenseCategories            Json?    @default("[\"Software\", \"Hardware\", \"Office Supplies\", \"Travel\", \"Meals\", \"Legal\", \"Marketing\", \"Other\"]")
-  
+  id                         String  @id @default(cuid())
+  organizationId             String  @unique
+  baseCurrency               String  @default("USD")
+  fiscalYearStart            String  @default("January")
+  bankBalance                Float   @default(0)
+  averageMonthlyExpenses     Float?
+  deferredRevenueRules       Json // ["annual", "yearly", "subscription"]
+  deferralPeriodMonths       Int     @default(12)
+  contractVerificationSource String  @default("manual")
+  requireAuditSeal           Boolean @default(true)
+  autoRejectUnverified       Boolean @default(false)
+  targetMonthlyRevenue       Float   @default(10000)
+  lowRunwayAlertThreshold    Int     @default(3)
+  enableVoiceSummary         Boolean @default(true)
+  elevenLabsVoiceId          String  @default("21m00Tcm4TlvDq8ikWAM")
+  voiceScriptTemplate        String  @default("Karina, a {{amount}} credit has been reconciled under ASC 606. This improves our net income for the quarter and extends our cash runway by {{runwayDays}} days, moving our 'Zero Cash Date' to {{zeroCashDate}}. We are currently {{percentAhead}}% ahead of our financial plan.")
+  enableSMS                  Boolean @default(false)
+  smsRecipientNumber         String?
+  aiModel                    String  @default("gpt-4o-mini") // Can be configurable by user (e.g. gpt-4, claude-3-haiku)
+  aiApiKey                   String? // Optional user-provided API key for their preferred provider
+  aiProvider                 String? @default("openai")
+  embeddingProvider          String? @default("openai")
+  embeddingModel             String? @default("text-embedding-3-small")
+  expenseCategories          Json?   @default("[\"Software\", \"Hardware\", \"Office Supplies\", \"Travel\", \"Meals\", \"Legal\", \"Marketing\", \"Other\"]")
+
   // Email Settings
-  emailProvider                String?  @default("smtp") // smtp, sendgrid, resend
-  emailFrom                    String?  @default("billing@yourcompany.com")
-  smtpHost                     String?
-  smtpPort                     Int?
-  smtpUser                     String?
-  smtpPass                     String?
+  emailProvider String? @default("smtp") // smtp, sendgrid, resend
+  emailFrom     String? @default("billing@yourcompany.com")
+  smtpHost      String?
+  smtpPort      Int?
+  smtpUser      String?
+  smtpPass      String?
 
   // Stripe Integration
-  stripeSecretKey              String?
-  stripeWebhookSecret          String?
+  stripeSecretKey     String?
+  stripeWebhookSecret String?
 
-  updatedAt                    DateTime @updatedAt
+  updatedAt DateTime @updatedAt
 
   organization Organization @relation(fields: [organizationId], references: [id])
 }
@@ -313,6 +313,7 @@ model Invoice {
   lineItems    InvoiceLineItem[]
   payments     Payment[]
   creditNotes  CreditNote[]
+  transactions Transaction[]
   organization Organization      @relation(fields: [organizationId], references: [id])
 }
 
@@ -350,20 +351,20 @@ model Payment {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  invoice         Invoice      @relation(fields: [invoiceId], references: [id])
-  organization    Organization @relation(fields: [organizationId], references: [id])
+  invoice      Invoice      @relation(fields: [invoiceId], references: [id])
+  organization Organization @relation(fields: [organizationId], references: [id])
 
   @@index([invoiceId])
   @@index([organizationId, paymentDate])
 }
 
 model CreditNote {
-  id              String   @id @default(cuid())
+  id              String    @id @default(cuid())
   invoiceId       String
   amount          Float
   reason          String
-  reasonCategory  String   @default("other")
-  issueDate       DateTime @default(now())
+  reasonCategory  String    @default("other")
+  issueDate       DateTime  @default(now())
   refundMethod    String?
   refundDate      DateTime?
   referenceNumber String?
@@ -371,11 +372,11 @@ model CreditNote {
   transactionId   String?
   createdById     String?
   organizationId  String
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
-  invoice         Invoice      @relation(fields: [invoiceId], references: [id])
-  organization    Organization @relation(fields: [organizationId], references: [id])
+  invoice      Invoice      @relation(fields: [invoiceId], references: [id])
+  organization Organization @relation(fields: [organizationId], references: [id])
 
   @@index([invoiceId])
   @@index([organizationId, issueDate])
@@ -393,20 +394,20 @@ model Expense {
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 
-  organization Organization @relation(fields: [organizationId], references: [id])
+  organization Organization     @relation(fields: [organizationId], references: [id])
   anomalies    ExpenseAnomaly[]
 }
 
 model ExpenseAnomaly {
-  id             String      @id @default(cuid())
-  type           AnomalyType
-  description    String
-  confidence     Float       @default(1.0)
-  isFalsePositive Boolean     @default(false)
-  status         AnomalyStatus @default(PENDING)
-  expenseId      String
-  organizationId String
-  createdAt      DateTime    @default(now())
+  id              String        @id @default(cuid())
+  type            AnomalyType
+  description     String
+  confidence      Float         @default(1.0)
+  isFalsePositive Boolean       @default(false)
+  status          AnomalyStatus @default(PENDING)
+  expenseId       String
+  organizationId  String
+  createdAt       DateTime      @default(now())
 
   expense      Expense      @relation(fields: [expenseId], references: [id])
   organization Organization @relation(fields: [organizationId], references: [id])
@@ -433,17 +434,17 @@ enum ExpenseStatus {
 }
 
 model User {
-  id                String   @id @default(cuid())
-  email             String   @unique
+  id                String     @id @default(cuid())
+  email             String     @unique
   password          String?
   name              String
   status            UserStatus @default(ACTIVE)
-  isSuperAdmin      Boolean  @default(false)
-  resetToken        String?   @unique
+  isSuperAdmin      Boolean    @default(false)
+  resetToken        String?    @unique
   resetTokenExpiry  DateTime?
-  reportPreferences Json?   // { receiveWeekly: boolean, reportTypes: string[] }
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  reportPreferences Json? // { receiveWeekly: boolean, reportTypes: string[] }
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
 
   organizations UserOrganization[]
   chatMessages  ChatMessage[]
@@ -461,21 +462,21 @@ model UserOrganization {
 }
 
 model Role {
-  id             String   @id @default(cuid())
+  id             String             @id @default(cuid())
   name           String
   description    String?
-  isSystem       Boolean  @default(false)
+  isSystem       Boolean            @default(false)
   organizationId String?
-  organization   Organization? @relation(fields: [organizationId], references: [id])
+  organization   Organization?      @relation(fields: [organizationId], references: [id])
   permissions    RolePermission[]
   userOrgs       UserOrganization[]
 }
 
 model Permission {
-  id             String   @id @default(cuid())
-  name           String   @unique // e.g. "users:manage"
-  description    String?
-  roles          RolePermission[]
+  id          String           @id @default(cuid())
+  name        String           @unique // e.g. "users:manage"
+  description String?
+  roles       RolePermission[]
 }
 
 model RolePermission {
@@ -494,12 +495,12 @@ enum UserStatus {
 }
 
 model TaxRule {
-  id             String   @id @default(cuid())
+  id             String       @id @default(cuid())
   name           String
-  jurisdiction   String   // Country ISO or US State ISO
+  jurisdiction   String // Country ISO or US State ISO
   rate           Float
-  taxType        TaxType  @default(VAT)
-  isNexus        Boolean  @default(false)
+  taxType        TaxType      @default(VAT)
+  isNexus        Boolean      @default(false)
   appliesTo      String[] // product categories
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id])
@@ -512,17 +513,17 @@ enum TaxType {
 }
 
 model Webhook {
-  id             String      @id @default(cuid())
+  id             String    @id @default(cuid())
   url            String
-  events         String[]    // ["invoice.paid", "expense.created"]
+  events         String[] // ["invoice.paid", "expense.created"]
   secret         String
   lastSent       DateTime?
-  failures       Int         @default(0)
+  failures       Int       @default(0)
   organizationId String
-  createdAt      DateTime    @default(now())
+  createdAt      DateTime  @default(now())
 
-  organization   Organization @relation(fields: [organizationId], references: [id])
-  logs           WebhookLog[]
+  organization Organization @relation(fields: [organizationId], references: [id])
+  logs         WebhookLog[]
 }
 
 model WebhookLog {
@@ -536,36 +537,35 @@ model WebhookLog {
   retryCount   Int      @default(0)
   createdAt    DateTime @default(now())
 
-  webhook      Webhook  @relation(fields: [webhookId], references: [id])
+  webhook Webhook @relation(fields: [webhookId], references: [id])
 }
 
 model ReportSchedule {
-  id             String      @id @default(cuid())
+  id             String     @id @default(cuid())
   organizationId String
   type           ReportType
   frequency      Frequency
-  recipients     String[]    // Emails
+  recipients     String[] // Emails
   lastSent       DateTime?
   nextRun        DateTime?
-  createdAt      DateTime    @default(now())
+  createdAt      DateTime   @default(now())
 
-  organization   Organization @relation(fields: [organizationId], references: [id])
+  organization Organization @relation(fields: [organizationId], references: [id])
 }
 
 model Notification {
   id             String   @id @default(cuid())
-  type           String   // "INFO", "SUCCESS", "WARNING", "ERROR"
+  type           String // "INFO", "SUCCESS", "WARNING", "ERROR"
   title          String
   message        String
-  link           String?  // Optional URL to redirect to
+  link           String? // Optional URL to redirect to
   read           Boolean  @default(false)
   organizationId String
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  organization   Organization @relation(fields: [organizationId], references: [id])
+  organization Organization @relation(fields: [organizationId], references: [id])
 }
-
 
 enum ReportType {
   CASH_FLOW
@@ -598,43 +598,43 @@ enum LicenseStatus {
 }
 
 model SubscriptionPlan {
-  id            String    @id @default(cuid())
-  name          String    @unique
+  id            String   @id @default(cuid())
+  name          String   @unique
   description   String?
   price         Float
-  interval      String    @default("month")
+  interval      String   @default("month")
   features      Json
-  isActive      Boolean   @default(true)
+  isActive      Boolean  @default(true)
   stripePriceId String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  licenses      License[]
+  licenses License[]
 }
 
 model License {
-  id             String        @id @default(cuid())
-  organizationId String        @unique
+  id             String           @id @default(cuid())
+  organizationId String           @unique
   planId         String
   plan           SubscriptionPlan @relation(fields: [planId], references: [id])
-  maxUsers       Int           @default(5)
-  maxApiCalls    Int           @default(10000)
-  maxAiTokens    Int           @default(50000)
-  startsAt       DateTime      @default(now())
+  maxUsers       Int              @default(5)
+  maxApiCalls    Int              @default(10000)
+  maxAiTokens    Int              @default(50000)
+  startsAt       DateTime         @default(now())
   endsAt         DateTime?
-  status         LicenseStatus @default(ACTIVE)
-  organization   Organization  @relation(fields: [organizationId], references: [id])
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  status         LicenseStatus    @default(ACTIVE)
+  organization   Organization     @relation(fields: [organizationId], references: [id])
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
 }
 
 model UsageMetrics {
-  id             String   @id @default(cuid())
+  id             String       @id @default(cuid())
   organizationId String
-  date           DateTime @default(now())
-  apiCalls       Int      @default(0)
-  aiTokensUsed   Int      @default(0)
-  storageBytes   Int      @default(0)
+  date           DateTime     @default(now())
+  apiCalls       Int          @default(0)
+  aiTokensUsed   Int          @default(0)
+  storageBytes   Int          @default(0)
   organization   Organization @relation(fields: [organizationId], references: [id])
 
   @@unique([organizationId, date])
@@ -642,59 +642,89 @@ model UsageMetrics {
 }
 
 model Transaction {
-  id                     String      @id @default(cuid())
-  stripePaymentIntentId  String      @unique
-  amount                 Float
-  currency               String      @default("usd")
-  description            String?
-  customerEmail          String?
-  
+  id                    String  @id @default(cuid())
+  stripePaymentIntentId String  @unique
+  amount                Float
+  currency              String  @default("usd")
+  description           String?
+  customerEmail         String?
+
+  // Payment and clearing fields
+  stripeChargeId  String? // charge_xxx, needed to fetch fee details
+  stripeFee       Float?    @default(0) // 2.9% + $0.30 in dollars
+  stripeNet       Float? // amount - stripeFee
+  fxFee           Float?    @default(0) // additional 1% FX fee if international
+  payoutId        String? // payout_xxx from Stripe payout.paid event
+  payoutDate      DateTime? // date funds actually land in bank
+  clearingStatus  String    @default("pending") // pending | paid_out
+  paymentMethod   String? // stripe | bank_transfer | ach | etc.
+  paymentFraction Float?    @default(1) // for partial payments
+
+  // Invoice linkage
+  invoiceId String?
+  invoice   Invoice? @relation(fields: [invoiceId], references: [id])
+
   // R2R & O&M fields
-  revenueRecognitionType String      @default("immediate") // immediate, deferred
-  recognizedRevenue      Float?      // amount recognized now
-  deferredRevenue        Float?      @default(0)
-  
+  revenueRecognitionType String @default("immediate") // immediate, deferred
+  recognizedRevenue      Float? // amount recognized now
+  deferredRevenue        Float? @default(0)
+
   // Auditor fields
-  auditStatus            String      @default("pending") // pending, verified, failed
-  auditHash              String?
-  
+  auditStatus String  @default("pending") // pending, verified, failed
+  auditHash   String?
+
   // FP&A fields
-  runwayMonths           Float?
-  zeroCashDate           DateTime?
-  percentAhead           Float?      // % ahead of financial plan
-  
+  runwayMonths Float?
+  zeroCashDate DateTime?
+  percentAhead Float? // % ahead of financial plan
+
   // Workflow state
-  agentStatus            Json?        // stores logs per agent: { r2r: "done", om: "pending", ... }
-  agentLogs              Json        // array of { agent, message, timestamp }
-  workflowStatus         String      @default("pending") // pending, running, completed, error
-  
-  organizationId         String
-  organization           Organization @relation(fields: [organizationId], references: [id])
-  
-  createdAt              DateTime    @default(now())
-  updatedAt              DateTime    @updatedAt
+  agentStatus    Json? // stores logs per agent: { r2r: "done", om: "pending", ... }
+  agentLogs      Json // array of { agent, message, timestamp }
+  workflowStatus String @default("pending") // pending, running, completed, error
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Contract {
-  id                    String   @id @default(cuid())
-  stripePaymentIntentId String   @unique
+  id                    String       @id @default(cuid())
+  stripePaymentIntentId String       @unique
   customerEmail         String
   amount                Float
-  status                String   @default("signed") // signed, pending
-  signedAt              DateTime @default(now())
+  status                String       @default("signed") // signed, pending
+  signedAt              DateTime     @default(now())
   organizationId        String
   organization          Organization @relation(fields: [organizationId], references: [id])
 }
 
+model DeferredRevenueSchedule {
+  id             String    @id @default(cuid())
+  transactionId  String
+  period         DateTime // first day of recognition month
+  amount         Float // amount to recognize in this period
+  recognized     Boolean   @default(false)
+  recognizedAt   DateTime?
+  glEntryId      String? // FK to GeneralLedgerEntry once booked
+  organizationId String
+  createdAt      DateTime  @default(now())
+
+  @@index([organizationId, period])
+  @@index([transactionId])
+}
+
 model FinancialSnapshot {
-  id                    String   @id @default(cuid())
-  bankBalance           Float
+  id                     String       @id @default(cuid())
+  bankBalance            Float
   averageMonthlyExpenses Float
-  runwayMonths          Float
-  zeroCashDate          DateTime
-  updatedAt             DateTime @updatedAt
-  organizationId        String   @unique
-  organization          Organization @relation(fields: [organizationId], references: [id])
+  runwayMonths           Float
+  zeroCashDate           DateTime
+  updatedAt              DateTime     @updatedAt
+  organizationId         String       @unique
+  organization           Organization @relation(fields: [organizationId], references: [id])
 }
 
 model DashboardLayout {
@@ -704,7 +734,7 @@ model DashboardLayout {
   widgets        Json
   updatedAt      DateTime @updatedAt
 
-  organization   Organization @relation(fields: [organizationId], references: [id])
+  organization Organization @relation(fields: [organizationId], references: [id])
 
   @@unique([userId, organizationId])
 }
@@ -724,7 +754,7 @@ model GeneralLedgerEntry {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  organization   Organization @relation(fields: [organizationId], references: [id])
+  organization Organization @relation(fields: [organizationId], references: [id])
 
   @@index([organizationId, date])
   @@index([organizationId, accountType])
@@ -740,7 +770,7 @@ model ChartOfAccounts {
   organizationId String
   createdAt      DateTime @default(now())
 
-  organization   Organization @relation(fields: [organizationId], references: [id])
+  organization Organization @relation(fields: [organizationId], references: [id])
 
   @@unique([organizationId, accountName])
 }
@@ -756,7 +786,7 @@ model AIUsageLog {
   totalTokens      Int      @default(0)
   createdAt        DateTime @default(now())
 
-  organization     Organization @relation(fields: [organizationId], references: [id])
+  organization Organization @relation(fields: [organizationId], references: [id])
 
   @@index([organizationId, createdAt])
   @@index([organizationId, feature])
@@ -770,19 +800,19 @@ model ChatMessage {
   content        String
   createdAt      DateTime @default(now())
 
-  user           User     @relation(fields: [userId], references: [id])
+  user User @relation(fields: [userId], references: [id])
 
   @@index([userId, organizationId, createdAt])
 }
 
 model AuditLog {
   id             String   @id @default(cuid())
-  action         String   // e.g. "CREATE_USER", "UPDATE_ORGANIZATION", "SUSPEND_USER"
-  entityType     String   // e.g. "USER", "ORGANIZATION"
+  action         String // e.g. "CREATE_USER", "UPDATE_ORGANIZATION", "SUSPEND_USER"
+  entityType     String // e.g. "USER", "ORGANIZATION"
   entityId       String
-  details        Json?    // Stores what changed, etc.
-  actorId        String?  // User ID who performed the action (if known)
-  organizationId String?  // If it relates to a specific org
+  details        Json? // Stores what changed, etc.
+  actorId        String? // User ID who performed the action (if known)
+  organizationId String? // If it relates to a specific org
   createdAt      DateTime @default(now())
 
   @@index([action, createdAt])
