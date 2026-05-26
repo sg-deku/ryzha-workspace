@@ -40,6 +40,14 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         },
         quantity: item.quantity,
       })),
+      payment_intent_data: {
+        metadata: {
+          organizationId: orgId,
+          invoiceId: invoice.id,
+          invoiceNumber: invoice.invoiceNumber,
+          customer_email: invoice.clientEmail,
+        }
+      },
       metadata: {
         organizationId: orgId,
         invoiceId: invoice.id,
