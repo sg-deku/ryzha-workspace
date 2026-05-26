@@ -16,7 +16,7 @@ export async function runInvoiceGenerationAgent(orderId: string, organizationId:
       invoiceNumber,
       organizationId,
       clientName: order.customer.name,
-      clientEmail: order.customer.email,
+      clientEmail: order.customer.email ?? "",
       dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
       subtotal: order.totalAmount,
       totalTax: 0,

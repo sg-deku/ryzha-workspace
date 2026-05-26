@@ -54,6 +54,7 @@ model Organization {
 
   dashboardLayouts DashboardLayout[]
   aiUsageLogs      AIUsageLog[]
+  chatMessages     ChatMessage[]
 
   // GL Models
   glEntries       GeneralLedgerEntry[]
@@ -97,14 +98,18 @@ model Vendor {
 }
 
 model PurchaseOrder {
-  id             String   @id @default(cuid())
-  poNumber       String   @unique
+  id             String    @id @default(cuid())
+  poNumber       String    @unique
   vendorId       String
-  status         String   @default("DRAFT") // DRAFT, PENDING_APPROVAL, APPROVED, ORDERED, RECEIVED, CLOSED
+  status         String    @default("DRAFT") // DRAFT, PENDING_APPROVAL, APPROVED, ORDERED, RECEIVED, CLOSED
   totalAmount    Float
+  description    String?
+  notes          String?
+  approvedBy     String?
+  approvedAt     DateTime?
   organizationId String
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   vendor         Vendor              @relation(fields: [vendorId], references: [id])
   organization   Organization        @relation(fields: [organizationId], references: [id])
@@ -123,18 +128,21 @@ model PurchaseOrderLine {
 }
 
 model VendorInvoice {
-  id              String   @id @default(cuid())
+  id              String    @id @default(cuid())
   invoiceNumber   String
   vendorId        String
   purchaseOrderId String?
-  status          String   @default("RECEIVED") // RECEIVED, MATCHED, APPROVED, PAID, DISPUTED
+  status          String    @default("RECEIVED") // RECEIVED, MATCHED, APPROVED, PAID, DISPUTED
   amount          Float
+  currencyCode    String    @default("USD")
   dueDate         DateTime
-  agentLogs       Json?    @default("[]")
+  paidDate        DateTime?
+  notes           String?
+  agentLogs       Json?     @default("[]")
   workflowStatus  String?
   organizationId  String
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   vendor         Vendor              @relation(fields: [vendorId], references: [id])
   purchaseOrder  PurchaseOrder?      @relation(fields: [purchaseOrderId], references: [id])
@@ -157,8 +165,10 @@ model VendorPayment {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  vendorInvoice VendorInvoice @relation(fields: [vendorInvoiceId], references: [id])
-  organization  Organization  @relation(fields: [organizationId], references: [id])
+  vendorInvoice        VendorInvoice    @relation(fields: [vendorInvoiceId], references: [id])
+  organization         Organization     @relation(fields: [organizationId], references: [id])
+  expense              Expense?         @relation("VendorPaymentExpense", fields: [expenseId], references: [id])
+  bankTransactions     BankTransaction[] @relation("BankTransactionVendorPayment")
 
   @@index([vendorInvoiceId])
   @@index([organizationId, paymentDate])
@@ -183,7 +193,9 @@ model BankTransaction {
   createdAt              DateTime @default(now())
   updatedAt              DateTime @updatedAt
 
-  organization Organization @relation(fields: [organizationId], references: [id])
+  organization         Organization   @relation(fields: [organizationId], references: [id])
+  matchedPayment       Payment?       @relation("BankTransactionPayment", fields: [matchedPaymentId], references: [id])
+  matchedVendorPayment VendorPayment? @relation("BankTransactionVendorPayment", fields: [matchedVendorPaymentId], references: [id])
 
   @@index([organizationId, date])
   @@index([organizationId, matchStatus])
@@ -211,9 +223,12 @@ model Customer {
   id             String   @id @default(cuid())
   name           String
   email          String?
+  phone          String?
   taxId          String?
   address        Json?
+  paymentTerms   String?  @default("NET30")
   creditLimit    Float    @default(5000)
+  notes          String?
   status         String   @default("ACTIVE")
   organizationId String
   createdAt      DateTime @default(now())
@@ -271,6 +286,10 @@ model FinancialSettings {
   voiceScriptTemplate        String  @default("Karina, a {{amount}} credit has been reconciled under ASC 606. This improves our net income for the quarter and extends our cash runway by {{runwayDays}} days, moving our 'Zero Cash Date' to {{zeroCashDate}}. We are currently {{percentAhead}}% ahead of our financial plan.")
   enableSMS                  Boolean @default(false)
   smsRecipientNumber         String?
+  twilioAccountSid           String?
+  twilioAuthToken            String?
+  twilioFromNumber           String?
+  elevenLabsApiKey           String?
   aiModel                    String  @default("gpt-4o-mini") // Can be configurable by user (e.g. gpt-4, claude-3-haiku)
   aiApiKey                   String? // Optional user-provided API key for their preferred provider
   aiProvider                 String? @default("openai")
@@ -335,6 +354,7 @@ model InvoiceLineItem {
 enum InvoiceStatus {
   DRAFT
   SENT
+  OVERDUE
   PARTIAL
   PAID
   VOID
@@ -355,8 +375,10 @@ model Payment {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  invoice      Invoice      @relation(fields: [invoiceId], references: [id])
-  organization Organization @relation(fields: [organizationId], references: [id])
+  invoice          Invoice           @relation(fields: [invoiceId], references: [id])
+  transaction      Transaction?      @relation("PaymentTransaction", fields: [transactionId], references: [id])
+  organization     Organization      @relation(fields: [organizationId], references: [id])
+  bankTransactions BankTransaction[] @relation("BankTransactionPayment")
 
   @@index([invoiceId])
   @@index([organizationId, paymentDate])
@@ -380,6 +402,7 @@ model CreditNote {
   updatedAt       DateTime  @updatedAt
 
   invoice      Invoice      @relation(fields: [invoiceId], references: [id])
+  transaction  Transaction? @relation("CreditNoteTransaction", fields: [transactionId], references: [id])
   organization Organization @relation(fields: [organizationId], references: [id])
 
   @@index([invoiceId])
@@ -398,8 +421,9 @@ model Expense {
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 
-  organization Organization     @relation(fields: [organizationId], references: [id])
-  anomalies    ExpenseAnomaly[]
+  organization   Organization     @relation(fields: [organizationId], references: [id])
+  anomalies      ExpenseAnomaly[]
+  vendorPayments VendorPayment[]  @relation("VendorPaymentExpense")
 }
 
 model ExpenseAnomaly {
@@ -434,6 +458,7 @@ enum ExpenseStatus {
   PENDING
   CATEGORIZED
   REVIEWED
+  APPROVED
   PAID
 }
 
@@ -450,8 +475,9 @@ model User {
   createdAt         DateTime   @default(now())
   updatedAt         DateTime   @updatedAt
 
-  organizations UserOrganization[]
-  chatMessages  ChatMessage[]
+  organizations    UserOrganization[]
+  chatMessages     ChatMessage[]
+  dashboardLayouts DashboardLayout[]
 }
 
 model UserOrganization {
@@ -690,6 +716,10 @@ model Transaction {
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id])
 
+  payments          Payment[]                  @relation("PaymentTransaction")
+  creditNotes       CreditNote[]               @relation("CreditNoteTransaction")
+  deferredSchedules DeferredRevenueSchedule[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -700,6 +730,9 @@ model Contract {
   customerEmail         String
   amount                Float
   status                String       @default("signed") // signed, pending
+  description           String?
+  startDate             DateTime?
+  endDate               DateTime?
   signedAt              DateTime     @default(now())
   organizationId        String
   organization          Organization @relation(fields: [organizationId], references: [id])
@@ -715,6 +748,9 @@ model DeferredRevenueSchedule {
   glEntryId      String? // FK to GeneralLedgerEntry once booked
   organizationId String
   createdAt      DateTime  @default(now())
+
+  transaction Transaction         @relation(fields: [transactionId], references: [id])
+  glEntry     GeneralLedgerEntry? @relation(fields: [glEntryId], references: [id])
 
   @@index([organizationId, period])
   @@index([transactionId])
@@ -739,6 +775,7 @@ model DashboardLayout {
   updatedAt      DateTime @updatedAt
 
   organization Organization @relation(fields: [organizationId], references: [id])
+  user         User         @relation(fields: [userId], references: [id])
 
   @@unique([userId, organizationId])
 }
@@ -758,8 +795,10 @@ model GeneralLedgerEntry {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  organization Organization @relation(fields: [organizationId], references: [id])
+  organization      Organization              @relation(fields: [organizationId], references: [id])
+  deferredSchedules DeferredRevenueSchedule[]
 
+  @@unique([organizationId, sourceId, sourceType, accountName], name: "org_source_account")
   @@index([organizationId, date])
   @@index([organizationId, accountType])
   @@index([organizationId, sourceType])
@@ -804,7 +843,8 @@ model ChatMessage {
   content        String
   createdAt      DateTime @default(now())
 
-  user User @relation(fields: [userId], references: [id])
+  user         User         @relation(fields: [userId], references: [id])
+  organization Organization @relation(fields: [organizationId], references: [id])
 
   @@index([userId, organizationId, createdAt])
 }

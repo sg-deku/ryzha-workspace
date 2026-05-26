@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { after } from "next/server"
 import { startCashApplicationWorkflow } from "@/lib/agents/orchestrator"
 
 export const dynamic = "force-dynamic"
@@ -64,7 +65,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     },
   })
 
-  startCashApplicationWorkflow(payment.id, session.user.organizationId).catch(console.error)
+  after(startCashApplicationWorkflow(payment.id, session.user.organizationId).catch(console.error))
 
   return NextResponse.json(payment, { status: 201 })
 }

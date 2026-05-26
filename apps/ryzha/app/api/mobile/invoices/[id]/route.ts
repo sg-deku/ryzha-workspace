@@ -4,12 +4,13 @@ import { prisma } from "@/lib/prisma"
 
 export const dynamic = "force-dynamic"
 
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await getMobileSession(req)
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
+  const { id } = await params
   const invoice = await prisma.invoice.findFirst({
-    where: { id: params.id, organizationId: session.organizationId },
+    where: { id, organizationId: session.organizationId },
     include: { lineItems: true },
   })
 
@@ -18,12 +19,13 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   return NextResponse.json(invoice)
 }
 
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await getMobileSession(req)
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
+  const { id } = await params
   const existing = await prisma.invoice.findFirst({
-    where: { id: params.id, organizationId: session.organizationId },
+    where: { id, organizationId: session.organizationId },
   })
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 })
 
@@ -31,7 +33,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   const { status } = body
 
   const updated = await prisma.invoice.update({
-    where: { id: params.id },
+    where: { id },
     data: { ...(status ? { status } : {}) },
   })
 

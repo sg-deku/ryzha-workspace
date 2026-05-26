@@ -392,6 +392,7 @@ export async function startO2CWorkflow(salesOrderId: string, scenario?: string) 
           customerEmail: order.customer.email,
           organizationId: orgId,
           agentLogs: [],
+          invoiceId: invoiceId || null,
         },
       })
       await appendO2CLog("Orchestrator", `[2/2] Transaction created | Transaction ID: ${transaction.id} | Handing off to R2R → O&M → Auditor → FP&A pipeline...`)

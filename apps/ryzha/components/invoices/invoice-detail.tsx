@@ -301,7 +301,7 @@ export function InvoiceDetail({ invoice: initialInvoice }: { invoice: Invoice })
     }
   }
 
-  const canIssueCredit = totalPaid > 0
+  const canIssueCredit = invoice.status !== "DRAFT" && invoice.status !== "VOID"
 
   return (
     <div className="container py-8 max-w-5xl">

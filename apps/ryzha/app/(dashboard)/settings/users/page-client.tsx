@@ -337,7 +337,7 @@ export default function UsersManagementPage() {
           </div>
 
           {/* Edit User Role Dialog */}
-          <Dialog open={!!editingUser} onOpenChange={(open) => !open && setEditingUser(null)}>
+          <Dialog open={!!editingUser} onOpenChange={(open: boolean) => !open && setEditingUser(null)}>
             <DialogContent className="sm:max-w-[425px]">
               <DialogHeader>
                 <DialogTitle>Edit User Role</DialogTitle>

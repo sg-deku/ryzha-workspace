@@ -26,31 +26,25 @@ async function upsertGLEntry(data: {
   amount: number
   description: string
 }) {
-  const existing = await prisma.generalLedgerEntry.findFirst({
+  await prisma.generalLedgerEntry.upsert({
     where: {
-      organizationId: data.organizationId,
-      sourceId: data.sourceId,
-      sourceType: data.sourceType,
-      accountName: data.accountName,
-    },
-  })
-
-  if (existing) {
-    await prisma.generalLedgerEntry.update({
-      where: { id: existing.id },
-      data: {
-        date: data.date,
-        debit: data.debit,
-        credit: data.credit,
-        amount: data.amount,
-        description: data.description,
-        accountType: data.accountType,
+      org_source_account: {
+        organizationId: data.organizationId,
+        sourceId: data.sourceId,
+        sourceType: data.sourceType,
         accountName: data.accountName,
       },
-    })
-  } else {
-    await prisma.generalLedgerEntry.create({ data })
-  }
+    },
+    update: {
+      date: data.date,
+      debit: data.debit,
+      credit: data.credit,
+      amount: data.amount,
+      description: data.description,
+      accountType: data.accountType,
+    },
+    create: data,
+  })
 }
 
 async function syncInvoices(organizationId: string) {

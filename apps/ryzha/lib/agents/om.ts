@@ -53,7 +53,7 @@ export async function runOMAgent(transactionId: string) {
     }
   }
 
-  const paymentFraction: number = (tx as any).paymentFraction ?? 1
+  const paymentFraction: number = tx.paymentFraction ?? 1
   const effectiveAmount = tx.amount * paymentFraction
 
   let updated
@@ -75,14 +75,20 @@ export async function runOMAgent(transactionId: string) {
       },
     })
 
-    const scheduleRows = Array.from({ length: deferralMonths }, (_, i) => ({
-      transactionId,
-      period: addMonths(startOfMonth(new Date()), i + 1),
-      amount: monthlyPortion,
-      recognized: false,
-      organizationId: tx.organizationId
-    }))
-    await prisma.deferredRevenueSchedule.createMany({ data: scheduleRows })
+    const existingScheduleCount = await prisma.deferredRevenueSchedule.count({
+      where: { transactionId }
+    })
+
+    if (existingScheduleCount === 0) {
+      const scheduleRows = Array.from({ length: deferralMonths }, (_, i) => ({
+        transactionId,
+        period: addMonths(startOfMonth(new Date()), i + 1),
+        amount: monthlyPortion,
+        recognized: false,
+        organizationId: tx.organizationId
+      }))
+      await prisma.deferredRevenueSchedule.createMany({ data: scheduleRows })
+    }
   } else {
     const logMessage = aiReasoning || "Approved: immediate revenue recognition."
     await appendAgentLog(transactionId, "O&M", logMessage)

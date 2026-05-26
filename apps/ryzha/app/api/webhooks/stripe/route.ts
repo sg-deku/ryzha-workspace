@@ -82,7 +82,7 @@ export async function POST(req: Request) {
           
           if (balanceTx.fee_details) {
             fxFee = balanceTx.fee_details
-              .filter(f => f.type === "application_fee") // or currency conversion
+              .filter(f => f.type === "currency_conversion")
               .reduce((s, f) => s + f.amount, 0) / 100
           }
           

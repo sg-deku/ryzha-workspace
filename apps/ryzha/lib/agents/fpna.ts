@@ -22,38 +22,46 @@ export async function runFPAgent(transactionId: string) {
   const lastKnownBalance = snapshot?.bankBalance ?? settings?.bankBalance ?? 0
   const bankBalance = lastKnownBalance
 
-  const [glRevenue, transactionsTotal] = await Promise.all([
+  const monthStart = new Date()
+  monthStart.setDate(1)
+  monthStart.setHours(0, 0, 0, 0)
+
+  const threeMonthsAgo = new Date()
+  threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3)
+
+  const [glRevenue, currentMonthGLRevenue, recentExpenses] = await Promise.all([
     prisma.generalLedgerEntry.aggregate({
       where: { organizationId: tx.organizationId, accountType: "Revenue" },
       _sum: { credit: true }
     }),
-    prisma.transaction.aggregate({ 
-      where: { organizationId: tx.organizationId }, 
-      _sum: { amount: true } 
+    prisma.generalLedgerEntry.aggregate({
+      where: {
+        organizationId: tx.organizationId,
+        accountType: "Revenue",
+        date: { gte: monthStart }
+      },
+      _sum: { credit: true }
+    }),
+    prisma.expense.aggregate({
+      where: { 
+        organizationId: tx.organizationId, 
+        date: { gte: threeMonthsAgo } 
+      },
+      _sum: { amount: true }
     })
   ])
 
   const currentRevenue = glRevenue._sum.credit ?? 0
-
-  // Average monthly expenses over last 3 months
-  const threeMonthsAgo = new Date()
-  threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3)
-  const recentExpenses = await prisma.expense.aggregate({
-    where: { 
-      organizationId: tx.organizationId, 
-      date: { gte: threeMonthsAgo } 
-    },
-    _sum: { amount: true }
-  })
   const avgMonthlyExpenses = (recentExpenses._sum.amount || 0) / 3
 
   const runwayMonths = avgMonthlyExpenses > 0 ? bankBalance / avgMonthlyExpenses : 999
   const zeroCashDate = new Date()
   zeroCashDate.setDate(zeroCashDate.getDate() + Math.round(runwayMonths * 30))
 
-  // Percent ahead of plan
-  const actualMonthlyRevenue = (transactionsTotal._sum.amount || 0) / 3 // crude average
-  const percentAhead = ((actualMonthlyRevenue - targetMonthlyRevenue) / targetMonthlyRevenue) * 100
+  const actualMonthlyRevenue = currentMonthGLRevenue._sum.credit ?? 0
+  const percentAhead = targetMonthlyRevenue > 0
+    ? ((actualMonthlyRevenue - targetMonthlyRevenue) / targetMonthlyRevenue) * 100
+    : 0
 
   let logMessage = `FP&A: Runway recalculated: ${runwayMonths.toFixed(1)} months. Zero cash date: ${zeroCashDate.toLocaleDateString()}. ${percentAhead > 0 ? `+${percentAhead.toFixed(0)}%` : `${percentAhead.toFixed(0)}%`} ahead of plan.`
   let aiNarrative = ""

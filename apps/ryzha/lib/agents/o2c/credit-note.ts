@@ -19,7 +19,7 @@ export async function runCreditNoteAgent(creditNoteId: string, organizationId: s
       invoice: {
         include: {
           payments: { select: { amount: true } },
-          creditNotes: { select: { amount: true } },
+          creditNotes: { select: { id: true, amount: true } },
         },
       },
     },
@@ -35,11 +35,12 @@ export async function runCreditNoteAgent(creditNoteId: string, organizationId: s
     .filter((c) => c.id !== creditNoteId)
     .reduce((s, c) => s + c.amount, 0)
 
-  if (creditNote.amount > totalPaid - priorCredits + 0.01) {
+  const isCashRefund = !!creditNote.refundMethod
+  if (isCashRefund && creditNote.amount > totalPaid - priorCredits + 0.01) {
     return {
       agent: "Credit Note Agent",
       status: "ERROR",
-      message: `Credit note amount ($${creditNote.amount}) exceeds the net amount paid ($${(totalPaid - priorCredits).toFixed(2)}). Cannot issue refund for more than was collected.`,
+      message: `Cash refund amount ($${creditNote.amount}) exceeds the net amount collected ($${(totalPaid - priorCredits).toFixed(2)}). Cannot refund more than was received. Remove refund method to issue a non-cash credit instead.`,
     }
   }
 
@@ -101,13 +102,13 @@ export async function runCreditNoteAgent(creditNoteId: string, organizationId: s
       {
         date: creditNote.issueDate,
         accountType: "Revenue",
-        accountName: "Revenue",
+        accountName: "Service Revenue",
         debit: creditNote.amount,
         credit: 0,
         amount: creditNote.amount,
         description: `Revenue reversal — Credit note ${creditNoteId} on Invoice ${invoice.invoiceNumber}`,
         sourceType: "credit_note",
-        sourceId: creditNoteId,
+        sourceId: `${creditNoteId}-rev`,
         organizationId,
       },
       {
@@ -119,10 +120,11 @@ export async function runCreditNoteAgent(creditNoteId: string, organizationId: s
         amount: creditNote.amount,
         description: `AR credit — Credit note ${creditNoteId} on Invoice ${invoice.invoiceNumber}`,
         sourceType: "credit_note",
-        sourceId: creditNoteId,
+        sourceId: `${creditNoteId}-ar`,
         organizationId,
       },
     ],
+    skipDuplicates: true,
   })
 
   const statusResult = await recalculateInvoiceStatus(invoice.id)

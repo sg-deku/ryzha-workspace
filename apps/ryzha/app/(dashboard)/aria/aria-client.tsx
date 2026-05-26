@@ -9,7 +9,8 @@ import Link from "next/link"
 import { cn } from "@/lib/utils"
 import { motion } from "framer-motion"
 
-const sectionVariant = (delay: number) => ({
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const sectionVariant = (delay: number): any => ({
   initial: { opacity: 0, y: 12 },
   animate: { opacity: 1, y: 0, transition: { duration: 0.35, delay, ease: [0.22, 1, 0.36, 1] } },
 })
