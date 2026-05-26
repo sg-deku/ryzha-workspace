@@ -60,7 +60,7 @@ const DB_SCHEMA: DbEntity[] = [
           { name: "anomalyThreshold", type: "Float", note: "default: 50000" },
           { name: "requireAuditSeal", type: "Boolean" }, { name: "autoRejectUnverified", type: "Boolean" },
           { name: "elevenLabsApiKey", type: "String?" }, { name: "twilioAccountSid", type: "String?" },
-          { name: "targetMonthlyRevenue", type: "Float" }, { name: "aiModel", type: "String", note: "default: gpt-4o-mini" },
+          { name: "targetMonthlyRevenue", type: "Float" }, { name: "aiModel", type: "String", note: "configurable (default: Groq)" },
           { name: "emailProvider", type: "String?", note: "smtp | sendgrid | resend" },
         ],
         children: [],
@@ -1055,7 +1055,7 @@ export default function DocsPage() {
                 <CardContent className="space-y-5">
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                     {[
-                      { name: "AI Transaction Extraction", step: "Step 1", actions: ["Calls GPT-4o-mini with transaction description", "Extracts: customer, product_type, is_subscription, period_months", "Structured output schema enforced via Zod", "Falls back to deterministic parsing on AI failure", "Logs extraction result to agentLogs JSON"], output: "Structured metadata enriching the transaction record" },
+                      { name: "AI Transaction Extraction", step: "Step 1", actions: ["Calls AI model with transaction description", "Extracts: customer, product_type, is_subscription, period_months", "Structured output schema enforced via Zod", "Falls back to deterministic parsing on AI failure", "Logs extraction result to agentLogs JSON"], output: "Structured metadata enriching the transaction record" },
                       { name: "Revenue Recognition", step: "Step 2", actions: ["Sets transaction.recognizedRevenue = full amount", "Sets revenueRecognitionType = 'immediate' (O&M may override to deferred)", "Marks transaction as R2R-processed in agentStatus", "Appends structured agent log with timestamp"], output: "Transaction.recognizedRevenue set, type = immediate" },
                       { name: "GL Journal Sync", step: "Step 3", actions: ["Runs syncGLForOrganization across all unprocessed transactions", "Posts DR Accounts Receivable (1100) / CR Service Revenue (4000)", "Each GL row includes: date, accountType, accountName, debit, credit, sourceType, sourceId", "Trial balance validated: SUM(debit) must equal SUM(credit)"], output: "GeneralLedgerEntry records — balanced (DR = CR)" },
                       { name: "Stripe Clearing Reconciliation", step: "Step 4", actions: ["Triggered by payout.paid webhook event", "Stage 2: DR Stripe Clearing (1150) / CR AR (1100) — on card charge", "Stage 3: DR Cash/Checking (1000) / CR Stripe Clearing (1150) — on payout", "Stripe Clearing account must net to $0 per payout cycle", "Flags any unreconciled clearing items for review"], output: "Stripe Clearing Account balance = $0 after payout" },
@@ -1130,7 +1130,7 @@ export default function DocsPage() {
                       { name: "Settings Resolution", step: "Step 1", actions: ["Loads FinancialSettings for the organization", "Reads deferralPeriodMonths (default: 12)", "Reads deferredRevenueRules keyword list (default: ['annual','yearly','subscription'])", "Reads paymentFraction for partial payment support"], output: "Deferral config loaded — keywords, period, fraction" },
                       { name: "Keyword Deferral Detection", step: "Step 2", actions: ["Scans transaction.description against keyword list (case-insensitive)", "Sets isDeferred = true if any keyword matched", "This is the fast deterministic path — no LLM call yet", "Can be fully overridden by the AI decision in step 4"], output: "Preliminary isDeferred flag (pre-AI, fast path)" },
                       { name: "RAG Context Retrieval", step: "Step 3", actions: ["Calls getFinancialContext(description, organizationId)", "Retrieves relevant accounting policy chunks from vector store", "Context includes: org-specific ASC 606 rules, past decisions", "Injected into the AI system prompt for grounded reasoning"], output: "ASC 606 policy context injected into AI prompt" },
-                      { name: "AI ASC 606 Decision", step: "Step 4", actions: ["Calls GPT-4o-mini as expert accountant (temperature: 0)", "Input: transaction description, amount, RAG context", "Output schema: { deferred: boolean, reason: string, period: number }", "AI can flip the keyword decision based on full context", "Falls back to keyword detection result on AI failure"], output: "Final deferred/immediate decision + AI explanation string" },
+                      { name: "AI ASC 606 Decision", step: "Step 4", actions: ["Calls AI model as expert accountant (temperature: 0)", "Input: transaction description, amount, RAG context", "Output schema: { deferred: boolean, reason: string, period: number }", "AI can flip the keyword decision based on full context", "Falls back to keyword detection result on AI failure"], output: "Final deferred/immediate decision + AI explanation string" },
                       { name: "Deferred Schedule Creation", step: "Step 5", actions: ["effectiveAmount = amount × paymentFraction (partial payment support)", "monthlyPortion = effectiveAmount / deferralPeriodMonths", "Duplicate guard: COUNT existing schedule rows before createMany", "Creates N rows: period = 1st of each future month, amount = monthlyPortion, recognized = false", "Only runs if isDeferred = true and no existing schedule"], output: "DeferredRevenueSchedule: N rows (one per month)" },
                       { name: "Transaction Update", step: "Step 6", actions: ["Deferred path: recognizedRevenue = monthlyPortion, deferredRevenue = effectiveAmount - monthlyPortion", "Immediate path: recognizedRevenue = full amount, deferredRevenue = 0", "Sets revenueRecognitionType = 'deferred' | 'immediate'", "Appends AI reasoning to agentLogs with 'O&M' agent label", "Feeds deferred amount to R2R for balance sheet Deferred Revenue line"], output: "Transaction.deferredRevenue + recognizedRevenue updated" },
                     ].map((cap) => (
@@ -1169,7 +1169,7 @@ export default function DocsPage() {
                           { label: "paymentFraction", value: "Float (0–1) — for partial payment support (default: 1)" },
                           { label: "monthlyPortion formula", value: "(amount × paymentFraction) / deferralPeriodMonths" },
                           { label: "Duplicate guard", value: "COUNT(DeferredRevenueSchedule WHERE transactionId) === 0 before insert" },
-                          { label: "AI model", value: "GPT-4o-mini, temperature: 0, JSON response mode" },
+                          { label: "AI model", value: "Configurable (default: Groq) — temperature: 0, JSON response mode" },
                           { label: "RAG source", value: "getFinancialContext() — vector store per organization" },
                         ].map((item) => (
                           <div key={item.label} className="flex flex-col gap-0.5">
@@ -1231,7 +1231,7 @@ export default function DocsPage() {
                       {
                         name: "AI CFO Narrative",
                         step: "Step 5",
-                        actions: ["Calls GPT-4o (temperature 0.7) as strategic CFO", "Generates narrative + optimistic/pessimistic scenarios", "Narrative replaces default log message if successful", "Falls back to deterministic log string on AI failure"],
+                        actions: ["Calls AI model (temperature 0.7) as strategic CFO", "Generates narrative + optimistic/pessimistic scenarios", "Narrative replaces default log message if successful", "Falls back to deterministic log string on AI failure"],
                         output: "AI narrative + scenario analysis in agent log",
                         dot: "bg-indigo-500",
                       },
@@ -1284,7 +1284,7 @@ export default function DocsPage() {
                       <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Notification Channels &amp; Config</p>
                       <div className="space-y-2.5">
                         {[
-                          { label: "AI Model", value: "GPT-4o, temperature: 0.7 — strategic CFO persona" },
+                          { label: "AI Model", value: "Configurable (default: Groq) — temperature: 0.7, strategic CFO persona" },
                           { label: "AI Output Schema", value: '{ narrative: string, scenarios: { optimistic, pessimistic } }' },
                           { label: "ElevenLabs Voice", value: "elevenLabsApiKey in FinancialSettings — async voice briefing" },
                           { label: "Twilio SMS", value: "twilioAccountSid + authToken + phone — runway digest SMS" },
@@ -1344,7 +1344,7 @@ export default function DocsPage() {
                       {
                         name: "AI Forensic Investigation",
                         step: "Step 4",
-                        actions: ["Calls GPT-4o as forensic auditor (temperature 0)", "Evaluates: amount vs description, contract availability, fraud patterns", "Returns: { is_anomaly, investigation_notes, risk_score }", "AI can override threshold result — either direction"],
+                        actions: ["Calls AI model as forensic auditor (temperature 0)", "Evaluates: amount vs description, contract availability, fraud patterns", "Returns: { is_anomaly, investigation_notes, risk_score }", "AI can override threshold result — either direction"],
                         output: "AI-determined is_anomaly + investigation notes + risk score",
                         dot: "bg-red-500",
                       },
@@ -1411,7 +1411,7 @@ export default function DocsPage() {
                           { label: "anomalyThreshold", value: "Float — default $50,000 (configurable per org in FinancialSettings)" },
                           { label: "requireAuditSeal", value: "Boolean — default true — forces contract match before verified status" },
                           { label: "autoRejectUnverified", value: "Boolean — default false — auto-rejects unmatched transactions" },
-                          { label: "AI Model", value: "GPT-4o, temperature: 0 — forensic auditor persona, deterministic" },
+                          { label: "AI Model", value: "Configurable (default: Groq) — temperature: 0, forensic auditor persona, deterministic" },
                           { label: "AI Output Schema", value: "{ is_anomaly: boolean, investigation_notes: string, risk_score: number }" },
                           { label: "Contract match key", value: "Contract.stripePaymentIntentId = Transaction.stripePaymentIntentId" },
                           { label: "Fallback behavior", value: "AI failure → threshold-only anomaly detection still applies" },
