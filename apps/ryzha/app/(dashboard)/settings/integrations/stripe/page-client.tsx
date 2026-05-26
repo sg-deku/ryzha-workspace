@@ -60,7 +60,10 @@ export default function StripeIntegrationPage() {
     }
   }
 
+  const [origin, setOrigin] = useState("https://yourdomain.com")
+
   useEffect(() => {
+    setOrigin(window.location.origin)
     fetchData()
     fetchLogs()
   }, [])
@@ -235,7 +238,7 @@ export default function StripeIntegrationPage() {
                       In Stripe, add a webhook endpoint.
                       <div className="flex items-center gap-2 mt-2 mb-2 ml-4">
                         <code className="bg-background px-2 py-1 rounded border break-all text-xs">
-                          https://yourdomain.com/api/webhooks/stripe?orgId={orgId}
+                          {origin}/api/webhooks/stripe?orgId={orgId}
                         </code>
                         <Button type="button" variant="outline" size="sm" onClick={handleCopyWebhook} className="h-7 text-xs whitespace-nowrap">
                           <Copy className="h-3 w-3 mr-1" /> Copy URL

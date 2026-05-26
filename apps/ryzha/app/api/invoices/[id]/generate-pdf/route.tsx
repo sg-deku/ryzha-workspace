@@ -38,11 +38,11 @@ export async function POST(
 
     // Render PDF to Buffer
     const buffer = await renderToBuffer(
-      React.createElement(InvoicePDF, { 
-        invoice, 
-        organization, 
-        qrCodeDataUrl 
-      }) as any
+      <InvoicePDF 
+        invoice={invoice} 
+        organization={organization} 
+        qrCodeDataUrl={qrCodeDataUrl} 
+      />
     )
 
     // Upload to S3

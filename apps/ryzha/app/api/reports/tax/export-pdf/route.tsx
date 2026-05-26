@@ -36,12 +36,12 @@ export async function GET(req: Request) {
     })
 
     const buffer = await renderToBuffer(
-      React.createElement(TaxReportPDF, {
-        report,
-        organization,
-        startDate,
-        endDate
-      }) as any
+      <TaxReportPDF
+        report={report}
+        organization={organization}
+        startDate={startDate}
+        endDate={endDate}
+      />
     )
 
     return new Response(new Uint8Array(buffer), {

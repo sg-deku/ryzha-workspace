@@ -29,6 +29,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   }
 
   try {
+    const origin = new URL(req.url).origin
+    
     const paymentLink = await stripe.paymentLinks.create({
       line_items: invoice.lineItems.map(item => ({
         price_data: {
@@ -46,7 +48,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       },
       after_completion: {
         type: "redirect",
-        redirect: { url: `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/thank-you?invoice=${invoice.id}` }
+        redirect: { url: `${origin}/thank-you?invoice=${invoice.id}` }
       }
     })
 
