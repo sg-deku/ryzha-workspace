@@ -30,28 +30,28 @@ export async function startAgentWorkflow(transactionId: string) {
     }
   }
 
+  // Helper to log and publish
+  const logAndPublish = async (agent: string, message: string) => {
+    const logEntry = {
+      agent,
+      message,
+      timestamp: new Date().toISOString()
+    }
+    
+    logs.push(logEntry)
+
+    await publishEvent(`org:${orgId}:events`, {
+      type: "agent_log",
+      transactionId,
+      ...logEntry
+    })
+  }
+
   try {
     await prisma.transaction.update({
       where: { id: transactionId },
       data: { workflowStatus: "running" }
     })
-
-    // Helper to log and publish
-    const logAndPublish = async (agent: string, message: string) => {
-      const logEntry = {
-        agent,
-        message,
-        timestamp: new Date().toISOString()
-      }
-      
-      logs.push(logEntry)
-
-      await publishEvent(`org:${orgId}:events`, {
-        type: "agent_log",
-        transactionId,
-        ...logEntry
-      })
-    }
 
     await logAndPublish("Orchestrator", `Workflow started | Transaction ID: ${transactionId} | Payment Intent: ${transaction.stripePaymentIntentId} | Customer: ${transaction.customerEmail ?? "unknown"} | Amount: $${transaction.amount}`)
 

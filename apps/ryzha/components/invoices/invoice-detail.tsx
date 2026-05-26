@@ -150,7 +150,7 @@ export function InvoiceDetail({ invoice: initialInvoice }: { invoice: Invoice })
     reason: "",
     reasonCategory: "other",
     issueDate: new Date().toISOString().slice(0, 10),
-    refundMethod: "",
+    refundMethod: "none",
     notes: "",
   })
 
@@ -255,14 +255,18 @@ export function InvoiceDetail({ invoice: initialInvoice }: { invoice: Invoice })
       const res = await fetch(`/api/invoices/${invoice.id}/credit-notes`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...creditNoteForm, amount: parseFloat(creditNoteForm.amount) }),
+        body: JSON.stringify({ 
+          ...creditNoteForm, 
+          amount: parseFloat(creditNoteForm.amount),
+          refundMethod: creditNoteForm.refundMethod === "none" ? "" : creditNoteForm.refundMethod
+        }),
       })
       if (res.ok) {
         const cn = await res.json()
         setInvoice((prev) => ({ ...prev, creditNotes: [cn, ...prev.creditNotes] }))
         toast.success("Credit note issued — reversal pipeline triggered")
         setCreditNoteDialogOpen(false)
-        setCreditNoteForm({ amount: "", reason: "", reasonCategory: "other", issueDate: new Date().toISOString().slice(0, 10), refundMethod: "", notes: "" })
+        setCreditNoteForm({ amount: "", reason: "", reasonCategory: "other", issueDate: new Date().toISOString().slice(0, 10), refundMethod: "none", notes: "" })
       } else {
         const err = await res.json()
         toast.error(err.error || "Failed to issue credit note")
@@ -703,7 +707,7 @@ export function InvoiceDetail({ invoice: initialInvoice }: { invoice: Invoice })
               <Select value={creditNoteForm.refundMethod} onValueChange={(v) => setCreditNoteForm((f) => ({ ...f, refundMethod: v }))}>
                 <SelectTrigger><SelectValue placeholder="Credit on account (no cash refund)" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Credit on account</SelectItem>
+                  <SelectItem value="none">Credit on account</SelectItem>
                   {PAYMENT_METHODS.map((m) => (
                     <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
                   ))}
@@ -723,7 +727,7 @@ export function InvoiceDetail({ invoice: initialInvoice }: { invoice: Invoice })
       <PDFPreviewModal
         isOpen={isPreviewOpen}
         onClose={() => setIsPreviewOpen(false)}
-        pdfUrl={invoice.pdfUrl || ""}
+        pdfUrl={`/api/invoices/${invoice.id}/pdf`}
         invoiceNumber={invoice.invoiceNumber}
       />
       <Dialog open={disputeDialogOpen} onOpenChange={setDisputeDialogOpen}>
