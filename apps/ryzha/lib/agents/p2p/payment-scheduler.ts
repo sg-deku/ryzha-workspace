@@ -85,7 +85,7 @@ export async function runPaymentSchedulerAgent(vendorPaymentId: string, organiza
   await prisma.generalLedgerEntry.create({
     data: {
       date: vendorPayment.paymentDate,
-      accountType: "liability",
+      accountType: "Liabilities",
       accountName: "Accounts Payable",
       debit: vendorPayment.amount,
       credit: 0,
@@ -100,7 +100,7 @@ export async function runPaymentSchedulerAgent(vendorPaymentId: string, organiza
   await prisma.generalLedgerEntry.create({
     data: {
       date: vendorPayment.paymentDate,
-      accountType: "asset",
+      accountType: "Assets",
       accountName: "Cash",
       debit: 0,
       credit: vendorPayment.amount,

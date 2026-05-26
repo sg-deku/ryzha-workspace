@@ -21,11 +21,14 @@ export const DEFAULT_CHART_OF_ACCOUNTS: AccountMapping[] = [
   { accountName: "Other Expenses", accountType: "Expenses" },
   { accountName: "Cash", accountType: "Assets" },
   { accountName: "Accounts Receivable", accountType: "Assets" },
+  { accountName: "Stripe Clearing Account", accountType: "Assets" },
   { accountName: "Prepaid Expenses", accountType: "Assets" },
   { accountName: "Accounts Payable", accountType: "Liabilities" },
   { accountName: "Deferred Revenue", accountType: "Liabilities" },
   { accountName: "Tax Payable", accountType: "Liabilities" },
   { accountName: "Retained Earnings", accountType: "Equity" },
+  { accountName: "Merchant Processing Fees", accountType: "Expenses" },
+  { accountName: "Foreign Exchange Expense", accountType: "Expenses" },
 ]
 
 const EXPENSE_CATEGORY_MAP: Record<string, string> = {

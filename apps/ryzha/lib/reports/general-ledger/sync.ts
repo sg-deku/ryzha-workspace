@@ -56,7 +56,7 @@ async function upsertGLEntry(data: {
 async function syncInvoices(organizationId: string) {
   const invoices = await prisma.invoice.findMany({
     where: { organizationId },
-    include: { lineItems: true },
+    include: { lineItems: true, payments: true },
   })
 
   for (const invoice of invoices) {
@@ -69,8 +69,8 @@ async function syncInvoices(organizationId: string) {
         date: invoice.issueDate,
         accountType: "Revenue",
         accountName,
-        debit: item.amount,
-        credit: 0,
+        debit: 0,
+        credit: item.amount,
         amount: item.amount,
         description: `${invoice.invoiceNumber} – ${item.description} (${invoice.clientName})`,
       })
@@ -95,12 +95,27 @@ async function syncInvoices(organizationId: string) {
       sourceId: `${invoice.id}-ar`,
       date: invoice.issueDate,
       accountType: "Assets",
-      accountName: invoice.status === "PAID" ? "Cash" : "Accounts Receivable",
-      debit: 0,
-      credit: invoice.total,
-      amount: -invoice.total,
-      description: `${invoice.invoiceNumber} – ${invoice.status === "PAID" ? "Payment received" : "Amount due"} (${invoice.clientName})`,
+      accountName: "Accounts Receivable",
+      debit: invoice.total,
+      credit: 0,
+      amount: invoice.total,
+      description: `${invoice.invoiceNumber} – Amount due (${invoice.clientName})`,
     })
+
+    for (const payment of invoice.payments) {
+      await upsertGLEntry({
+        organizationId,
+        sourceType: "Payment",
+        sourceId: `${payment.id}-ar-clear`,
+        date: payment.paymentDate,
+        accountType: "Assets",
+        accountName: "Accounts Receivable",
+        debit: 0,
+        credit: payment.amount,
+        amount: -payment.amount,
+        description: `${invoice.invoiceNumber} – Payment received (${invoice.clientName})`,
+      })
+    }
   }
 }
 
@@ -118,9 +133,9 @@ async function syncExpenses(organizationId: string) {
       date: expense.date,
       accountType: "Expenses",
       accountName,
-      debit: 0,
-      credit: expense.amount,
-      amount: -expense.amount,
+      debit: expense.amount,
+      credit: 0,
+      amount: expense.amount,
       description: expense.description,
     })
   }
@@ -143,9 +158,9 @@ async function syncVendorInvoices(organizationId: string) {
           date: vi.createdAt,
           accountType: "Expenses",
           accountName,
-          debit: 0,
-          credit: item.amount,
-          amount: -item.amount,
+          debit: item.amount,
+          credit: 0,
+          amount: item.amount,
           description: `${vi.invoiceNumber} – ${item.description} (${vi.vendor.name})`,
         })
       }
@@ -158,9 +173,9 @@ async function syncVendorInvoices(organizationId: string) {
         date: vi.createdAt,
         accountType: "Expenses",
         accountName,
-        debit: 0,
-        credit: vi.amount,
-        amount: -vi.amount,
+        debit: vi.amount,
+        credit: 0,
+        amount: vi.amount,
         description: `${vi.invoiceNumber} – ${vi.vendor.name}`,
       })
     }
@@ -170,11 +185,11 @@ async function syncVendorInvoices(organizationId: string) {
       sourceId: `${vi.id}-ap`,
       date: vi.createdAt,
       accountType: "Liabilities",
-      accountName: vi.status === "PAID" ? "Cash" : "Accounts Payable",
-      debit: vi.amount,
-      credit: 0,
-      amount: vi.amount,
-      description: `${vi.invoiceNumber} – ${vi.status === "PAID" ? "Payment sent" : "Amount owed"} (${vi.vendor.name})`,
+      accountName: "Accounts Payable",
+      debit: 0,
+      credit: vi.amount,
+      amount: -vi.amount,
+      description: `${vi.invoiceNumber} – Amount owed (${vi.vendor.name})`,
     })
   }
 }
@@ -201,34 +216,36 @@ async function syncTransactions(organizationId: string) {
       description: tx.description ?? `Stripe payment – ${tx.customerEmail ?? "unknown"}`,
     })
 
-    if (recognized > 0) {
-      await upsertGLEntry({
-        organizationId,
-        sourceType: "StripeTransaction",
-        sourceId: `${tx.id}-rev`,
-        date: tx.createdAt,
-        accountType: "Revenue",
-        accountName: "Subscription Revenue",
-        debit: 0,
-        credit: recognized,
-        amount: -recognized,
-        description: `${tx.description ?? "Stripe payment"} – recognized revenue`,
-      })
-    }
+    if (!tx.invoiceId) {
+      if (recognized > 0) {
+        await upsertGLEntry({
+          organizationId,
+          sourceType: "StripeTransaction",
+          sourceId: `${tx.id}-rev`,
+          date: tx.createdAt,
+          accountType: "Revenue",
+          accountName: "Subscription Revenue",
+          debit: 0,
+          credit: recognized,
+          amount: -recognized,
+          description: `${tx.description ?? "Stripe payment"} – recognized revenue`,
+        })
+      }
 
-    if (deferred > 0) {
-      await upsertGLEntry({
-        organizationId,
-        sourceType: "StripeTransaction",
-        sourceId: `${tx.id}-def`,
-        date: tx.createdAt,
-        accountType: "Liabilities",
-        accountName: "Deferred Revenue",
-        debit: 0,
-        credit: deferred,
-        amount: -deferred,
-        description: `${tx.description ?? "Stripe payment"} – deferred revenue`,
-      })
+      if (deferred > 0) {
+        await upsertGLEntry({
+          organizationId,
+          sourceType: "StripeTransaction",
+          sourceId: `${tx.id}-def`,
+          date: tx.createdAt,
+          accountType: "Liabilities",
+          accountName: "Deferred Revenue",
+          debit: 0,
+          credit: deferred,
+          amount: -deferred,
+          description: `${tx.description ?? "Stripe payment"} – deferred revenue`,
+        })
+      }
     }
   }
 }

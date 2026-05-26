@@ -100,7 +100,7 @@ export async function runCreditNoteAgent(creditNoteId: string, organizationId: s
     data: [
       {
         date: creditNote.issueDate,
-        accountType: "revenue",
+        accountType: "Revenue",
         accountName: "Revenue",
         debit: creditNote.amount,
         credit: 0,
@@ -112,7 +112,7 @@ export async function runCreditNoteAgent(creditNoteId: string, organizationId: s
       },
       {
         date: creditNote.issueDate,
-        accountType: "liability",
+        accountType: "Assets",
         accountName: "Accounts Receivable",
         debit: 0,
         credit: creditNote.amount,
