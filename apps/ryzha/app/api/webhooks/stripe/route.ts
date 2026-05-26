@@ -58,6 +58,16 @@ export async function POST(req: Request) {
     const paymentIntent = event.data.object as Stripe.PaymentIntent
     const { id, amount, currency, description, metadata, latest_charge } = paymentIntent
 
+    // Check early if transaction already exists to avoid duplicate payments/processing
+    const existingTx = await prisma.transaction.findUnique({
+      where: { stripePaymentIntentId: id }
+    })
+    
+    if (existingTx) {
+      console.log(`[stripe webhook] Transaction for PaymentIntent ${id} already exists. Ignoring to prevent duplicates.`)
+      return NextResponse.json({ received: true, message: "Transaction already exists" })
+    }
+
     const orgId = stripeOrgId || metadata?.organizationId
     if (!orgId) {
       console.error("[stripe webhook] Missing organizationId in payment_intent metadata. Event ignored.")

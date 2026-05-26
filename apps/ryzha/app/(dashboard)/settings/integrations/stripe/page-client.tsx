@@ -227,29 +227,27 @@ export default function StripeIntegrationPage() {
                 </div>
               </form>
 
-              {!stripeConnected && (
-                <div className="mt-6 p-4 rounded-lg bg-muted/40 text-sm space-y-2">
-                  <p className="font-medium">Setup steps:</p>
-                  <ol className="list-decimal list-inside space-y-1 text-muted-foreground">
-                    <li>Go to <strong>stripe.com → Developers → API keys</strong></li>
-                    <li>Copy your <strong>Secret key</strong> (starts with <code>sk_</code>)</li>
-                    <li>Paste it above and click <strong>Connect Stripe</strong></li>
-                    <li>
-                      In Stripe, add a webhook endpoint.
-                      <div className="flex items-center gap-2 mt-2 mb-2 ml-4">
-                        <code className="bg-background px-2 py-1 rounded border break-all text-xs">
-                          {origin}/api/webhooks/stripe?orgId={orgId}
-                        </code>
-                        <Button type="button" variant="outline" size="sm" onClick={handleCopyWebhook} className="h-7 text-xs whitespace-nowrap">
-                          <Copy className="h-3 w-3 mr-1" /> Copy URL
-                        </Button>
-                      </div>
-                    </li>
-                    <li>Events to listen for: <code>payment_intent.succeeded</code>, <code>payout.paid</code>, <code>charge.refunded</code>, <code>payment_intent.payment_failed</code></li>
-                    <li>Copy the <strong>Signing secret</strong> and paste it above</li>
-                  </ol>
-                </div>
-              )}
+              <div className="mt-6 p-4 rounded-lg bg-muted/40 text-sm space-y-2 border">
+                <p className="font-medium">Setup steps:</p>
+                <ol className="list-decimal list-inside space-y-1 text-muted-foreground">
+                  <li>Go to <strong>stripe.com → Developers → API keys</strong></li>
+                  <li>Copy your <strong>Secret key</strong> (starts with <code>sk_</code>)</li>
+                  <li>Paste it above and click <strong>Connect Stripe</strong></li>
+                  <li>
+                    In Stripe, add a webhook endpoint.
+                    <div className="flex items-center gap-2 mt-2 mb-2 ml-4">
+                      <code className="bg-background px-2 py-1 rounded border break-all text-xs text-foreground">
+                        {origin}/api/webhooks/stripe?orgId={orgId}
+                      </code>
+                      <Button type="button" variant="outline" size="sm" onClick={handleCopyWebhook} className="h-7 text-xs whitespace-nowrap">
+                        <Copy className="h-3 w-3 mr-1" /> Copy URL
+                      </Button>
+                    </div>
+                  </li>
+                  <li>Events to listen for: <code>payment_intent.succeeded</code>, <code>payout.paid</code>, <code>charge.refunded</code>, <code>payment_intent.payment_failed</code></li>
+                  <li>Copy the <strong>Signing secret</strong> and paste it above</li>
+                </ol>
+              </div>
             </CardContent>
           </Card>
         </div>
