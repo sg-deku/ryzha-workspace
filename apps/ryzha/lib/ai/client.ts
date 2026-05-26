@@ -1,7 +1,8 @@
 import OpenAI from "openai"
 import { prisma } from "@/lib/prisma"
 
-export function parseAIJson<T = unknown>(text: string): T {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function parseAIJson<T = any>(text: string): T {
   const stripped = text.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim()
   return JSON.parse(stripped) as T
 }

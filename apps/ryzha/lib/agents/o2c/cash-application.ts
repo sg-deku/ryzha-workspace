@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma"
+import { after } from "next/server"
 import { callLLM } from "@/lib/ai/llm"
 import { parseAIJson } from "@/lib/ai/client"
 import { startAgentWorkflow } from "@/lib/agents/orchestrator"
@@ -86,12 +87,14 @@ export async function runCashApplicationAgent(paymentId: string, organizationId:
       organizationId,
       agentLogs: [],
       revenueRecognitionType: aiClassification,
+      paymentFraction,
+      invoiceId: invoice.id,
     },
   })
 
   await prisma.payment.update({ where: { id: paymentId }, data: { transactionId: transaction.id } })
 
-  await startAgentWorkflow(transaction.id)
+  after(startAgentWorkflow(transaction.id).catch(console.error))
 
   return {
     agent: "Cash Application Agent",

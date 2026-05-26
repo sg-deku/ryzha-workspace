@@ -2,6 +2,8 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { NextResponse } from "next/server"
+import { runApprovalAgent } from "@/lib/agents/p2p/approval"
+import { createNotification } from "@/lib/notifications"
 
 export const dynamic = "force-dynamic";
 
@@ -37,6 +39,36 @@ export async function POST(req: Request) {
         }
       },
     })
+
+    const settings = await prisma.p2PSettings.findUnique({
+      where: { organizationId: session.user.organizationId }
+    })
+
+    const autoApproveLimit = settings?.autoApproveLimit ?? 500
+
+    if (totalAmount > autoApproveLimit) {
+      const approval = await runApprovalAgent(purchaseOrder.id, session.user.organizationId)
+      
+      await prisma.purchaseOrder.update({
+        where: { id: purchaseOrder.id },
+        data: { status: "ROUTED" }
+      })
+
+      const approvers = approval.suggestedApprovers.join(", ")
+
+      await createNotification({
+        organizationId: session.user.organizationId,
+        type: "WARNING",
+        title: "PO Requires Approval",
+        message: `PO #${poNumber} requires approval by: ${approvers}.`,
+        link: `/purchases/${purchaseOrder.id}`
+      })
+    } else {
+      await prisma.purchaseOrder.update({
+        where: { id: purchaseOrder.id },
+        data: { status: "APPROVED" }
+      })
+    }
 
     return NextResponse.json(purchaseOrder)
   } catch (error) {

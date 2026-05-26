@@ -14,7 +14,7 @@ export async function PATCH(req: Request) {
   if (!name?.trim()) return NextResponse.json({ error: "name is required" }, { status: 400 })
 
   const user = await prisma.user.update({
-    where: { id: session.userId },
+    where: { id: session.id },
     data: { name: name.trim() },
     select: { id: true, name: true, email: true },
   })
@@ -27,7 +27,7 @@ export async function GET(req: Request) {
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
   const user = await prisma.user.findUnique({
-    where: { id: session.userId },
+    where: { id: session.id },
     select: {
       id: true,
       name: true,

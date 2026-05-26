@@ -4,12 +4,13 @@ import { prisma } from "@/lib/prisma"
 
 export const dynamic = "force-dynamic"
 
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await getMobileSession(req)
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
+  const { id } = await params
   const customer = await prisma.customer.findFirst({
-    where: { id: params.id, organizationId: session.organizationId },
+    where: { id, organizationId: session.organizationId },
     include: {
       salesOrders: {
         orderBy: { createdAt: "desc" },

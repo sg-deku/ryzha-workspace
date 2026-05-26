@@ -100,6 +100,7 @@ const PAYMENT_METHODS = [
   { value: "wire", label: "Wire Transfer" },
   { value: "cheque", label: "Cheque" },
   { value: "credit_card", label: "Credit Card" },
+  { value: "stripe", label: "Stripe" },
   { value: "other", label: "Other" },
 ]
 
@@ -132,6 +133,9 @@ export function InvoiceDetail({ invoice: initialInvoice }: { invoice: Invoice })
   const [creditNoteDialogOpen, setCreditNoteDialogOpen] = useState(false)
   const [submittingPayment, setSubmittingPayment] = useState(false)
   const [submittingCreditNote, setSubmittingCreditNote] = useState(false)
+  const [disputeDialogOpen, setDisputeDialogOpen] = useState(false)
+  const [submittingDispute, setSubmittingDispute] = useState(false)
+  const [disputeReason, setDisputeReason] = useState("")
 
   const [paymentForm, setPaymentForm] = useState({
     amount: "",
@@ -153,6 +157,27 @@ export function InvoiceDetail({ invoice: initialInvoice }: { invoice: Invoice })
   const totalPaid = invoice.payments.reduce((s, p) => s + p.amount, 0)
   const totalCredits = invoice.creditNotes.reduce((s, c) => s + c.amount, 0)
   const outstanding = Math.max(0, invoice.total - totalPaid + totalCredits)
+
+  const [generatingStripeLink, setGeneratingStripeLink] = useState(false)
+
+  const handleGenerateStripeLink = async () => {
+    setGeneratingStripeLink(true)
+    try {
+      const res = await fetch(`/api/invoices/${invoice.id}/stripe-link`, { method: "POST" })
+      if (res.ok) {
+        const { url } = await res.json()
+        await navigator.clipboard.writeText(url)
+        toast.success("Payment link copied to clipboard!")
+      } else {
+        const err = await res.json()
+        toast.error(err.error || "Failed to generate link")
+      }
+    } catch {
+      toast.error("Failed to generate Stripe link")
+    } finally {
+      setGeneratingStripeLink(false)
+    }
+  }
 
   const handleMarkAsPaid = async () => {
     setIsUpdating(true)
@@ -249,7 +274,34 @@ export function InvoiceDetail({ invoice: initialInvoice }: { invoice: Invoice })
     }
   }
 
-  const canIssueCredit = totalPaid > 0
+  const handleRaiseDispute = async () => {
+    if (!disputeReason.trim()) {
+      toast.error("Reason is required")
+      return
+    }
+    setSubmittingDispute(true)
+    try {
+      const res = await fetch(`/api/invoices/${invoice.id}/dispute`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason: disputeReason }),
+      })
+      if (res.ok) {
+        toast.success("Dispute raised and analyzed by AI")
+        setDisputeDialogOpen(false)
+        setDisputeReason("")
+      } else {
+        const err = await res.json()
+        toast.error(err.error || "Failed to raise dispute")
+      }
+    } catch {
+      toast.error("An error occurred")
+    } finally {
+      setSubmittingDispute(false)
+    }
+  }
+
+  const canIssueCredit = invoice.status !== "DRAFT" && invoice.status !== "VOID"
 
   return (
     <div className="container py-8 max-w-5xl">
@@ -277,6 +329,10 @@ export function InvoiceDetail({ invoice: initialInvoice }: { invoice: Invoice })
         </div>
 
         <div className="flex items-center gap-2">
+          <Button variant="default" onClick={handleGenerateStripeLink} disabled={generatingStripeLink || invoice.status === "PAID"}>
+            {generatingStripeLink ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CreditCard className="mr-2 h-4 w-4" />}
+            Send via Stripe
+          </Button>
           <Button variant="outline" onClick={() => setIsPreviewOpen(true)}>
             <FileText className="mr-2 h-4 w-4" />
             Preview PDF
@@ -299,6 +355,9 @@ export function InvoiceDetail({ invoice: initialInvoice }: { invoice: Invoice })
               )}
               <DropdownMenuItem onClick={handleMarkAsPaid} disabled={isUpdating || invoice.status === "PAID"}>
                 Mark as Paid (manual)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setDisputeDialogOpen(true)}>
+                Raise Dispute
               </DropdownMenuItem>
               <DropdownMenuItem className="text-destructive">Delete Invoice</DropdownMenuItem>
             </DropdownMenuContent>
@@ -667,6 +726,29 @@ export function InvoiceDetail({ invoice: initialInvoice }: { invoice: Invoice })
         pdfUrl={invoice.pdfUrl || ""}
         invoiceNumber={invoice.invoiceNumber}
       />
+      <Dialog open={disputeDialogOpen} onOpenChange={setDisputeDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Raise Dispute</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Reason for Dispute</Label>
+              <Textarea 
+                placeholder="Describe the customer's dispute..." 
+                value={disputeReason} 
+                onChange={(e) => setDisputeReason(e.target.value)} 
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDisputeDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleRaiseDispute} disabled={submittingDispute}>
+              {submittingDispute ? "Analyzing..." : "Submit Dispute"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

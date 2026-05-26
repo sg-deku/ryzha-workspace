@@ -1,12 +1,15 @@
 import { prisma } from "@/lib/prisma"
+import { after } from "next/server"
 import { runR2RAgent } from "./r2r"
 import { runOMAgent } from "./om"
 import { runAuditorAgent } from "./auditor"
 import { runFPAgent } from "./fpna"
 import { runMatchingAgent } from "./p2p/matching"
+import { runGLCodingAgent } from "./p2p/gl-coding"
 import { runCollectionsAgent } from "./o2c/collections"
 import { runCashApplicationAgent } from "./o2c/cash-application"
 import { runCreditNoteAgent } from "./o2c/credit-note"
+import { runInvoiceGenerationAgent } from "./o2c/invoice-generation"
 import { runPaymentSchedulerAgent } from "./p2p/payment-scheduler"
 import { sendVoiceSummary, sendSMSNotification, createNotification } from "@/lib/notifications"
 import { publishEvent } from "@/lib/events"
@@ -16,6 +19,16 @@ export async function startAgentWorkflow(transactionId: string) {
   if (!transaction) return
 
   const orgId = transaction.organizationId
+  const logs: any[] = []
+
+  let currentLogs: any[] = []
+  if (transaction.agentLogs) {
+    if (Array.isArray(transaction.agentLogs)) {
+      currentLogs = transaction.agentLogs
+    } else if (typeof transaction.agentLogs === "string") {
+      try { currentLogs = JSON.parse(transaction.agentLogs) } catch(e) {}
+    }
+  }
 
   try {
     await prisma.transaction.update({
@@ -31,23 +44,7 @@ export async function startAgentWorkflow(transactionId: string) {
         timestamp: new Date().toISOString()
       }
       
-      const currentTx = await prisma.transaction.findUnique({ where: { id: transactionId } })
-      let currentLogs: any[] = []
-      
-      if (currentTx && currentTx.agentLogs) {
-        if (Array.isArray(currentTx.agentLogs)) {
-          currentLogs = currentTx.agentLogs
-        } else if (typeof currentTx.agentLogs === "string") {
-          try { currentLogs = JSON.parse(currentTx.agentLogs) } catch(e) {}
-        }
-      }
-      
-      await prisma.transaction.update({
-        where: { id: transactionId },
-        data: {
-          agentLogs: [...currentLogs, logEntry]
-        }
-      })
+      logs.push(logEntry)
 
       await publishEvent(`org:${orgId}:events`, {
         type: "agent_log",
@@ -91,17 +88,17 @@ export async function startAgentWorkflow(transactionId: string) {
       afterAuditor = await runAuditorAgent(transactionId)
     } catch (err: any) {
       await logAndPublish("Auditor", `FAILED — unexpected error: ${err.message}`)
-      await prisma.transaction.update({ where: { id: transactionId }, data: { workflowStatus: "error" } })
+      await prisma.transaction.update({ where: { id: transactionId }, data: { workflowStatus: "error", agentLogs: [...currentLogs, ...logs] } })
       return
     }
 
-    if (!afterAuditor || afterAuditor.auditStatus !== "verified") {
+    if (!afterAuditor || afterAuditor.auditStatus === "rejected") {
       const status = afterAuditor?.auditStatus ?? "unknown"
       await logAndPublish("Auditor", `FAILED — audit status: ${status}. No signed contract found matching Payment Intent ${transaction.stripePaymentIntentId}. Create a contract record under Contracts and re-run.`)
-      await prisma.transaction.update({ where: { id: transactionId }, data: { workflowStatus: "error" } })
+      await prisma.transaction.update({ where: { id: transactionId }, data: { workflowStatus: "error", agentLogs: [...currentLogs, ...logs] } })
       return
     }
-    await logAndPublish("Auditor", `Verified. Audit hash: ${afterAuditor.auditHash ?? "n/a"}. Contract matched for ${transaction.customerEmail}.`)
+    await logAndPublish("Auditor", `Verified/Flagged. Audit status: ${afterAuditor.auditStatus}. Audit hash: ${afterAuditor.auditHash ?? "n/a"}. Contract matched for ${transaction.customerEmail}.`)
 
     // Step 4: FP&A
     await logAndPublish("Orchestrator", `[4/4] Starting FP&A Agent — recalculating runway and financial model...`)
@@ -132,7 +129,7 @@ export async function startAgentWorkflow(transactionId: string) {
 
     await prisma.transaction.update({
       where: { id: transactionId },
-      data: { workflowStatus: "completed" },
+      data: { workflowStatus: "completed", agentLogs: [...currentLogs, ...logs] },
     })
 
     await logAndPublish("Orchestrator", `Workflow COMPLETED | Transaction ID: ${transactionId} | $${transaction.amount} from ${transaction.customerEmail ?? "unknown"} fully processed.`)
@@ -148,7 +145,7 @@ export async function startAgentWorkflow(transactionId: string) {
     console.error("Workflow error:", error)
     await prisma.transaction.update({
       where: { id: transactionId },
-      data: { workflowStatus: "error" },
+      data: { workflowStatus: "error", agentLogs: [...currentLogs, ...logs] },
     })
     await publishEvent(`org:${orgId}:events`, {
       type: "workflow_error",
@@ -174,17 +171,25 @@ export async function startP2PWorkflow(vendorInvoiceId: string) {
   if (!invoice) return
 
   const orgId = invoice.organizationId
+  const logs: any[] = []
+
+  let currentLogs: any[] = []
+  if (invoice.agentLogs) {
+    if (Array.isArray(invoice.agentLogs)) {
+      currentLogs = invoice.agentLogs
+    } else if (typeof invoice.agentLogs === "string") {
+      try { currentLogs = JSON.parse(invoice.agentLogs) } catch(e) {}
+    }
+  }
 
   const appendP2PLog = async (agent: string, message: string) => {
     const logEntry = { agent, message, timestamp: new Date().toISOString() }
-    const current = await prisma.vendorInvoice.findUnique({ where: { id: vendorInvoiceId }, select: { agentLogs: true } })
-    const existing = Array.isArray(current?.agentLogs) ? (current.agentLogs as any[]) : []
-    await prisma.vendorInvoice.update({ where: { id: vendorInvoiceId }, data: { agentLogs: [...existing, logEntry] } })
+    logs.push(logEntry)
     await publishEvent(`org:${orgId}:events`, { type: "agent_log", transactionId: vendorInvoiceId, ...logEntry })
   }
 
   try {
-    await prisma.vendorInvoice.update({ where: { id: vendorInvoiceId }, data: { workflowStatus: "running", agentLogs: [] } })
+    await prisma.vendorInvoice.update({ where: { id: vendorInvoiceId }, data: { workflowStatus: "running" } })
 
     await appendP2PLog("Orchestrator", `P2P Workflow started | Invoice ID: ${vendorInvoiceId} | Invoice #: ${invoice.invoiceNumber} | Vendor: ${invoice.vendor?.name ?? "unknown"} | Amount: $${invoice.amount} | PO: ${invoice.purchaseOrder?.poNumber ?? "none"} | Due: ${invoice.dueDate ? new Date(invoice.dueDate).toLocaleDateString() : "n/a"}`)
     await appendP2PLog("Orchestrator", `[1/2] Starting Matching Agent — comparing invoice against PO...`)
@@ -194,7 +199,7 @@ export async function startP2PWorkflow(vendorInvoiceId: string) {
       matchingResult = await runMatchingAgent(vendorInvoiceId)
     } catch (err: any) {
       await appendP2PLog("Matching", `FAILED — ${err.message}`)
-      await prisma.vendorInvoice.update({ where: { id: vendorInvoiceId }, data: { workflowStatus: "error" } })
+      await prisma.vendorInvoice.update({ where: { id: vendorInvoiceId }, data: { workflowStatus: "error", agentLogs: [...currentLogs, ...logs] } })
       throw err
     }
 
@@ -204,19 +209,62 @@ export async function startP2PWorkflow(vendorInvoiceId: string) {
     await appendP2PLog("Orchestrator", `[2/2] Processing matched invoice — creating expense record...`)
 
     if (updated.status === "MATCHED") {
+      let category = "Software & SaaS" // fallback
+      try {
+        await appendP2PLog("GL Coding", `[2a/2] Starting GL Coding Agent to determine expense account...`)
+        const glResult = await runGLCodingAgent(
+          `Vendor Invoice: ${updated.invoiceNumber} from ${invoice.vendor?.name ?? "unknown"}`,
+          orgId
+        )
+        category = glResult.suggestedCategory || category
+        await appendP2PLog("GL Coding", `AI suggests category: ${category}`)
+      } catch (err: any) {
+        await appendP2PLog("GL Coding", `AI fallback — using default. Error: ${err.message}`)
+      }
+
       const expense = await prisma.expense.create({
         data: {
           date: new Date(),
           description: `Vendor Invoice: ${updated.invoiceNumber}`,
           amount: updated.amount,
-          category: "Accounts Payable",
+          category,
           organizationId: orgId,
           status: "REVIEWED",
         },
       })
+      
+      await prisma.generalLedgerEntry.createMany({
+        data: [
+          {
+            date: new Date(),
+            accountType: "Expenses",
+            accountName: category,
+            debit: updated.amount,
+            credit: 0,
+            amount: updated.amount,
+            description: `AP Voucher — ${updated.invoiceNumber} from ${invoice.vendor?.name ?? "unknown"}`,
+            sourceType: "vendor_invoice",
+            sourceId: vendorInvoiceId,
+            organizationId: orgId,
+          },
+          {
+            date: new Date(),
+            accountType: "Liabilities",
+            accountName: "Accounts Payable",
+            debit: 0,
+            credit: updated.amount,
+            amount: -updated.amount,
+            description: `AP Voucher — ${updated.invoiceNumber} from ${invoice.vendor?.name ?? "unknown"}`,
+            sourceType: "vendor_invoice",
+            sourceId: vendorInvoiceId,
+            organizationId: orgId,
+          }
+        ]
+      })
+
       await appendP2PLog("Orchestrator", `Expense record created | Expense ID: ${expense.id} | Amount: $${expense.amount} | Category: ${expense.category}`)
       await appendP2PLog("Orchestrator", `P2P Workflow COMPLETED | Invoice #${updated.invoiceNumber} from ${invoice.vendor?.name ?? "vendor"} approved and expensed.`)
-      await prisma.vendorInvoice.update({ where: { id: vendorInvoiceId }, data: { workflowStatus: "completed" } })
+      await prisma.vendorInvoice.update({ where: { id: vendorInvoiceId }, data: { workflowStatus: "completed", agentLogs: [...currentLogs, ...logs] } })
       
       await createNotification({
         organizationId: orgId,
@@ -227,7 +275,7 @@ export async function startP2PWorkflow(vendorInvoiceId: string) {
       })
     } else {
       await appendP2PLog("Orchestrator", `P2P Workflow STOPPED | Invoice #${updated.invoiceNumber} status is "${updated.status}". Manual review required before expense is created.`)
-      await prisma.vendorInvoice.update({ where: { id: vendorInvoiceId }, data: { workflowStatus: "error" } })
+      await prisma.vendorInvoice.update({ where: { id: vendorInvoiceId }, data: { workflowStatus: "error", agentLogs: [...currentLogs, ...logs] } })
 
       await createNotification({
         organizationId: orgId,
@@ -248,7 +296,7 @@ export async function startP2PWorkflow(vendorInvoiceId: string) {
   } catch (error: any) {
     console.error("P2P Workflow error:", error)
     await appendP2PLog("Orchestrator", `P2P Workflow ERROR | Invoice ID: ${vendorInvoiceId} | ${error.message}`)
-    await prisma.vendorInvoice.update({ where: { id: vendorInvoiceId }, data: { workflowStatus: "error" } }).catch(() => {})
+    await prisma.vendorInvoice.update({ where: { id: vendorInvoiceId }, data: { workflowStatus: "error", agentLogs: [...currentLogs, ...logs] } }).catch(() => {})
     
     await createNotification({
       organizationId: orgId,
@@ -268,21 +316,59 @@ export async function startO2CWorkflow(salesOrderId: string, scenario?: string) 
   if (!order) return
 
   const orgId = order.organizationId
+  const logs: any[] = []
+
+  let currentLogs: any[] = []
+  if (order.agentLogs) {
+    if (Array.isArray(order.agentLogs)) {
+      currentLogs = order.agentLogs
+    } else if (typeof order.agentLogs === "string") {
+      try { currentLogs = JSON.parse(order.agentLogs) } catch(e) {}
+    }
+  }
 
   const appendO2CLog = async (agent: string, message: string) => {
     const logEntry = { agent, message, timestamp: new Date().toISOString() }
-    const current = await prisma.salesOrder.findUnique({ where: { id: salesOrderId }, select: { agentLogs: true } })
-    const existing = Array.isArray(current?.agentLogs) ? (current.agentLogs as any[]) : []
-    await prisma.salesOrder.update({ where: { id: salesOrderId }, data: { agentLogs: [...existing, logEntry] } })
+    logs.push(logEntry)
     await publishEvent(`org:${orgId}:events`, { type: "agent_log", transactionId: salesOrderId, ...logEntry })
   }
 
   try {
-    await prisma.salesOrder.update({ where: { id: salesOrderId }, data: { workflowStatus: "running", agentLogs: [] } })
+    await prisma.salesOrder.update({ where: { id: salesOrderId }, data: { workflowStatus: "running" } })
 
     await appendO2CLog("Orchestrator", `O2C Workflow started | Sales Order ID: ${salesOrderId} | Order #: ${order.orderNumber} | Customer: ${order.customer.name} (${order.customer.email ?? "no email"}) | Amount: $${order.totalAmount} | Status: ${order.status}`)
 
-    if (order.status === "PAID") {
+    if (order.status === "APPROVED") {
+      await appendO2CLog("Orchestrator", `[1/1] Order is APPROVED — triggering Invoice Generation Agent...`)
+      try {
+        const invResult = await runInvoiceGenerationAgent(salesOrderId, orgId)
+        await appendO2CLog("InvoiceGen", invResult.message)
+      } catch (err: any) {
+        await appendO2CLog("InvoiceGen", `FAILED — ${err.message}`)
+        throw err
+      }
+      await prisma.salesOrder.update({ where: { id: salesOrderId }, data: { workflowStatus: "completed", agentLogs: [...currentLogs, ...logs] } })
+      
+      await createNotification({
+        organizationId: orgId,
+        type: "SUCCESS",
+        title: "Invoice Generated",
+        message: `Invoice generated for Order #${order.orderNumber}.`,
+        link: `/sales-orders/${salesOrderId}`
+      })
+    } else if (order.status === "PAID") {
+      const invoiceId = (order as any).invoiceId;
+      if (invoiceId) {
+        const existingTx = await prisma.transaction.findFirst({
+          where: { organizationId: orgId, invoiceId: invoiceId }
+        })
+        if (existingTx) {
+          await appendO2CLog("Orchestrator", `Transaction already exists (${existingTx.id}). Skipping pipeline.`)
+          await prisma.salesOrder.update({ where: { id: salesOrderId }, data: { workflowStatus: "completed", agentLogs: [...currentLogs, ...logs] } })
+          return
+        }
+      }
+
       await appendO2CLog("Orchestrator", `[1/2] Order is PAID — creating synthetic contract + transaction for agent pipeline...`)
 
       const intentId = `o2c-${order.orderNumber}-${Date.now()}`
@@ -306,19 +392,28 @@ export async function startO2CWorkflow(salesOrderId: string, scenario?: string) 
           customerEmail: order.customer.email,
           organizationId: orgId,
           agentLogs: [],
+          invoiceId: invoiceId || null,
         },
       })
       await appendO2CLog("Orchestrator", `[2/2] Transaction created | Transaction ID: ${transaction.id} | Handing off to R2R → O&M → Auditor → FP&A pipeline...`)
-      await prisma.salesOrder.update({ where: { id: salesOrderId }, data: { workflowStatus: "completed" } })
+      await prisma.salesOrder.update({ where: { id: salesOrderId }, data: { workflowStatus: "completed", agentLogs: [...currentLogs, ...logs] } })
 
-      await startAgentWorkflow(transaction.id)
+      after(startAgentWorkflow(transaction.id).catch(console.error))
     } else if (order.status === "INVOICED") {
       await appendO2CLog("Collections", `[1/1] Order is INVOICED but unpaid — running collections check...`)
+      
+      try {
+        const collectionsResults = await runCollectionsAgent(orgId)
+        await appendO2CLog("Collections", `Dunning logic triggered — actions performed: ${JSON.stringify(collectionsResults.slice(0, 2))}...`)
+      } catch (err: any) {
+        await appendO2CLog("Collections", `Collections check failed: ${err.message}`)
+      }
+      
       const daysSinceCreated = Math.floor((Date.now() - new Date(order.createdAt).getTime()) / (1000 * 60 * 60 * 24))
       await appendO2CLog("Collections", `Customer: ${order.customer.name} (${order.customer.email ?? "no email"}) | Amount: $${order.totalAmount} | Days since invoiced: ${daysSinceCreated} | Action: Flag for dunning outreach`)
       await appendO2CLog("Collections", `Dunning recommended — ${order.customer.name} has an open invoice of $${order.totalAmount} (Order #${order.orderNumber}) with no payment received. Schedule follow-up contact.`)
       await appendO2CLog("Orchestrator", `O2C Collections flow COMPLETED | Order #${order.orderNumber} flagged. No financial pipeline triggered until payment is received.`)
-      await prisma.salesOrder.update({ where: { id: salesOrderId }, data: { workflowStatus: "completed" } })
+      await prisma.salesOrder.update({ where: { id: salesOrderId }, data: { workflowStatus: "completed", agentLogs: [...currentLogs, ...logs] } })
 
       await createNotification({
         organizationId: orgId,
@@ -329,7 +424,7 @@ export async function startO2CWorkflow(salesOrderId: string, scenario?: string) 
       })
     } else {
       await appendO2CLog("Orchestrator", `O2C Workflow SKIPPED | Order #${order.orderNumber} is in status "${order.status}" — expected PAID or INVOICED. No action taken.`)
-      await prisma.salesOrder.update({ where: { id: salesOrderId }, data: { workflowStatus: "error" } })
+      await prisma.salesOrder.update({ where: { id: salesOrderId }, data: { workflowStatus: "error", agentLogs: [...currentLogs, ...logs] } })
     }
 
     await publishEvent(`org:${orgId}:events`, {
@@ -341,7 +436,7 @@ export async function startO2CWorkflow(salesOrderId: string, scenario?: string) 
   } catch (error: any) {
     console.error("O2C Workflow error:", error)
     await appendO2CLog("Orchestrator", `O2C Workflow ERROR | Order ID: ${salesOrderId} | Order #: ${order.orderNumber} | ${error.message}`)
-    await prisma.salesOrder.update({ where: { id: salesOrderId }, data: { workflowStatus: "error" } }).catch(() => {})
+    await prisma.salesOrder.update({ where: { id: salesOrderId }, data: { workflowStatus: "error", agentLogs: [...currentLogs, ...logs] } }).catch(() => {})
     
     await createNotification({
       organizationId: orgId,

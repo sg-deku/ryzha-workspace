@@ -148,7 +148,7 @@ export function DashboardLayoutEditor({ open, onClose, widgets: initialWidgets, 
   }
 
   return (
-    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+    <Dialog open={open} onOpenChange={(v: boolean) => !v && onClose()}>
       <DialogContent className="max-w-md max-h-[85vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>Customize Dashboard</DialogTitle>

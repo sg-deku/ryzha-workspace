@@ -15,48 +15,53 @@ export async function runFPAgent(transactionId: string) {
   if (!tx) return null
 
   const settings = tx.organization.financialSettings
-  const baseBankBalance = settings?.bankBalance || 0
   const targetMonthlyRevenue = settings?.targetMonthlyRevenue || 10000
 
-  // Calculate real-time bank balance: base + sum of all paid invoices + all transactions - expenses
-  const [invoicesTotal, expensesTotal, transactionsTotal] = await Promise.all([
-    prisma.invoice.aggregate({ 
-      where: { organizationId: tx.organizationId, status: "PAID" }, 
-      _sum: { total: true } 
+  // Bank balance comes from FinancialSnapshot plus adjustments
+  const snapshot = await prisma.financialSnapshot.findUnique({ where: { organizationId: tx.organizationId } })
+  const lastKnownBalance = snapshot?.bankBalance ?? settings?.bankBalance ?? 0
+  const bankBalance = lastKnownBalance
+
+  const monthStart = new Date()
+  monthStart.setDate(1)
+  monthStart.setHours(0, 0, 0, 0)
+
+  const threeMonthsAgo = new Date()
+  threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3)
+
+  const [glRevenue, currentMonthGLRevenue, recentExpenses] = await Promise.all([
+    prisma.generalLedgerEntry.aggregate({
+      where: { organizationId: tx.organizationId, accountType: "Revenue" },
+      _sum: { credit: true }
     }),
-    prisma.expense.aggregate({ 
-      where: { organizationId: tx.organizationId }, 
-      _sum: { amount: true } 
+    prisma.generalLedgerEntry.aggregate({
+      where: {
+        organizationId: tx.organizationId,
+        accountType: "Revenue",
+        date: { gte: monthStart }
+      },
+      _sum: { credit: true }
     }),
-    prisma.transaction.aggregate({ 
-      where: { organizationId: tx.organizationId }, 
-      _sum: { amount: true } 
+    prisma.expense.aggregate({
+      where: { 
+        organizationId: tx.organizationId, 
+        date: { gte: threeMonthsAgo } 
+      },
+      _sum: { amount: true }
     })
   ])
 
-  const currentRevenue = (invoicesTotal._sum.total || 0) + (transactionsTotal._sum.amount || 0)
-  const currentExpenses = expensesTotal._sum.amount || 0
-  const bankBalance = baseBankBalance + currentRevenue - currentExpenses
-
-  // Average monthly expenses over last 3 months
-  const threeMonthsAgo = new Date()
-  threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3)
-  const recentExpenses = await prisma.expense.aggregate({
-    where: { 
-      organizationId: tx.organizationId, 
-      date: { gte: threeMonthsAgo } 
-    },
-    _sum: { amount: true }
-  })
+  const currentRevenue = glRevenue._sum.credit ?? 0
   const avgMonthlyExpenses = (recentExpenses._sum.amount || 0) / 3
 
   const runwayMonths = avgMonthlyExpenses > 0 ? bankBalance / avgMonthlyExpenses : 999
   const zeroCashDate = new Date()
   zeroCashDate.setDate(zeroCashDate.getDate() + Math.round(runwayMonths * 30))
 
-  // Percent ahead of plan
-  const actualMonthlyRevenue = (transactionsTotal._sum.amount || 0) / 3 // crude average
-  const percentAhead = ((actualMonthlyRevenue - targetMonthlyRevenue) / targetMonthlyRevenue) * 100
+  const actualMonthlyRevenue = currentMonthGLRevenue._sum.credit ?? 0
+  const percentAhead = targetMonthlyRevenue > 0
+    ? ((actualMonthlyRevenue - targetMonthlyRevenue) / targetMonthlyRevenue) * 100
+    : 0
 
   let logMessage = `FP&A: Runway recalculated: ${runwayMonths.toFixed(1)} months. Zero cash date: ${zeroCashDate.toLocaleDateString()}. ${percentAhead > 0 ? `+${percentAhead.toFixed(0)}%` : `${percentAhead.toFixed(0)}%`} ahead of plan.`
   let aiNarrative = ""

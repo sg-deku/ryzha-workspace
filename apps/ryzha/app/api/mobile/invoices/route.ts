@@ -16,7 +16,8 @@ export async function GET(req: Request) {
   const invoices = await prisma.invoice.findMany({
     where: {
       organizationId: session.organizationId,
-      ...(status ? { status } : {}),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ...(status ? { status: status as any } : {}),
     },
     orderBy: { createdAt: "desc" },
     take: limit,
@@ -76,7 +77,7 @@ export async function POST(req: Request) {
           quantity: l.quantity,
           unitPrice: l.unitPrice,
           taxRate: l.taxRate ?? 0,
-          total: l.quantity * l.unitPrice * (1 + (l.taxRate ?? 0) / 100),
+          amount: l.quantity * l.unitPrice,
         })),
       },
     },

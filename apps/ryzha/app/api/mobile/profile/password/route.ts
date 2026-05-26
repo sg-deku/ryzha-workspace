@@ -19,7 +19,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Password must be at least 8 characters" }, { status: 400 })
 
   const user = await prisma.user.findUnique({
-    where: { id: session.userId },
+    where: { id: session.id },
     select: { id: true, password: true },
   })
 
@@ -33,7 +33,7 @@ export async function POST(req: Request) {
   const hashed = await bcrypt.hash(newPassword, 10)
 
   await prisma.user.update({
-    where: { id: session.userId },
+    where: { id: session.id },
     data: { password: hashed },
   })
 

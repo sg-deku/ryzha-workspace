@@ -128,7 +128,7 @@ export default async function TransactionPage({ params }: { params: Promise<{ id
 
   let rawLogs: LogEntry[] = []
   if (Array.isArray(transaction.agentLogs)) {
-    rawLogs = transaction.agentLogs as LogEntry[]
+    rawLogs = transaction.agentLogs as unknown as LogEntry[]
   } else if (typeof transaction.agentLogs === "string") {
     try { rawLogs = JSON.parse(transaction.agentLogs) } catch {}
   }

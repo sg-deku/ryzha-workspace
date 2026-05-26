@@ -74,7 +74,8 @@ export async function POST(req: Request) {
   try {
     const { client, model, provider } = await getAIClientConfig(orgId)
 
-    const messages: { role: "system" | "user" | "assistant" | "tool"; content: string; tool_call_id?: string; name?: string }[] = [
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const messages: any[] = [
       { role: "system", content: SYSTEM_PROMPT },
       ...history,
       { role: "user", content: message.trim() },
@@ -103,6 +104,7 @@ export async function POST(req: Request) {
 
         const toolResults: typeof messages = []
         for (const toolCall of assistantMessage.tool_calls || []) {
+          if (toolCall.type !== 'function') continue
           const toolArgs = JSON.parse(toolCall.function.arguments || "{}")
           const toolResult = await executeTool(toolCall.function.name, toolArgs, orgId)
           toolResults.push({

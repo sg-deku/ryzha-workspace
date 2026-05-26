@@ -19,11 +19,15 @@ export function CashFlowForecast() {
   const fetchForecast = async (currentScenarios = scenarios) => {
     setLoading(true)
     try {
+      const balRes = await fetch("/api/dashboard/balance")
+      const balData = await balRes.json()
+      const currentBalance = balData.balance || 0
+
       const res = await fetch("/api/forecast/predict", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
-          currentBalance: 15000,
+          currentBalance,
           whatIfScenarios: currentScenarios 
         })
       })
