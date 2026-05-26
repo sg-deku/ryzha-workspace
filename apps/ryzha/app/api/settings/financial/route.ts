@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { NextResponse } from "next/server"
+import Stripe from "stripe"
 
 export const dynamic = "force-dynamic";
 
@@ -33,6 +34,18 @@ export async function PUT(req: Request) {
   const { id, organizationId, ...updateData } = body
 
   try {
+    if (updateData.stripeSecretKey) {
+      try {
+        const stripe = new Stripe(updateData.stripeSecretKey, {
+          apiVersion: "2025-01-27.acacia" as any,
+          typescript: true,
+        })
+        await stripe.balance.retrieve()
+      } catch (stripeError: any) {
+        return NextResponse.json({ error: "Invalid Stripe Secret Key: " + stripeError.message }, { status: 400 })
+      }
+    }
+
     const updated = await prisma.financialSettings.upsert({
       where: { organizationId: session.user.organizationId },
       update: updateData,
