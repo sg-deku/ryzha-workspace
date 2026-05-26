@@ -126,6 +126,7 @@ export function GeneralLedgerClient() {
   const [sourceType, setSourceType] = useState<SourceType>("All")
   const [accountNameFilter, setAccountNameFilter] = useState("All")
   const [drilldownAccount, setDrilldownAccount] = useState<string | null>(null)
+  const [recon, setRecon] = useState<{ status: string, message: string } | null>(null)
 
   const uniqueAccountNames = ["All", ...Array.from(new Set(summary.map((s) => s.accountName))).sort()]
 
@@ -141,7 +142,11 @@ export function GeneralLedgerClient() {
         ...(sourceType !== "All" && { sourceType }),
         ...((drilldownAccount || accountNameFilter !== "All") && { accountName: drilldownAccount ?? accountNameFilter }),
       })
-      const res = await fetch(`/api/reports/general-ledger?${params}`)
+      const [res, reconRes] = await Promise.all([
+        fetch(`/api/reports/general-ledger?${params}`),
+        fetch("/api/reports/reconciliation")
+      ])
+      
       if (!res.ok) return
       const data = await res.json()
       setEntries(data.entries)
@@ -149,6 +154,11 @@ export function GeneralLedgerClient() {
       setKpis(data.kpis)
       setTotalCount(data.totalCount)
       setTotalPages(data.totalPages)
+      
+      if (reconRes.ok) {
+        const reconData = await reconRes.json()
+        setRecon(reconData)
+      }
     } finally {
       setLoading(false)
     }
@@ -228,9 +238,16 @@ export function GeneralLedgerClient() {
             <BookOpen className="h-7 w-7 text-primary" />
             <h1 className="text-3xl font-bold tracking-tight">General Ledger</h1>
           </div>
-          <p className="text-muted-foreground mt-1">
-            Unified view of all financial transactions across every module
-          </p>
+          <div className="flex items-center gap-3 mt-1">
+            <p className="text-muted-foreground">
+              Unified view of all financial transactions across every module
+            </p>
+            {recon && (
+              <Badge variant={recon.status === "reconciled" ? "secondary" : "destructive"} className="text-xs">
+                {recon.message}
+              </Badge>
+            )}
+          </div>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={handleSync} disabled={syncing}>

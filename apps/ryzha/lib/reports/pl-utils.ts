@@ -32,35 +32,24 @@ export async function getPLData(
     if (endDate) dateFilter.lte = new Date(endDate + "T23:59:59.999Z")
   }
 
-  const invoiceWhere: any = { organizationId, status: { not: "VOID" } }
-  if (startDate || endDate) invoiceWhere.issueDate = dateFilter
+  const whereRevenue: any = { organizationId, accountType: "Revenue" }
+  if (startDate || endDate) whereRevenue.date = dateFilter
 
-  const expenseWhere: any = { organizationId }
-  if (startDate || endDate) expenseWhere.date = dateFilter
+  const whereExpenses: any = { organizationId, accountType: "Expenses" }
+  if (startDate || endDate) whereExpenses.date = dateFilter
 
-  const vendorWhere: any = { organizationId }
-  if (startDate || endDate) vendorWhere.createdAt = dateFilter
-
-  const [invoices, expenses, vendorInvoices] = await Promise.all([
-    prisma.invoice.findMany({
-      where: invoiceWhere,
-      include: { lineItems: true },
-    }),
-    prisma.expense.findMany({ where: expenseWhere }),
-    prisma.vendorInvoice.findMany({ where: vendorWhere }),
+  const [revenueEntries, expenseEntries] = await Promise.all([
+    prisma.generalLedgerEntry.findMany({ where: whereRevenue }),
+    prisma.generalLedgerEntry.findMany({ where: whereExpenses }),
   ])
 
-  const revenue = invoices.reduce((s, inv) => s + inv.subtotal, 0)
-  const expenseTotal = expenses.reduce((s, e) => s + e.amount, 0)
-  const vendorExpenseTotal = vendorInvoices.reduce((s, vi) => s + vi.amount, 0)
-  const totalExpenses = expenseTotal + vendorExpenseTotal
+  const revenue = revenueEntries.reduce((s, e) => s + e.credit - e.debit, 0)
+  const totalExpenses = expenseEntries.reduce((s, e) => s + e.debit - e.credit, 0)
 
   const revenueByDesc: Record<string, number> = {}
-  for (const inv of invoices) {
-    for (const item of inv.lineItems) {
-      const key = item.description || "Other"
-      revenueByDesc[key] = (revenueByDesc[key] ?? 0) + item.amount
-    }
+  for (const entry of revenueEntries) {
+    const key = entry.accountName || "Other"
+    revenueByDesc[key] = (revenueByDesc[key] ?? 0) + (entry.credit - entry.debit)
   }
   const revenueBreakdown = Object.entries(revenueByDesc)
     .map(([name, amount]) => ({ name, amount }))
@@ -68,12 +57,9 @@ export async function getPLData(
     .slice(0, 8)
 
   const expenseByCategory: Record<string, number> = {}
-  for (const e of expenses) {
-    const key = e.category || "Uncategorized"
-    expenseByCategory[key] = (expenseByCategory[key] ?? 0) + e.amount
-  }
-  for (const vi of vendorInvoices) {
-    expenseByCategory["Vendor Expenses"] = (expenseByCategory["Vendor Expenses"] ?? 0) + vi.amount
+  for (const e of expenseEntries) {
+    const key = e.accountName || "Uncategorized"
+    expenseByCategory[key] = (expenseByCategory[key] ?? 0) + (e.debit - e.credit)
   }
   const expenseBreakdown = Object.entries(expenseByCategory)
     .map(([name, amount]) => ({ name, amount }))
@@ -87,8 +73,8 @@ export async function getPLData(
 
   return {
     revenue,
-    expenses: expenseTotal,
-    vendorExpenses: vendorExpenseTotal,
+    expenses: totalExpenses,
+    vendorExpenses: 0, // Simplified, everything is in totalExpenses from GL
     totalExpenses,
     grossProfit,
     netIncome,
@@ -114,31 +100,31 @@ export async function getMonthlyPL(
 
     const monthLabel = startDate.toLocaleString("default", { month: "short", year: "2-digit" })
 
-    const [invoices, expenses, vendorInvoices] = await Promise.all([
-      prisma.invoice.aggregate({
+    const [revenueEntries, expenseEntries] = await Promise.all([
+      prisma.generalLedgerEntry.aggregate({
         where: {
           organizationId,
-          status: { not: "VOID" },
-          issueDate: { gte: startDate, lte: endDate },
+          accountType: "Revenue",
+          date: { gte: startDate, lte: endDate },
         },
-        _sum: { subtotal: true },
+        _sum: { credit: true, debit: true },
       }),
-      prisma.expense.aggregate({
-        where: { organizationId, date: { gte: startDate, lte: endDate } },
-        _sum: { amount: true },
-      }),
-      prisma.vendorInvoice.aggregate({
-        where: { organizationId, createdAt: { gte: startDate, lte: endDate } },
-        _sum: { amount: true },
+      prisma.generalLedgerEntry.aggregate({
+        where: { 
+          organizationId, 
+          accountType: "Expenses", 
+          date: { gte: startDate, lte: endDate } 
+        },
+        _sum: { debit: true, credit: true },
       }),
     ])
 
-    const revenue = invoices._sum.subtotal ?? 0
-    const expenses2 = (expenses._sum.amount ?? 0) + (vendorInvoices._sum.amount ?? 0)
-    const netIncome = revenue - expenses2
+    const revenue = (revenueEntries._sum.credit ?? 0) - (revenueEntries._sum.debit ?? 0)
+    const expenses = (expenseEntries._sum.debit ?? 0) - (expenseEntries._sum.credit ?? 0)
+    const netIncome = revenue - expenses
     const grossMargin = revenue > 0 ? Math.round((netIncome / revenue) * 100) : 0
 
-    rows.push({ month: monthLabel, revenue, expenses: expenses2, netIncome, grossMargin })
+    rows.push({ month: monthLabel, revenue, expenses, netIncome, grossMargin })
   }
 
   return rows

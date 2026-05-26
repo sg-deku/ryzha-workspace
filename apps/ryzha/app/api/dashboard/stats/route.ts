@@ -39,7 +39,7 @@ export async function GET() {
 
   const orgId = session.user.organizationId
 
-  const [settings, salesOrders, expenses7mo, transactions7mo] = await Promise.all([
+  const [settings, salesOrders, expenses7mo, revenue7mo] = await Promise.all([
     prisma.financialSettings.findUnique({
       where: { organizationId: orgId },
       select: { bankBalance: true, averageMonthlyExpenses: true },
@@ -48,25 +48,25 @@ export async function GET() {
       where: { organizationId: orgId, status: "INVOICED" },
       select: { totalAmount: true },
     }),
-    prisma.expense.findMany({
+    prisma.generalLedgerEntry.findMany({
       where: {
         organizationId: orgId,
+        accountType: "Expenses",
         date: { gte: monthStart(6) },
       },
-      select: { amount: true, date: true },
+      select: { debit: true, credit: true, date: true },
     }),
-    prisma.transaction.findMany({
+    prisma.generalLedgerEntry.findMany({
       where: {
         organizationId: orgId,
-        workflowStatus: "completed",
-        createdAt: { gte: monthStart(6) },
+        accountType: "Revenue",
+        date: { gte: monthStart(6) },
       },
-      select: { amount: true, createdAt: true },
+      select: { credit: true, debit: true, date: true },
     }),
   ])
 
   const bankBalance = settings?.bankBalance ?? 0
-
   const outstandingTotal = salesOrders.reduce((s, o) => s + o.totalAmount, 0)
 
   const monthlyRevenue: number[] = []
@@ -75,14 +75,14 @@ export async function GET() {
     const start = monthStart(i)
     const end = i === 0 ? new Date() : monthEnd(i)
     monthlyRevenue.push(
-      transactions7mo
-        .filter(t => new Date(t.createdAt) >= start && new Date(t.createdAt) <= end)
-        .reduce((s, t) => s + t.amount, 0)
+      revenue7mo
+        .filter(t => new Date(t.date) >= start && new Date(t.date) <= end)
+        .reduce((s, t) => s + t.credit - t.debit, 0)
     )
     monthlyExpenses.push(
       expenses7mo
         .filter(e => new Date(e.date) >= start && new Date(e.date) <= end)
-        .reduce((s, e) => s + e.amount, 0)
+        .reduce((s, e) => s + e.debit - e.credit, 0)
     )
   }
 

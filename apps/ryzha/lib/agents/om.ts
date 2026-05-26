@@ -3,6 +3,7 @@ import { getFinancialContext } from "@/lib/ai/rag"
 import { callLLM } from "@/lib/ai/llm"
 import { parseAIJson } from "@/lib/ai/client"
 import { appendAgentLog } from "./utils"
+import { addMonths, startOfMonth } from "date-fns"
 
 export async function runOMAgent(transactionId: string) {
   const tx = await prisma.transaction.findUnique({ 
@@ -41,7 +42,7 @@ export async function runOMAgent(transactionId: string) {
       ], "agent_om", { modelName: "gpt-4o-mini", temperature: 0 })
 
       try {
-        const result = parseAIJson(response.content as string)
+        const result = parseAIJson(response.content as string) as any
         isDeferred = result.deferred
         aiReasoning = result.reason
       } catch (e) {
@@ -73,6 +74,15 @@ export async function runOMAgent(transactionId: string) {
         revenueRecognitionType: "deferred",
       },
     })
+
+    const scheduleRows = Array.from({ length: deferralMonths }, (_, i) => ({
+      transactionId,
+      period: addMonths(startOfMonth(new Date()), i + 1),
+      amount: monthlyPortion,
+      recognized: false,
+      organizationId: tx.organizationId
+    }))
+    await prisma.deferredRevenueSchedule.createMany({ data: scheduleRows })
   } else {
     const logMessage = aiReasoning || "Approved: immediate revenue recognition."
     await appendAgentLog(transactionId, "O&M", logMessage)
