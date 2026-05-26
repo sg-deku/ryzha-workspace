@@ -8,12 +8,16 @@ import { Badge } from "@/components/ui/badge"
 import { Label } from "@/components/ui/label"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { toast } from "sonner"
-import { CheckCircle2, XCircle, Eye, EyeOff, Loader2, ArrowLeft } from "lucide-react"
+import { CheckCircle2, XCircle, Eye, EyeOff, Loader2, ArrowLeft, Copy } from "lucide-react"
 import Link from "next/link"
+import { useSession } from "next-auth/react"
 
 export const dynamic = 'force-dynamic'
 
 export default function StripeIntegrationPage() {
+  const { data: session } = useSession()
+  const orgId = (session?.user as any)?.organizationId || "YOUR_ORG_ID"
+
   const [stripeKey, setStripeKey] = useState("")
   const [stripeWebhookSecret, setStripeWebhookSecret] = useState("")
   const [showStripeKey, setShowStripeKey] = useState(false)
@@ -107,6 +111,12 @@ export default function StripeIntegrationPage() {
     } finally {
       setStripeSaving(false)
     }
+  }
+
+  const handleCopyWebhook = () => {
+    const url = `${window.location.origin}/api/webhooks/stripe?orgId=${orgId}`
+    navigator.clipboard.writeText(url)
+    toast.success("Webhook URL copied!")
   }
 
   return (
@@ -221,9 +231,19 @@ export default function StripeIntegrationPage() {
                     <li>Go to <strong>stripe.com → Developers → API keys</strong></li>
                     <li>Copy your <strong>Secret key</strong> (starts with <code>sk_</code>)</li>
                     <li>Paste it above and click <strong>Connect Stripe</strong></li>
-                    <li>In Stripe, add a webhook endpoint: <code>/api/webhooks/stripe</code></li>
+                    <li>
+                      In Stripe, add a webhook endpoint.
+                      <div className="flex items-center gap-2 mt-2 mb-2 ml-4">
+                        <code className="bg-background px-2 py-1 rounded border break-all text-xs">
+                          https://yourdomain.com/api/webhooks/stripe?orgId={orgId}
+                        </code>
+                        <Button type="button" variant="outline" size="sm" onClick={handleCopyWebhook} className="h-7 text-xs whitespace-nowrap">
+                          <Copy className="h-3 w-3 mr-1" /> Copy URL
+                        </Button>
+                      </div>
+                    </li>
+                    <li>Events to listen for: <code>payment_intent.succeeded</code>, <code>payout.paid</code>, <code>charge.refunded</code>, <code>payment_intent.payment_failed</code></li>
                     <li>Copy the <strong>Signing secret</strong> and paste it above</li>
-                    <li>Set the webhook to listen for <code>payment_intent.succeeded</code></li>
                   </ol>
                 </div>
               )}

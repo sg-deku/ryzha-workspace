@@ -100,6 +100,7 @@ const PAYMENT_METHODS = [
   { value: "wire", label: "Wire Transfer" },
   { value: "cheque", label: "Cheque" },
   { value: "credit_card", label: "Credit Card" },
+  { value: "stripe", label: "Stripe" },
   { value: "other", label: "Other" },
 ]
 
@@ -153,6 +154,27 @@ export function InvoiceDetail({ invoice: initialInvoice }: { invoice: Invoice })
   const totalPaid = invoice.payments.reduce((s, p) => s + p.amount, 0)
   const totalCredits = invoice.creditNotes.reduce((s, c) => s + c.amount, 0)
   const outstanding = Math.max(0, invoice.total - totalPaid + totalCredits)
+
+  const [generatingStripeLink, setGeneratingStripeLink] = useState(false)
+
+  const handleGenerateStripeLink = async () => {
+    setGeneratingStripeLink(true)
+    try {
+      const res = await fetch(`/api/invoices/${invoice.id}/stripe-link`, { method: "POST" })
+      if (res.ok) {
+        const { url } = await res.json()
+        await navigator.clipboard.writeText(url)
+        toast.success("Payment link copied to clipboard!")
+      } else {
+        const err = await res.json()
+        toast.error(err.error || "Failed to generate link")
+      }
+    } catch {
+      toast.error("Failed to generate Stripe link")
+    } finally {
+      setGeneratingStripeLink(false)
+    }
+  }
 
   const handleMarkAsPaid = async () => {
     setIsUpdating(true)
@@ -277,6 +299,10 @@ export function InvoiceDetail({ invoice: initialInvoice }: { invoice: Invoice })
         </div>
 
         <div className="flex items-center gap-2">
+          <Button variant="default" onClick={handleGenerateStripeLink} disabled={generatingStripeLink || invoice.status === "PAID"}>
+            {generatingStripeLink ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CreditCard className="mr-2 h-4 w-4" />}
+            Send via Stripe
+          </Button>
           <Button variant="outline" onClick={() => setIsPreviewOpen(true)}>
             <FileText className="mr-2 h-4 w-4" />
             Preview PDF

@@ -4,6 +4,7 @@ import { getStripe, getStripeForOrg } from "@/lib/stripe"
 import { prisma } from "@/lib/prisma"
 import { startAgentWorkflow } from "@/lib/agents/orchestrator"
 import { syncGLForOrganization } from "@/lib/reports/general-ledger/sync"
+import { recalculateInvoiceStatus } from "@/lib/agents/o2c/cash-application"
 
 export const dynamic = "force-dynamic"
 
@@ -92,13 +93,41 @@ export async function POST(req: Request) {
       }
     }
 
+    const customer_email = metadata?.customer_email || (event.data.object as any).customer_email
+    const invoiceIdParam = metadata?.invoiceId
+
+    const matchedInvoice = invoiceIdParam
+      ? await prisma.invoice.findUnique({ where: { id: invoiceIdParam } })
+      : await prisma.invoice.findFirst({
+          where: {
+            organizationId: orgId,
+            clientEmail: customer_email,
+            total: amount / 100,
+            status: { in: ["SENT", "PARTIAL"] }
+          }
+        })
+
+    if (matchedInvoice) {
+      await prisma.payment.create({
+        data: {
+          invoiceId: matchedInvoice.id,
+          amount: amount / 100,
+          method: "stripe",
+          paymentDate: new Date(paymentIntent.created * 1000),
+          referenceNumber: id,
+          organizationId: orgId,
+        }
+      })
+      await recalculateInvoiceStatus(matchedInvoice.id)
+    }
+
     const transaction = await prisma.transaction.create({
       data: {
         stripePaymentIntentId: id,
         amount: amount / 100,
         currency,
         description: description || metadata?.product_description || "Stripe payment",
-        customerEmail: metadata?.customer_email || (event.data.object as any).customer_email,
+        customerEmail: customer_email,
         organizationId: orgId,
         workflowStatus: "running",
         agentLogs: [],
@@ -106,7 +135,8 @@ export async function POST(req: Request) {
         stripeFee,
         fxFee,
         stripeNet,
-        clearingStatus: "pending"
+        clearingStatus: "pending",
+        invoiceId: matchedInvoice?.id ?? null
       },
     })
 
