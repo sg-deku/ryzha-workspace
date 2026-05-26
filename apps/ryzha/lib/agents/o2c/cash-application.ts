@@ -86,6 +86,8 @@ export async function runCashApplicationAgent(paymentId: string, organizationId:
       organizationId,
       agentLogs: [],
       revenueRecognitionType: aiClassification,
+      paymentFraction,
+      invoiceId: invoice.id,
     },
   })
 

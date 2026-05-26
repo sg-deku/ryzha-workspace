@@ -275,6 +275,7 @@ model FinancialSettings {
   embeddingProvider          String? @default("openai")
   embeddingModel             String? @default("text-embedding-3-small")
   expenseCategories          Json?   @default("[\"Software\", \"Hardware\", \"Office Supplies\", \"Travel\", \"Meals\", \"Legal\", \"Marketing\", \"Other\"]")
+  anomalyThreshold           Float   @default(50000)
 
   // Email Settings
   emailProvider String? @default("smtp") // smtp, sendgrid, resend

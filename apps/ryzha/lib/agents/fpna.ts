@@ -15,18 +15,17 @@ export async function runFPAgent(transactionId: string) {
   if (!tx) return null
 
   const settings = tx.organization.financialSettings
-  const baseBankBalance = settings?.bankBalance || 0
   const targetMonthlyRevenue = settings?.targetMonthlyRevenue || 10000
 
-  // Calculate real-time bank balance: base + sum of all paid invoices + all transactions - expenses
-  const [invoicesTotal, expensesTotal, transactionsTotal] = await Promise.all([
-    prisma.invoice.aggregate({ 
-      where: { organizationId: tx.organizationId, status: "PAID" }, 
-      _sum: { total: true } 
-    }),
-    prisma.expense.aggregate({ 
-      where: { organizationId: tx.organizationId }, 
-      _sum: { amount: true } 
+  // Bank balance comes from FinancialSnapshot plus adjustments
+  const snapshot = await prisma.financialSnapshot.findUnique({ where: { organizationId: tx.organizationId } })
+  const lastKnownBalance = snapshot?.bankBalance ?? settings?.bankBalance ?? 0
+  const bankBalance = lastKnownBalance
+
+  const [glRevenue, transactionsTotal] = await Promise.all([
+    prisma.generalLedgerEntry.aggregate({
+      where: { organizationId: tx.organizationId, accountType: "Revenue" },
+      _sum: { credit: true }
     }),
     prisma.transaction.aggregate({ 
       where: { organizationId: tx.organizationId }, 
@@ -34,9 +33,7 @@ export async function runFPAgent(transactionId: string) {
     })
   ])
 
-  const currentRevenue = (invoicesTotal._sum.total || 0) + (transactionsTotal._sum.amount || 0)
-  const currentExpenses = expensesTotal._sum.amount || 0
-  const bankBalance = baseBankBalance + currentRevenue - currentExpenses
+  const currentRevenue = glRevenue._sum.credit ?? 0
 
   // Average monthly expenses over last 3 months
   const threeMonthsAgo = new Date()

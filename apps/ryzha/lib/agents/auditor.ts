@@ -33,8 +33,10 @@ export async function runAuditorAgent(transactionId: string) {
   let anomalyDetected = false
   let aiReasoning = ""
 
+  const anomalyThreshold = settings?.anomalyThreshold ?? 50000
+
   // 1. Check for basic anomalies (mocking historical comparison)
-  if (tx.amount > 5000) { // Example: unusually large transaction
+  if (tx.amount > anomalyThreshold) { // Unusually large transaction
     anomalyDetected = true
   }
 
@@ -73,7 +75,7 @@ export async function runAuditorAgent(transactionId: string) {
       logMessage += ` WARNING: ${aiReasoning || "Unusual transaction pattern detected."}`
     }
   } else {
-    auditStatus = autoReject ? "rejected" : "failed"
+    auditStatus = autoReject ? "rejected" : (requireAuditSeal ? "flagged" : "unverified")
     logMessage = `Auditor: Verification failed – no matching contract found for ${tx.description || tx.stripePaymentIntentId}.`
     if (aiReasoning) logMessage += ` Investigation: ${aiReasoning}`
   }
