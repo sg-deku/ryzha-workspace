@@ -847,13 +847,39 @@ export default function DocsPage() {
             <div className="mb-6">
               <Card>
                 <CardHeader><CardTitle className="text-base">Orchestrator — The Central Coordinator</CardTitle></CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    The Orchestrator (<code className="text-xs bg-muted px-1 rounded">lib/agents/orchestrator.ts</code>) is the entry point for all agent workflows. It sequences the 6 agents, posts GL journal entries, calculates financial metrics, handles error isolation, and fires notifications. All agent pipelines run via <code className="text-xs bg-muted px-1 rounded">after()</code> to avoid blocking HTTP responses.
+                <CardContent className="space-y-6">
+                  <p className="text-sm text-muted-foreground">
+                    The Orchestrator (<code className="text-xs bg-muted px-1 rounded">lib/agents/orchestrator.ts</code>) is the entry point for all agent workflows. It sequences all 6 agents, posts GL journal entries, calculates financial metrics, handles error isolation, and fires notifications. All agent pipelines run via <code className="text-xs bg-muted px-1 rounded">after()</code> to avoid blocking HTTP responses.
                   </p>
-                  <div className="space-y-5">
+
+                  <div>
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">All 6 Agents — Overview</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {[
+                        { dot: "bg-violet-500", name: "O2C Agent", file: "lib/agents/o2c/", trigger: "SalesOrder created / Stripe webhook", owns: "Customer revenue cycle — order → invoice → cash collected", subs: "9 sub-agents: OrderIntake, InvoiceGen, CashApp, Collections, CreditNote, CustomerValidation, Credit, Dispute, Pricing", border: "border-violet-200 dark:border-violet-800", bg: "bg-violet-50/40 dark:bg-violet-950/20" },
+                        { dot: "bg-orange-500", name: "P2P Agent", file: "lib/agents/p2p/", trigger: "Vendor created / PO submitted", owns: "Vendor spend cycle — requisition → PO → invoice → payment", subs: "9 sub-agents: VendorIntake, Requisition, POCreation, Approval, InvoiceCapture, Matching, Receiving, GLCoding, PaymentScheduler", border: "border-orange-200 dark:border-orange-800", bg: "bg-orange-50/40 dark:bg-orange-950/20" },
+                        { dot: "bg-cyan-500", name: "R2R Agent", file: "lib/agents/r2r.ts", trigger: "Month-end close · on-demand sync", owns: "Books closure — GL sync, trial balance, deferred revenue release", subs: "Single-file agent: AI extraction → GL journal → Stripe clearing reconciliation → snapshot", border: "border-cyan-200 dark:border-cyan-800", bg: "bg-cyan-50/40 dark:bg-cyan-950/20" },
+                        { dot: "bg-teal-500", name: "O&M Agent", file: "lib/agents/om.ts", trigger: "Every transaction via orchestrator", owns: "ASC 606 compliance — deferred vs immediate revenue decision", subs: "Single-file agent: keyword detection → RAG context → AI ASC 606 decision → deferred schedule", border: "border-teal-200 dark:border-teal-800", bg: "bg-teal-50/40 dark:bg-teal-950/20" },
+                        { dot: "bg-indigo-500", name: "FP&A Agent", file: "lib/agents/fpna.ts", trigger: "Post-transaction · weekly CRON", owns: "AI CFO — runway, burn rate, zero-cash date, voice + SMS alerts", subs: "Single-file agent: GL aggregation → burn rate → forecast → AI narrative → ElevenLabs + Twilio", border: "border-indigo-200 dark:border-indigo-800", bg: "bg-indigo-50/40 dark:bg-indigo-950/20" },
+                        { dot: "bg-red-500", name: "Auditor Agent", file: "lib/agents/auditor.ts", trigger: "Every transaction · month-end audit", owns: "Forensic audit — contract match, anomaly detection, SHA-256 seal", subs: "Single-file agent: contract match → threshold check → AI investigation → audit hash → status", border: "border-red-200 dark:border-red-800", bg: "bg-red-50/40 dark:bg-red-950/20" },
+                      ].map((a) => (
+                        <div key={a.name} className={cn("rounded-lg border p-3 space-y-2", a.border, a.bg)}>
+                          <div className="flex items-center gap-2">
+                            <div className={cn("h-3 w-3 rounded-full flex-shrink-0", a.dot)} />
+                            <span className="font-semibold text-sm">{a.name}</span>
+                          </div>
+                          <p className="text-[10px] font-mono text-muted-foreground/70">{a.file}</p>
+                          <p className="text-xs text-muted-foreground"><span className="font-medium text-foreground/60">Trigger:</span> {a.trigger}</p>
+                          <p className="text-xs text-muted-foreground"><span className="font-medium text-foreground/60">Owns:</span> {a.owns}</p>
+                          <p className="text-xs text-muted-foreground italic">{a.subs}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2.5">Pipeline per transaction (sequential)</p>
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2.5">Per-transaction pipeline (sequential, blocking)</p>
                       <div className="space-y-1.5">
                         {[
                           { n: 1, agent: "R2R Agent", desc: "Record revenue, post GL entries", dot: "bg-cyan-500" },
@@ -876,18 +902,21 @@ export default function DocsPage() {
                       </div>
                     </div>
                     <div>
-                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2.5">Separate workflows</p>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2.5">Separate workflows (non-blocking via after())</p>
+                      <div className="space-y-2">
                         {[
-                          { fn: "startO2CWorkflow()", label: "O2C Agent pipeline" },
-                          { fn: "startCashApplicationWorkflow()", label: "Cash Application (non-blocking)" },
-                          { fn: "startP2PWorkflow()", label: "P2P Agent pipeline" },
-                          { fn: "startCollectionsWorkflow()", label: "O2C Collections (scheduled)" },
+                          { fn: "startO2CWorkflow()", label: "Full O2C pipeline", detail: "9 sub-agents: OrderIntake → InvoiceGen → ... → Pricing", dot: "bg-violet-500" },
+                          { fn: "startCashApplicationWorkflow()", label: "Stripe payment matching", detail: "Runs after payment webhook — matches payment to invoice", dot: "bg-violet-400" },
+                          { fn: "startP2PWorkflow()", label: "Full P2P pipeline", detail: "9 sub-agents: VendorIntake → Requisition → ... → PaymentScheduler", dot: "bg-orange-500" },
+                          { fn: "startCollectionsWorkflow()", label: "Overdue invoice scan", detail: "Scheduled job — emails at 7/14/30 days, escalates at 60", dot: "bg-orange-400" },
                         ].map((item) => (
-                          <div key={item.fn} className="flex items-center gap-2 rounded-md border bg-muted/20 px-3 py-2">
-                            <code className="text-xs text-primary font-mono">{item.fn}</code>
-                            <ArrowRight className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-                            <span className="text-xs text-muted-foreground">{item.label}</span>
+                          <div key={item.fn} className="rounded-md border bg-muted/20 px-3 py-2 space-y-0.5">
+                            <div className="flex items-center gap-2">
+                              <div className={cn("h-2 w-2 rounded-full flex-shrink-0", item.dot)} />
+                              <code className="text-xs text-primary font-mono">{item.fn}</code>
+                            </div>
+                            <p className="text-xs font-medium pl-4">{item.label}</p>
+                            <p className="text-xs text-muted-foreground pl-4">{item.detail}</p>
                           </div>
                         ))}
                       </div>
@@ -1104,76 +1133,68 @@ export default function DocsPage() {
                     <div className="h-4 w-4 rounded-full bg-cyan-500 flex-shrink-0" />
                     <div>
                       <CardTitle className="text-base">Record-to-Report Agent (R2R)</CardTitle>
-                      <CardDescription>Closes the books — syncs every transaction into double-entry GL, validates trial balance, and releases deferred revenue</CardDescription>
+                      <CardDescription>Closes the books — syncs every transaction into double-entry GL, validates trial balance, and releases deferred revenue on schedule</CardDescription>
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-2 pt-1">
                     <Badge variant="outline" className="text-xs font-mono">lib/agents/r2r.ts</Badge>
-                    <Badge variant="secondary" className="text-xs">Trigger: month-end close · on-demand sync</Badge>
+                    <Badge variant="secondary" className="text-xs">Trigger: month-end close · on-demand sync · post every transaction</Badge>
                   </div>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="space-y-5">
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                     {[
-                      {
-                        name: "AI Transaction Extraction",
-                        step: "Step 1",
-                        actions: ["Calls GPT-4o-mini with transaction description", "Extracts: customer, product_type, is_subscription, period_months", "Falls back to deterministic parsing on AI failure", "Logs extraction result to agentLogs JSON"],
-                        output: "Structured metadata enriching the transaction record",
-                        dot: "bg-cyan-500",
-                      },
-                      {
-                        name: "Revenue Recognition",
-                        step: "Step 2",
-                        actions: ["Sets transaction.recognizedRevenue = full amount", "Sets revenueRecognitionType = 'immediate'", "Marks transaction as R2R-processed", "Appends structured agent log entry"],
-                        output: "Transaction.recognizedRevenue updated, type = immediate",
-                        dot: "bg-cyan-500",
-                      },
-                      {
-                        name: "GL Journal Sync",
-                        step: "Step 3",
-                        actions: ["Runs syncGLForOrganization on all open transactions", "Posts DR Accounts Receivable / CR Service Revenue", "Validates every debit has a matching credit", "Generates trial balance report"],
-                        output: "GeneralLedgerEntry records balanced (DR = CR)",
-                        dot: "bg-cyan-500",
-                      },
-                      {
-                        name: "Stripe Clearing Reconciliation",
-                        step: "Step 4",
-                        actions: ["Matches payment_intent.succeeded events to GL entries", "Moves funds: DR Cash / CR Stripe Clearing", "Ensures Stripe Clearing balance nets to $0 per cycle", "Flags any unreconciled clearing items"],
-                        output: "Stripe Clearing Account = $0 for completed payouts",
-                        dot: "bg-cyan-500",
-                      },
-                      {
-                        name: "Deferred Revenue Release",
-                        step: "Step 5",
-                        actions: ["Queries DeferredRevenueSchedule where recognized = false AND period ≤ now()", "Posts DR Deferred Revenue / CR Service Revenue per line", "Marks each schedule row recognized = true", "Updates FinancialSnapshot with released amounts"],
-                        output: "Monthly deferred slices moved to recognized revenue",
-                        dot: "bg-cyan-500",
-                      },
-                      {
-                        name: "Financial Snapshot Update",
-                        step: "Step 6",
-                        actions: ["Upserts FinancialSnapshot with current GL totals", "Updates total revenue, AR balance, deferred balances", "Generates period-end closing entry summary", "Notifies FP&A agent to recalculate metrics"],
-                        output: "FinancialSnapshot reflects closed-period balances",
-                        dot: "bg-cyan-500",
-                      },
+                      { name: "AI Transaction Extraction", step: "Step 1", actions: ["Calls GPT-4o-mini with transaction description", "Extracts: customer, product_type, is_subscription, period_months", "Structured output schema enforced via Zod", "Falls back to deterministic parsing on AI failure", "Logs extraction result to agentLogs JSON"], output: "Structured metadata enriching the transaction record" },
+                      { name: "Revenue Recognition", step: "Step 2", actions: ["Sets transaction.recognizedRevenue = full amount", "Sets revenueRecognitionType = 'immediate' (O&M may override to deferred)", "Marks transaction as R2R-processed in agentStatus", "Appends structured agent log with timestamp"], output: "Transaction.recognizedRevenue set, type = immediate" },
+                      { name: "GL Journal Sync", step: "Step 3", actions: ["Runs syncGLForOrganization across all unprocessed transactions", "Posts DR Accounts Receivable (1100) / CR Service Revenue (4000)", "Each GL row includes: date, accountType, accountName, debit, credit, sourceType, sourceId", "Trial balance validated: SUM(debit) must equal SUM(credit)"], output: "GeneralLedgerEntry records — balanced (DR = CR)" },
+                      { name: "Stripe Clearing Reconciliation", step: "Step 4", actions: ["Triggered by payout.paid webhook event", "Stage 2: DR Stripe Clearing (1150) / CR AR (1100) — on card charge", "Stage 3: DR Cash/Checking (1000) / CR Stripe Clearing (1150) — on payout", "Stripe Clearing account must net to $0 per payout cycle", "Flags any unreconciled clearing items for review"], output: "Stripe Clearing Account balance = $0 after payout" },
+                      { name: "Deferred Revenue Release", step: "Step 5", actions: ["Queries DeferredRevenueSchedule WHERE recognized = false AND period ≤ now()", "For each due row: posts DR Deferred Revenue (1200) / CR Service Revenue (4000)", "Marks schedule row recognized = true, sets recognizedAt = now()", "Links glEntryId FK on schedule row back to the GL entry created", "Updates FinancialSnapshot with released amounts"], output: "Monthly deferred slices recognized to revenue P&L" },
+                      { name: "Trial Balance & Snapshot", step: "Step 6", actions: ["Aggregates all GL entries: total debits, total credits, net by account", "Asserts SUM(DR) === SUM(CR) — throws on imbalance", "Upserts FinancialSnapshot with latest revenue, AR, deferred totals", "Generates period-end closing summary in agentLogs", "Chains to FP&A agent for runway recalculation"], output: "FinancialSnapshot reflects closed-period balances + trial balance" },
                     ].map((cap) => (
                       <div key={cap.name} className="rounded-md border bg-muted/20 p-3 space-y-2">
-                        <div>
-                          <p className="text-sm font-semibold">{cap.name}</p>
-                          <p className="text-[10px] font-mono text-muted-foreground/70">{cap.step}</p>
-                        </div>
-                        <ul className="space-y-0.5">
-                          {cap.actions.map((a, i) => (
-                            <li key={i} className="flex items-start gap-1.5 text-xs text-muted-foreground">
-                              <CheckCircle2 className="h-3 w-3 text-cyan-500 mt-0.5 flex-shrink-0" />
-                              {a}
-                            </li>
-                          ))}
-                        </ul>
+                        <div><p className="text-sm font-semibold">{cap.name}</p><p className="text-[10px] font-mono text-muted-foreground/70">{cap.step}</p></div>
+                        <ul className="space-y-0.5">{cap.actions.map((a, i) => (<li key={i} className="flex items-start gap-1.5 text-xs text-muted-foreground"><CheckCircle2 className="h-3 w-3 text-cyan-500 mt-0.5 flex-shrink-0" />{a}</li>))}</ul>
                         <p className="text-xs"><span className="font-medium text-foreground/70">Output:</span> <span className="text-muted-foreground">{cap.output}</span></p>
                       </div>
                     ))}
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="rounded-lg border bg-muted/20 p-4 space-y-3">
+                      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">GL Journal Entries Posted</p>
+                      {[
+                        { label: "Stage 1 — Invoice Issued", dr: "Accounts Receivable (1100)", cr: "Service Revenue (4000)", amount: "$1,000.00" },
+                        { label: "Stage 2 — Stripe Charge", dr: "Stripe Clearing (1150) + Fee Expense (5000)", cr: "Accounts Receivable (1100)", amount: "$1,000.00" },
+                        { label: "Stage 3 — Stripe Payout", dr: "Cash / Checking (1000)", cr: "Stripe Clearing (1150)", amount: "$970.70" },
+                        { label: "Deferred Release (monthly)", dr: "Deferred Revenue (1200)", cr: "Service Revenue (4000)", amount: "$1,000 / N months" },
+                      ].map((e) => (
+                        <div key={e.label} className="space-y-1">
+                          <p className="text-[10px] font-semibold text-muted-foreground">{e.label}</p>
+                          <div className="rounded border bg-background p-2 text-xs font-mono space-y-0.5">
+                            <div className="flex justify-between"><span className="text-green-600 dark:text-green-400">DR {e.dr}</span><span className="font-semibold">{e.amount}</span></div>
+                            <div className="flex justify-between pl-4"><span className="text-blue-600 dark:text-blue-400">CR {e.cr}</span><span className="font-semibold">{e.amount}</span></div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="rounded-lg border bg-muted/20 p-4 space-y-3">
+                      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Key Outputs & Validations</p>
+                      <div className="space-y-2">
+                        {[
+                          { label: "Trial Balance", value: "SUM(ALL debits) = SUM(ALL credits)" },
+                          { label: "Stripe Clearing", value: "Balance must equal $0.00 after payout cycle" },
+                          { label: "AI Extraction Schema", value: "{ customer, product_type, is_subscription, period_months }" },
+                          { label: "agentStatus field", value: '{ r2r: "done", om: "pending", fpna: "pending", auditor: "pending" }' },
+                          { label: "GL Source Types", value: "INVOICE, PAYMENT, CREDIT_NOTE, PAYOUT, DEFERRED_RELEASE" },
+                          { label: "Deferred Schedule guard", value: "Checks count > 0 before createMany — prevents double-insert" },
+                        ].map((item) => (
+                          <div key={item.label} className="flex flex-col gap-0.5">
+                            <span className="text-xs font-medium">{item.label}</span>
+                            <span className="text-xs text-muted-foreground font-mono">{item.value}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -1185,76 +1206,69 @@ export default function DocsPage() {
                     <div className="h-4 w-4 rounded-full bg-teal-500 flex-shrink-0" />
                     <div>
                       <CardTitle className="text-base">Operations &amp; Management Agent (O&amp;M)</CardTitle>
-                      <CardDescription>Enforces ASC 606 deferral policy — decides whether revenue is recognized immediately or spread over time via AI reasoning + RAG</CardDescription>
+                      <CardDescription>Enforces ASC 606 deferral policy — uses AI + RAG to decide deferred vs immediate recognition, then creates the monthly release schedule</CardDescription>
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-2 pt-1">
                     <Badge variant="outline" className="text-xs font-mono">lib/agents/om.ts</Badge>
-                    <Badge variant="secondary" className="text-xs">Trigger: every transaction processed by orchestrator</Badge>
+                    <Badge variant="secondary" className="text-xs">Trigger: every transaction — runs as step 2 of orchestrator pipeline</Badge>
                   </div>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="space-y-5">
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                     {[
-                      {
-                        name: "Settings Resolution",
-                        step: "Step 1",
-                        actions: ["Loads FinancialSettings for the organization", "Reads deferralPeriodMonths (default: 12)", "Reads deferredRevenueRules keyword list", "Default keywords: 'annual', 'yearly', 'subscription'"],
-                        output: "Deferral config loaded for this organization",
-                        dot: "bg-teal-500",
-                      },
-                      {
-                        name: "Keyword Deferral Detection",
-                        step: "Step 2",
-                        actions: ["Scans transaction.description for deferral keywords", "Case-insensitive match against configurable rules list", "Sets isDeferred = true if any keyword found", "Provides fast deterministic path before AI call"],
-                        output: "Preliminary isDeferred flag (pre-AI)",
-                        dot: "bg-teal-500",
-                      },
-                      {
-                        name: "RAG Context Retrieval",
-                        step: "Step 3",
-                        actions: ["Calls getFinancialContext() with transaction description", "Retrieves relevant accounting policies from vector store", "Injects ASC 606 context into AI prompt", "Ensures AI decisions align with stored financial rules"],
-                        output: "Contextual ASC 606 policy fed to AI decision layer",
-                        dot: "bg-teal-500",
-                      },
-                      {
-                        name: "AI ASC 606 Decision",
-                        step: "Step 4",
-                        actions: ["Calls GPT-4o-mini as expert accountant", "Decides: { deferred: boolean, reason: string, period: number }", "AI can override keyword detection with reasoning", "Falls back to keyword result on AI failure"],
-                        output: "Final deferred/immediate decision + AI explanation",
-                        dot: "bg-teal-500",
-                      },
-                      {
-                        name: "Deferred Schedule Creation",
-                        step: "Step 5",
-                        actions: ["Calculates monthlyPortion = amount / deferralMonths", "Duplicate guard: checks existing schedule count before insert", "Creates N monthly DeferredRevenueSchedule rows", "Each row: period date, amount slice, recognized = false"],
-                        output: "DeferredRevenueSchedule rows (1 per month, 0 if immediate)",
-                        dot: "bg-teal-500",
-                      },
-                      {
-                        name: "Transaction Update",
-                        step: "Step 6",
-                        actions: ["Sets transaction.recognizedRevenue = monthlyPortion (deferred) or full amount (immediate)", "Sets transaction.deferredRevenue = remaining deferred amount", "Sets revenueRecognitionType = 'deferred' or 'immediate'", "Appends AI reasoning to agent log with ASC 606 citation"],
-                        output: "Transaction.deferredRevenue + recognizedRevenue updated",
-                        dot: "bg-teal-500",
-                      },
+                      { name: "Settings Resolution", step: "Step 1", actions: ["Loads FinancialSettings for the organization", "Reads deferralPeriodMonths (default: 12)", "Reads deferredRevenueRules keyword list (default: ['annual','yearly','subscription'])", "Reads paymentFraction for partial payment support"], output: "Deferral config loaded — keywords, period, fraction" },
+                      { name: "Keyword Deferral Detection", step: "Step 2", actions: ["Scans transaction.description against keyword list (case-insensitive)", "Sets isDeferred = true if any keyword matched", "This is the fast deterministic path — no LLM call yet", "Can be fully overridden by the AI decision in step 4"], output: "Preliminary isDeferred flag (pre-AI, fast path)" },
+                      { name: "RAG Context Retrieval", step: "Step 3", actions: ["Calls getFinancialContext(description, organizationId)", "Retrieves relevant accounting policy chunks from vector store", "Context includes: org-specific ASC 606 rules, past decisions", "Injected into the AI system prompt for grounded reasoning"], output: "ASC 606 policy context injected into AI prompt" },
+                      { name: "AI ASC 606 Decision", step: "Step 4", actions: ["Calls GPT-4o-mini as expert accountant (temperature: 0)", "Input: transaction description, amount, RAG context", "Output schema: { deferred: boolean, reason: string, period: number }", "AI can flip the keyword decision based on full context", "Falls back to keyword detection result on AI failure"], output: "Final deferred/immediate decision + AI explanation string" },
+                      { name: "Deferred Schedule Creation", step: "Step 5", actions: ["effectiveAmount = amount × paymentFraction (partial payment support)", "monthlyPortion = effectiveAmount / deferralPeriodMonths", "Duplicate guard: COUNT existing schedule rows before createMany", "Creates N rows: period = 1st of each future month, amount = monthlyPortion, recognized = false", "Only runs if isDeferred = true and no existing schedule"], output: "DeferredRevenueSchedule: N rows (one per month)" },
+                      { name: "Transaction Update", step: "Step 6", actions: ["Deferred path: recognizedRevenue = monthlyPortion, deferredRevenue = effectiveAmount - monthlyPortion", "Immediate path: recognizedRevenue = full amount, deferredRevenue = 0", "Sets revenueRecognitionType = 'deferred' | 'immediate'", "Appends AI reasoning to agentLogs with 'O&M' agent label", "Feeds deferred amount to R2R for balance sheet Deferred Revenue line"], output: "Transaction.deferredRevenue + recognizedRevenue updated" },
                     ].map((cap) => (
                       <div key={cap.name} className="rounded-md border bg-muted/20 p-3 space-y-2">
-                        <div>
-                          <p className="text-sm font-semibold">{cap.name}</p>
-                          <p className="text-[10px] font-mono text-muted-foreground/70">{cap.step}</p>
-                        </div>
-                        <ul className="space-y-0.5">
-                          {cap.actions.map((a, i) => (
-                            <li key={i} className="flex items-start gap-1.5 text-xs text-muted-foreground">
-                              <CheckCircle2 className="h-3 w-3 text-teal-500 mt-0.5 flex-shrink-0" />
-                              {a}
-                            </li>
-                          ))}
-                        </ul>
+                        <div><p className="text-sm font-semibold">{cap.name}</p><p className="text-[10px] font-mono text-muted-foreground/70">{cap.step}</p></div>
+                        <ul className="space-y-0.5">{cap.actions.map((a, i) => (<li key={i} className="flex items-start gap-1.5 text-xs text-muted-foreground"><CheckCircle2 className="h-3 w-3 text-teal-500 mt-0.5 flex-shrink-0" />{a}</li>))}</ul>
                         <p className="text-xs"><span className="font-medium text-foreground/70">Output:</span> <span className="text-muted-foreground">{cap.output}</span></p>
                       </div>
                     ))}
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="rounded-lg border bg-muted/20 p-4 space-y-3">
+                      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">GL Journal Entries — Deferred Path Example</p>
+                      <p className="text-xs text-muted-foreground italic">Example: $12,000 annual subscription — deferred over 12 months</p>
+                      {[
+                        { label: "On Invoice / Transaction Receipt", dr: "Accounts Receivable (1100)", cr: "Deferred Revenue (1200)", amount: "$12,000.00" },
+                        { label: "Month 1 Release (R2R cron job)", dr: "Deferred Revenue (1200)", cr: "Service Revenue (4000)", amount: "$1,000.00" },
+                        { label: "Month 2–12 (repeated monthly)", dr: "Deferred Revenue (1200)", cr: "Service Revenue (4000)", amount: "$1,000.00 × 11" },
+                      ].map((e) => (
+                        <div key={e.label} className="space-y-1">
+                          <p className="text-[10px] font-semibold text-muted-foreground">{e.label}</p>
+                          <div className="rounded border bg-background p-2 text-xs font-mono space-y-0.5">
+                            <div className="flex justify-between"><span className="text-green-600 dark:text-green-400">DR {e.dr}</span><span className="font-semibold">{e.amount}</span></div>
+                            <div className="flex justify-between pl-4"><span className="text-blue-600 dark:text-blue-400">CR {e.cr}</span><span className="font-semibold">{e.amount}</span></div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="rounded-lg border bg-muted/20 p-4 space-y-3">
+                      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Configuration &amp; Key Formulas</p>
+                      <div className="space-y-2">
+                        {[
+                          { label: "deferralPeriodMonths", value: "Int — how many months to spread (default: 12)" },
+                          { label: "deferredRevenueRules", value: 'Json — keyword array e.g. ["annual","yearly","subscription"]' },
+                          { label: "paymentFraction", value: "Float (0–1) — for partial payment support (default: 1)" },
+                          { label: "monthlyPortion formula", value: "(amount × paymentFraction) / deferralPeriodMonths" },
+                          { label: "Duplicate guard", value: "COUNT(DeferredRevenueSchedule WHERE transactionId) === 0 before insert" },
+                          { label: "AI model", value: "GPT-4o-mini, temperature: 0, JSON response mode" },
+                          { label: "RAG source", value: "getFinancialContext() — vector store per organization" },
+                        ].map((item) => (
+                          <div key={item.label} className="flex flex-col gap-0.5">
+                            <span className="text-xs font-medium font-mono text-teal-700 dark:text-teal-400">{item.label}</span>
+                            <span className="text-xs text-muted-foreground">{item.value}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -1337,6 +1351,46 @@ export default function DocsPage() {
                       </div>
                     ))}
                   </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="rounded-lg border bg-muted/20 p-4 space-y-3">
+                      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Key Metrics &amp; Formulas</p>
+                      <div className="space-y-2.5">
+                        {[
+                          { label: "Runway Formula", value: "runwayMonths = bankBalance ÷ avgMonthlyExpenses" },
+                          { label: "Zero-Cash Date", value: "today + (runwayMonths × 30 days)" },
+                          { label: "Burn Rate", value: "SUM(expenses last 3 months) ÷ 3  →  rolling monthly avg" },
+                          { label: "% Ahead of Plan", value: "(actualMonthlyRevenue − targetMonthlyRevenue) ÷ targetMonthlyRevenue × 100" },
+                          { label: "Revenue Source", value: "SUM(GeneralLedgerEntry.credit WHERE accountType = 'Revenue')" },
+                          { label: "Zero Division Guard", value: "If avgMonthlyExpenses = 0 → runwayMonths = 999 (infinite)" },
+                        ].map((item) => (
+                          <div key={item.label} className="flex flex-col gap-0.5">
+                            <span className="text-xs font-medium font-mono text-indigo-700 dark:text-indigo-400">{item.label}</span>
+                            <span className="text-xs text-muted-foreground">{item.value}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="rounded-lg border bg-muted/20 p-4 space-y-3">
+                      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Notification Channels &amp; Config</p>
+                      <div className="space-y-2.5">
+                        {[
+                          { label: "AI Model", value: "GPT-4o, temperature: 0.7 — strategic CFO persona" },
+                          { label: "AI Output Schema", value: '{ narrative: string, scenarios: { optimistic, pessimistic } }' },
+                          { label: "ElevenLabs Voice", value: "elevenLabsApiKey in FinancialSettings — async voice briefing" },
+                          { label: "Twilio SMS", value: "twilioAccountSid + authToken + phone — runway digest SMS" },
+                          { label: "FinancialSnapshot fields", value: "bankBalance, averageMonthlyExpenses, runwayMonths, zeroCashDate" },
+                          { label: "targetMonthlyRevenue", value: "Float in FinancialSettings — default: $10,000 / month" },
+                          { label: "Fallback behavior", value: "AI narrative failure → deterministic log string emitted instead" },
+                        ].map((item) => (
+                          <div key={item.label} className="flex flex-col gap-0.5">
+                            <span className="text-xs font-medium font-mono text-indigo-700 dark:text-indigo-400">{item.label}</span>
+                            <span className="text-xs text-muted-foreground">{item.value}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
 
@@ -1417,6 +1471,50 @@ export default function DocsPage() {
                         <p className="text-xs"><span className="font-medium text-foreground/70">Output:</span> <span className="text-muted-foreground">{cap.output}</span></p>
                       </div>
                     ))}
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="rounded-lg border bg-muted/20 p-4 space-y-3">
+                      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Audit Decision Matrix</p>
+                      <div className="space-y-2">
+                        {[
+                          { status: "verified", color: "text-green-600 dark:text-green-400", bg: "bg-green-50/50 dark:bg-green-950/20", cond: "Signed contract found + SHA-256 hash generated" },
+                          { status: "flagged", color: "text-yellow-600 dark:text-yellow-400", bg: "bg-yellow-50/50 dark:bg-yellow-950/20", cond: "requireAuditSeal = true AND no contract found" },
+                          { status: "rejected", color: "text-red-600 dark:text-red-400", bg: "bg-red-50/50 dark:bg-red-950/20", cond: "autoRejectUnverified = true AND no contract found" },
+                          { status: "unverified", color: "text-slate-500", bg: "bg-slate-50/50 dark:bg-slate-900/20", cond: "requireAuditSeal = false — no seal required by policy" },
+                        ].map((row) => (
+                          <div key={row.status} className={`rounded border px-3 py-2 flex items-center gap-3 ${row.bg}`}>
+                            <span className={`text-xs font-bold font-mono w-20 flex-shrink-0 ${row.color}`}>{row.status}</span>
+                            <span className="text-xs text-muted-foreground">{row.cond}</span>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="rounded border bg-background p-2 text-xs font-mono space-y-0.5">
+                        <p className="text-[10px] text-muted-foreground font-semibold mb-1">SHA-256 Hash Formula</p>
+                        <div className="text-green-600 dark:text-green-400">hash = SHA-256( contractId + transactionAmount )</div>
+                        <div className="text-muted-foreground pl-2">stored on: transaction.auditHash</div>
+                        <div className="text-muted-foreground pl-2">displayed: first 8 chars in audit log</div>
+                      </div>
+                    </div>
+                    <div className="rounded-lg border bg-muted/20 p-4 space-y-3">
+                      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Configuration &amp; Risk Thresholds</p>
+                      <div className="space-y-2.5">
+                        {[
+                          { label: "anomalyThreshold", value: "Float — default $50,000 (configurable per org in FinancialSettings)" },
+                          { label: "requireAuditSeal", value: "Boolean — default true — forces contract match before verified status" },
+                          { label: "autoRejectUnverified", value: "Boolean — default false — auto-rejects unmatched transactions" },
+                          { label: "AI Model", value: "GPT-4o, temperature: 0 — forensic auditor persona, deterministic" },
+                          { label: "AI Output Schema", value: "{ is_anomaly: boolean, investigation_notes: string, risk_score: number }" },
+                          { label: "Contract match key", value: "Contract.stripePaymentIntentId = Transaction.stripePaymentIntentId" },
+                          { label: "Fallback behavior", value: "AI failure → threshold-only anomaly detection still applies" },
+                        ].map((item) => (
+                          <div key={item.label} className="flex flex-col gap-0.5">
+                            <span className="text-xs font-medium font-mono text-red-700 dark:text-red-400">{item.label}</span>
+                            <span className="text-xs text-muted-foreground">{item.value}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
