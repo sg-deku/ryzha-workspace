@@ -1,7 +1,6 @@
 "use client"
 
 export default function GlobalError({
-  error,
   reset,
 }: {
   error: Error & { digest?: string }
@@ -19,14 +18,28 @@ export default function GlobalError({
             flexDirection: "column",
             alignItems: "center",
             justifyContent: "center",
-            height: "100dvh",
-            gap: 16,
+            minHeight: "100vh",
+            gap: "16px",
             fontFamily: "system-ui, sans-serif",
+            textAlign: "center",
+            padding: "24px",
           }}
         >
-          <h2>Something went wrong</h2>
-          <button type="button" onClick={() => window.location.reload()}>
-            Reload page
+          <h2 style={{ margin: 0, fontSize: "1.5rem" }}>Something went wrong</h2>
+          <p style={{ margin: 0, color: "#666" }}>An unexpected error occurred.</p>
+          <button
+            type="button"
+            onClick={reset}
+            style={{
+              padding: "8px 16px",
+              borderRadius: "6px",
+              border: "1px solid #d1d5db",
+              background: "#fff",
+              cursor: "pointer",
+              fontSize: "0.875rem",
+            }}
+          >
+            Try again
           </button>
         </div>
       </body>
