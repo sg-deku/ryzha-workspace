@@ -1,5 +1,5 @@
 "use client"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -46,6 +46,21 @@ export function ManualTriggerPanel({ onTrigger, customers, vendors }: ManualTrig
 
   const [o2cCustomerId, setO2cCustomerId] = useState(defaultCustomer?.id ?? "")
   const [o2cAmount, setO2cAmount] = useState("4500")
+
+  useEffect(() => {
+    if (customers.length > 0 && !stripeCustomerId) {
+      setStripeCustomerId(customers[0].id)
+    }
+    if (customers.length > 0 && !o2cCustomerId) {
+      setO2cCustomerId(customers[0].id)
+    }
+  }, [customers, stripeCustomerId, o2cCustomerId])
+
+  useEffect(() => {
+    if (vendors.length > 0 && !p2pVendorId) {
+      setP2pVendorId(vendors[0].id)
+    }
+  }, [vendors, p2pVendorId])
 
   const handleTrigger = async (type: string, payload: Record<string, any>) => {
     setLoading(true)

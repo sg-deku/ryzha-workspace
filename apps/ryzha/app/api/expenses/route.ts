@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { NextResponse } from "next/server"
+import { detectAnomalies } from "@/lib/ai/anomaly-detector"
 
 export const dynamic = "force-dynamic";
 
@@ -31,6 +32,9 @@ export async function POST(req: Request) {
         organizationId,
       },
     })
+
+    // Run anomaly detection
+    await detectAnomalies(expense.id, organizationId)
 
     await prisma.generalLedgerEntry.createMany({
       data: [

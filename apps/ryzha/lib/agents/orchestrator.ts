@@ -13,6 +13,7 @@ import { runInvoiceGenerationAgent } from "./o2c/invoice-generation"
 import { runPaymentSchedulerAgent } from "./p2p/payment-scheduler"
 import { sendVoiceSummary, sendSMSNotification, createNotification } from "@/lib/notifications"
 import { publishEvent } from "@/lib/events"
+import { detectAnomalies } from "@/lib/ai/anomaly-detector"
 
 export async function startAgentWorkflow(transactionId: string) {
   const transaction = await prisma.transaction.findUnique({ where: { id: transactionId } })
@@ -235,6 +236,9 @@ export async function startP2PWorkflow(vendorInvoiceId: string) {
           status: "REVIEWED",
         },
       })
+
+      // Run anomaly detection on the newly created expense
+      await detectAnomalies(expense.id, orgId)
       
       await prisma.generalLedgerEntry.createMany({
         skipDuplicates: true,

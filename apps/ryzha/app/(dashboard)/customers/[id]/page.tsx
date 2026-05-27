@@ -23,49 +23,53 @@ export default async function CustomerDetailsPage({ params }: { params: Promise<
 
   const customer = await prisma.customer.findFirst({
     where: { id, organizationId: session.user.organizationId },
-    include: {
-      salesOrders: {
-        orderBy: { createdAt: "desc" },
-        take: 50,
-      },
-    },
   })
 
   if (!customer) return notFound()
 
-  const invoices = await prisma.invoice.findMany({
-    where: {
-      organizationId: session.user.organizationId,
-      OR: [
-        { customerId: id },
-        ...(customer.email ? [{ clientEmail: customer.email }] : []),
-      ],
-    },
-    orderBy: { issueDate: "desc" },
-    take: 50,
-    include: {
-      payments: {
-        select: {
-          id: true,
-          amount: true,
-          paymentDate: true,
-          method: true,
-          referenceNumber: true,
-          invoice: { select: { id: true, invoiceNumber: true } },
+  const [invoices, salesOrders] = await Promise.all([
+    prisma.invoice.findMany({
+      where: {
+        organizationId: session.user.organizationId,
+        OR: [
+          { customerId: id },
+          ...(customer.email ? [{ clientEmail: { equals: customer.email, mode: "insensitive" } }] : []),
+        ],
+      },
+      orderBy: { issueDate: "desc" },
+      take: 50,
+      include: {
+        payments: {
+          select: {
+            id: true,
+            amount: true,
+            paymentDate: true,
+            method: true,
+            referenceNumber: true,
+            invoice: { select: { id: true, invoiceNumber: true } },
+          },
+        },
+        creditNotes: {
+          select: {
+            id: true,
+            amount: true,
+            issueDate: true,
+            reasonCategory: true,
+            reason: true,
+            invoice: { select: { id: true, invoiceNumber: true } },
+          },
         },
       },
-      creditNotes: {
-        select: {
-          id: true,
-          amount: true,
-          issueDate: true,
-          reasonCategory: true,
-          reason: true,
-          invoice: { select: { id: true, invoiceNumber: true } },
-        },
+    }),
+    prisma.salesOrder.findMany({
+      where: {
+        organizationId: session.user.organizationId,
+        customerId: id,
       },
-    },
-  })
+      orderBy: { createdAt: "desc" },
+      take: 50,
+    })
+  ])
 
   const allPayments = invoices.flatMap((inv) => inv.payments)
   const allCreditNotes = invoices.flatMap((inv) => inv.creditNotes)
@@ -184,7 +188,7 @@ export default async function CustomerDetailsPage({ params }: { params: Promise<
           </CardHeader>
           <CardContent>
             <CustomerActivityTabs
-              salesOrders={customer.salesOrders.map((o) => ({
+              salesOrders={salesOrders.map((o) => ({
                 id: o.id,
                 orderNumber: o.orderNumber,
                 status: o.status,
