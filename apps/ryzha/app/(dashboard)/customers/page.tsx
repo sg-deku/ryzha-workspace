@@ -7,17 +7,30 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { UserPlus } from "lucide-react"
+import { ListSearch } from "@/components/ui/list-search"
+import { Suspense } from "react"
 
 
 export const dynamic = "force-dynamic";
 
-export default async function CustomersPage() {
+export default async function CustomersPage({
+  searchParams
+}: {
+  searchParams: Promise<{ q?: string; status?: string }>
+}) {
   const session = await getSession()
   if (!session) redirect("/login")
 
+  const { q, status } = await searchParams
+
   const customers = await prisma.customer.findMany({
-    where: { organizationId: session.user.organizationId },
-    orderBy: { name: "asc" }
+    where: {
+      organizationId: session.user.organizationId,
+      ...(q && { name: { contains: q, mode: "insensitive" } }),
+      ...(status && { status }),
+    },
+    orderBy: { name: "asc" },
+    take: 100,
   })
 
   return (
@@ -30,6 +43,17 @@ export default async function CustomersPage() {
           </Link>
         </Button>
       </div>
+
+      <Suspense>
+        <ListSearch
+          placeholder="Search customers..."
+          statusOptions={[
+            { value: "ACTIVE", label: "Active" },
+            { value: "ON_HOLD", label: "On Hold" },
+            { value: "INACTIVE", label: "Inactive" },
+          ]}
+        />
+      </Suspense>
 
       <Card>
         <CardHeader>
@@ -60,15 +84,20 @@ export default async function CustomersPage() {
                   <TableCell>${customer.creditLimit?.toLocaleString() || "0"}</TableCell>
                   <TableCell>{customer.paymentTerms || "N/A"}</TableCell>
                   <TableCell className="text-right">
-                    <Button variant="ghost" size="sm" asChild>
-                      <Link href={`/customers/${customer.id}`}>View</Link>
-                    </Button>
+                    <div className="flex justify-end gap-1">
+                      <Button variant="ghost" size="sm" asChild>
+                        <Link href={`/customers/${customer.id}/edit`}>Edit</Link>
+                      </Button>
+                      <Button variant="ghost" size="sm" asChild>
+                        <Link href={`/customers/${customer.id}`}>View</Link>
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
               {customers.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                     No customers found.
                   </TableCell>
                 </TableRow>

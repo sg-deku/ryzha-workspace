@@ -6,19 +6,37 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
-import { FileText, Upload } from "lucide-react"
+import { Upload } from "lucide-react"
+import { ListSearch } from "@/components/ui/list-search"
+import { Suspense } from "react"
 
 
 export const dynamic = "force-dynamic";
 
-export default async function VendorInvoicesPage() {
+export default async function VendorInvoicesPage({
+  searchParams
+}: {
+  searchParams: Promise<{ q?: string; status?: string }>
+}) {
   const session = await getSession()
   if (!session) redirect("/login")
 
+  const { q, status } = await searchParams
+
   const invoices = await prisma.vendorInvoice.findMany({
-    where: { organizationId: session.user.organizationId },
+    where: {
+      organizationId: session.user.organizationId,
+      ...(status && { status }),
+      ...(q && {
+        OR: [
+          { invoiceNumber: { contains: q, mode: "insensitive" } },
+          { vendor: { name: { contains: q, mode: "insensitive" } } },
+        ]
+      }),
+    },
     include: { vendor: true, purchaseOrder: true },
-    orderBy: { createdAt: "desc" }
+    orderBy: { createdAt: "desc" },
+    take: 100,
   })
 
   return (
@@ -31,6 +49,19 @@ export default async function VendorInvoicesPage() {
           </Link>
         </Button>
       </div>
+
+      <Suspense>
+        <ListSearch
+          placeholder="Search by invoice # or vendor..."
+          statusOptions={[
+            { value: "PENDING", label: "Pending" },
+            { value: "MATCHED", label: "Matched" },
+            { value: "APPROVED", label: "Approved" },
+            { value: "PAID", label: "Paid" },
+            { value: "REJECTED", label: "Rejected" },
+          ]}
+        />
+      </Suspense>
 
       <Card>
         <CardHeader>
@@ -63,9 +94,14 @@ export default async function VendorInvoicesPage() {
                   <TableCell>${inv.amount.toLocaleString()}</TableCell>
                   <TableCell>{inv.dueDate.toLocaleDateString()}</TableCell>
                   <TableCell className="text-right">
-                    <Button variant="ghost" size="sm" asChild>
-                      <Link href={`/vendor-invoices/${inv.id}`}>View</Link>
-                    </Button>
+                    <div className="flex justify-end gap-1">
+                      <Button variant="ghost" size="sm" asChild>
+                        <Link href={`/vendor-invoices/${inv.id}/edit`}>Edit</Link>
+                      </Button>
+                      <Button variant="ghost" size="sm" asChild>
+                        <Link href={`/vendor-invoices/${inv.id}`}>View</Link>
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}

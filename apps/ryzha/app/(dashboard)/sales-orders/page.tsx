@@ -6,19 +6,37 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
-import { Plus, BarChart3 } from "lucide-react"
+import { Plus } from "lucide-react"
+import { ListSearch } from "@/components/ui/list-search"
+import { Suspense } from "react"
 
 
 export const dynamic = "force-dynamic";
 
-export default async function SalesOrdersPage() {
+export default async function SalesOrdersPage({
+  searchParams
+}: {
+  searchParams: Promise<{ q?: string; status?: string }>
+}) {
   const session = await getSession()
   if (!session) redirect("/login")
 
+  const { q, status } = await searchParams
+
   const orders = await prisma.salesOrder.findMany({
-    where: { organizationId: session.user.organizationId },
+    where: {
+      organizationId: session.user.organizationId,
+      ...(status && { status }),
+      ...(q && {
+        OR: [
+          { orderNumber: { contains: q, mode: "insensitive" } },
+          { customer: { name: { contains: q, mode: "insensitive" } } },
+        ]
+      }),
+    },
     include: { customer: true },
-    orderBy: { createdAt: "desc" }
+    orderBy: { createdAt: "desc" },
+    take: 100,
   })
 
   return (
@@ -31,6 +49,19 @@ export default async function SalesOrdersPage() {
           </Link>
         </Button>
       </div>
+
+      <Suspense>
+        <ListSearch
+          placeholder="Search by order # or customer..."
+          statusOptions={[
+            { value: "DRAFT", label: "Draft" },
+            { value: "APPROVED", label: "Approved" },
+            { value: "INVOICED", label: "Invoiced" },
+            { value: "SHIPPED", label: "Shipped" },
+            { value: "PAID", label: "Paid" },
+          ]}
+        />
+      </Suspense>
 
       <Card>
         <CardHeader>
@@ -61,9 +92,14 @@ export default async function SalesOrdersPage() {
                   <TableCell>${order.totalAmount.toLocaleString()}</TableCell>
                   <TableCell>{order.createdAt.toLocaleDateString()}</TableCell>
                   <TableCell className="text-right">
-                    <Button variant="ghost" size="sm" asChild>
-                      <Link href={`/sales-orders/${order.id}`}>View</Link>
-                    </Button>
+                    <div className="flex justify-end gap-1">
+                      <Button variant="ghost" size="sm" asChild>
+                        <Link href={`/sales-orders/${order.id}/edit`}>Edit</Link>
+                      </Button>
+                      <Button variant="ghost" size="sm" asChild>
+                        <Link href={`/sales-orders/${order.id}`}>View</Link>
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}

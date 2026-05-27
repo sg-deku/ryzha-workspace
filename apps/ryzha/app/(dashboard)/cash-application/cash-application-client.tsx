@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Brain, CheckCircle2, Search, Loader2 } from "lucide-react"
+import { Brain, CheckCircle2, Loader2 } from "lucide-react"
 import { toast } from "sonner"
 
 export function CashApplicationClient({ unmatched: initialUnmatched, openInvoices }: { unmatched: any[], openInvoices: any[] }) {
@@ -119,9 +119,6 @@ export function CashApplicationClient({ unmatched: initialUnmatched, openInvoice
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
-                        <Button variant="ghost" size="sm" className="gap-1">
-                          <Search className="h-3 w-3" /> Manual Match
-                        </Button>
                         {match && (
                           <Button size="sm" className="gap-1" onClick={() => approveMatch(payment, match)} disabled={approvingId === payment.id}>
                             {approvingId === payment.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle2 className="h-3 w-3" />}
