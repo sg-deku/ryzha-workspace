@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { AnomalyCard } from "@/components/alerts/anomaly-card"
 import { Button } from "@/components/ui/button"
+import { ShieldCheck } from "lucide-react"
 
 export function DashboardAlerts() {
   const [anomalies, setAnomalies] = useState<any[]>([])
@@ -46,12 +47,12 @@ export function DashboardAlerts() {
 
   if (anomalies.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 text-center">
-        <div className="bg-primary/5 p-4 rounded-full mb-4">
-          <span className="text-3xl">✅</span>
+      <div className="flex flex-col items-center justify-center py-12 text-center border border-dashed rounded-lg bg-muted/30">
+        <div className="bg-primary/10 p-3 rounded-full mb-4 ring-8 ring-primary/5">
+          <ShieldCheck className="h-8 w-8 text-primary" />
         </div>
-        <h3 className="text-lg font-medium text-foreground">No anomalies detected</h3>
-        <p className="text-sm text-muted-foreground mt-1 max-w-[280px]">
+        <h3 className="text-sm font-semibold text-foreground">No anomalies detected</h3>
+        <p className="text-sm text-muted-foreground mt-2 max-w-[400px]">
           Our AI audit agents have reviewed your recent expenses and found no irregularities.
         </p>
       </div>
