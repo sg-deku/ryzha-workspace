@@ -32,17 +32,18 @@ interface ManualTriggerPanelProps {
 export function ManualTriggerPanel({ onTrigger, customers, vendors }: ManualTriggerPanelProps) {
   const [loading, setLoading] = useState(false)
 
+  const defaultVendor = vendors[0]
+  const defaultCustomer = customers[0]
+
   const [stripeScenario, setStripeScenario] = useState(STRIPE_SCENARIOS[0].value)
   const [stripeAmount, setStripeAmount] = useState(STRIPE_SCENARIOS[0].amount)
   const [stripeDesc, setStripeDesc] = useState(STRIPE_SCENARIOS[0].desc)
-  const [stripeEmail, setStripeEmail] = useState("customer@example.com")
+  const [stripeCustomerId, setStripeCustomerId] = useState(defaultCustomer?.id ?? "")
 
-  const defaultVendor = vendors[0]
   const [p2pVendorId, setP2pVendorId] = useState(defaultVendor?.id ?? "")
   const [p2pAmount, setP2pAmount] = useState("2500")
   const [p2pHasPO, setP2pHasPO] = useState(true)
 
-  const defaultCustomer = customers[0]
   const [o2cCustomerId, setO2cCustomerId] = useState(defaultCustomer?.id ?? "")
   const [o2cAmount, setO2cAmount] = useState("4500")
 
@@ -78,6 +79,7 @@ export function ManualTriggerPanel({ onTrigger, customers, vendors }: ManualTrig
 
   const selectedVendor = vendors.find(v => v.id === p2pVendorId)
   const selectedCustomer = customers.find(c => c.id === o2cCustomerId)
+  const stripeSelectedCustomer = customers.find(c => c.id === stripeCustomerId)
 
   return (
     <Card>
@@ -106,23 +108,37 @@ export function ManualTriggerPanel({ onTrigger, customers, vendors }: ManualTrig
                 </SelectContent>
               </Select>
             </div>
+            <div className="space-y-2">
+              <Label>Customer</Label>
+              {customers.length > 0 ? (
+                <Select value={stripeCustomerId} onValueChange={setStripeCustomerId}>
+                  <SelectTrigger><SelectValue placeholder="Select a customer" /></SelectTrigger>
+                  <SelectContent>
+                    {customers.map(c => (
+                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <p className="text-sm text-muted-foreground">No customers found. Add customers in the Customers section first.</p>
+              )}
+            </div>
+            {stripeSelectedCustomer?.email && (
+              <p className="text-xs text-muted-foreground -mt-2">Email: {stripeSelectedCustomer.email}</p>
+            )}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Amount ($)</Label>
                 <Input type="number" value={stripeAmount} onChange={e => setStripeAmount(e.target.value)} />
               </div>
               <div className="space-y-2">
-                <Label>Customer Email</Label>
-                <Input type="email" value={stripeEmail} onChange={e => setStripeEmail(e.target.value)} />
+                <Label>Description</Label>
+                <Input value={stripeDesc} onChange={e => setStripeDesc(e.target.value)} />
               </div>
             </div>
-            <div className="space-y-2">
-              <Label>Description</Label>
-              <Input value={stripeDesc} onChange={e => setStripeDesc(e.target.value)} />
-            </div>
             <Button
-              onClick={() => handleTrigger("stripe", { amount: stripeAmount, description: stripeDesc, customerEmail: stripeEmail, scenario: stripeScenario })}
-              disabled={loading}
+              onClick={() => handleTrigger("stripe", { customerId: stripeCustomerId, customerEmail: stripeSelectedCustomer?.email ?? "", amount: stripeAmount, description: stripeDesc, scenario: stripeScenario })}
+              disabled={loading || !stripeCustomerId}
             >
               {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Zap className="mr-2 h-4 w-4" />}
               Trigger Stripe Workflow

@@ -18,8 +18,17 @@ export async function POST(req: Request) {
     if (type === "stripe") {
       const intentId = `sim_tx_${Date.now()}`
       const amount = Number(payload?.amount) || 1000
-      const customerEmail = payload?.customerEmail || "simulated@example.com"
       const description = payload?.description || "Manual Stripe Simulation"
+
+      let customerEmail = payload?.customerEmail || "simulated@example.com"
+
+      if (payload?.customerId) {
+        const customer = await prisma.customer.findFirst({
+          where: { id: payload.customerId, organizationId: orgId },
+          select: { email: true },
+        })
+        if (customer?.email) customerEmail = customer.email
+      }
 
       await prisma.contract.create({
         data: {
@@ -46,19 +55,25 @@ export async function POST(req: Request) {
 
     } else if (type === "p2p") {
       const amount = Number(payload?.amount) || 500
-      const vendorName = payload?.vendorName || `Mock Vendor ${Date.now()}`
       const hasPO = payload?.hasPO !== false
-      const scenario = payload?.scenario || "standard"
+      const vendorId = payload?.vendorId
 
-      const vendor = await prisma.vendor.create({
-        data: { name: vendorName, email: `vendor-${Date.now()}@example.com`, organizationId: orgId },
+      if (!vendorId) {
+        return NextResponse.json({ error: "vendorId is required" }, { status: 400 })
+      }
+
+      const vendor = await prisma.vendor.findFirst({
+        where: { id: vendorId, organizationId: orgId },
       })
+      if (!vendor) {
+        return NextResponse.json({ error: "Vendor not found" }, { status: 404 })
+      }
 
       let po = null
       if (hasPO) {
         po = await prisma.purchaseOrder.create({
           data: {
-            poNumber: `PO-${Date.now()}`,
+            poNumber: `PO-SIM-${Date.now()}`,
             vendorId: vendor.id,
             totalAmount: amount,
             organizationId: orgId,
@@ -68,13 +83,11 @@ export async function POST(req: Request) {
 
       const invoice = await prisma.vendorInvoice.create({
         data: {
-          invoiceNumber: `INV-${Date.now()}`,
+          invoiceNumber: `INV-SIM-${Date.now()}`,
           vendorId: vendor.id,
           purchaseOrderId: po?.id ?? null,
           amount,
-          dueDate: scenario === "overdue"
-            ? new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
-            : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+          dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
           organizationId: orgId,
         },
       })
@@ -83,27 +96,30 @@ export async function POST(req: Request) {
 
     } else if (type === "o2c") {
       const amount = Number(payload?.amount) || 1500
-      const customerName = payload?.customerName || `Mock Customer ${Date.now()}`
-      const customerEmail = payload?.customerEmail || "mock@customer.com"
-      const scenario = payload?.scenario || "new_customer"
+      const customerId = payload?.customerId
 
-      const orderStatus = scenario === "churn_risk" ? "INVOICED" : "PAID"
+      if (!customerId) {
+        return NextResponse.json({ error: "customerId is required" }, { status: 400 })
+      }
 
-      const customer = await prisma.customer.create({
-        data: { name: customerName, email: customerEmail, organizationId: orgId },
+      const customer = await prisma.customer.findFirst({
+        where: { id: customerId, organizationId: orgId },
       })
+      if (!customer) {
+        return NextResponse.json({ error: "Customer not found" }, { status: 404 })
+      }
 
       const so = await prisma.salesOrder.create({
         data: {
-          orderNumber: `SO-${Date.now()}`,
+          orderNumber: `SO-SIM-${Date.now()}`,
           customerId: customer.id,
           totalAmount: amount,
           organizationId: orgId,
-          status: orderStatus,
+          status: "APPROVED",
         },
       })
       executionId = so.id
-      after(startO2CWorkflow(executionId, scenario).catch(console.error))
+      after(startO2CWorkflow(executionId).catch(console.error))
     }
 
     return NextResponse.json({ executionId })
