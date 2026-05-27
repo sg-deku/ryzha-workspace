@@ -1,7 +1,8 @@
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { NextResponse } from "next/server"
+import { NextResponse, after } from "next/server"
+import { startO2CWorkflow } from "@/lib/agents/orchestrator"
 
 export const dynamic = "force-dynamic";
 
@@ -37,6 +38,9 @@ export async function POST(req: Request) {
         }
       },
     })
+
+    // Trigger the O2C workflow in the background
+    after(startO2CWorkflow(salesOrder.id).catch(console.error))
 
     return NextResponse.json(salesOrder)
   } catch (error) {

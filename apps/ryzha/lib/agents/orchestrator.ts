@@ -346,6 +346,22 @@ export async function startO2CWorkflow(salesOrderId: string, scenario?: string) 
 
     await appendO2CLog("Orchestrator", `O2C Workflow started | Sales Order ID: ${salesOrderId} | Order #: ${order.orderNumber} | Customer: ${order.customer.name} (${order.customer.email ?? "no email"}) | Amount: $${order.totalAmount} | Status: ${order.status}`)
 
+    if (order.status === "DRAFT") {
+      await appendO2CLog("Orchestrator", `[1/2] Order is DRAFT — triggering Order Intake Agent for validation...`)
+      try {
+        const { runCustomerValidationAgent } = await import("./o2c/customer-validation")
+        const valResult = await runCustomerValidationAgent(order.customer, orgId)
+        await appendO2CLog("OrderIntake", `Validation complete. Risk Score: ${valResult.riskScore}. Reasoning: ${valResult.aiReasoning.substring(0, 100)}...`)
+        
+        await prisma.salesOrder.update({ where: { id: salesOrderId }, data: { status: "APPROVED" } })
+        order.status = "APPROVED"
+        await appendO2CLog("Orchestrator", `[2/2] Order status updated to APPROVED. Proceeding to Invoice Generation...`)
+      } catch (err: any) {
+        await appendO2CLog("OrderIntake", `FAILED validation — ${err.message}`)
+        throw err
+      }
+    }
+
     if (order.status === "APPROVED") {
       await appendO2CLog("Orchestrator", `[1/1] Order is APPROVED — triggering Invoice Generation Agent...`)
       try {
