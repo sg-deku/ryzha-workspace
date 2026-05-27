@@ -13,7 +13,7 @@ export async function POST(req: Request) {
   const queryOrgId = url.searchParams.get("orgId")
 
   let webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
-  let stripe = getStripe()
+  let stripe: Stripe | null = null
 
   if (queryOrgId) {
     const settings = await prisma.financialSettings.findUnique({
@@ -30,6 +30,16 @@ export async function POST(req: Request) {
         apiVersion: "2025-01-27.acacia" as any,
         typescript: true,
       })
+    }
+  }
+
+  // Fallback to environment variable if no org-specific key was found
+  if (!stripe) {
+    try {
+      stripe = getStripe()
+    } catch (e) {
+      console.error("[stripe webhook] Failed to initialize Stripe:", e)
+      return NextResponse.json({ error: "Stripe not configured" }, { status: 500 })
     }
   }
 
