@@ -2,7 +2,6 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { NextResponse } from "next/server"
-import { DEFAULT_CHART_OF_ACCOUNTS } from "@/lib/default-chart-of-accounts"
 
 export const dynamic = "force-dynamic";
 
@@ -40,16 +39,6 @@ export async function POST(req: Request) {
         })
       }
 
-      await tx.chartOfAccounts.createMany({
-        data: DEFAULT_CHART_OF_ACCOUNTS.map((account) => ({
-          accountCode: account.accountCode,
-          accountName: account.accountName,
-          accountType: account.accountType,
-          categoryMatch: account.categoryMatch,
-          organizationId,
-        })),
-        skipDuplicates: true,
-      })
     })
 
     return NextResponse.json({ success: true })

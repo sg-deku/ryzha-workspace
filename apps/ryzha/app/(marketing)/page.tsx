@@ -558,10 +558,10 @@ export default async function LandingPage() {
               Why teams switch to Ryzha
             </div>
             <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-3">
-              The ERP that doesn&apos;t require a consultant
+              The complete finance stack, without the complexity
             </h2>
             <p className="text-muted-foreground text-lg">
-              NetSuite costs $50K to implement. QuickBooks doesn&apos;t scale. Ryzha gives you enterprise ERP power at a fraction of the cost, live in days — not months.
+              Ryzha gives you enterprise ERP power at a fraction of the cost — full O2C, P2P, GL, and AI in one platform, ready in days.
             </p>
           </div>
 
@@ -618,11 +618,6 @@ export default async function LandingPage() {
                     feature: "Startup-friendly pricing",
                     desc: "No per-module fees, no seat taxes, no hidden professional services",
                     ryzha: "yes", netsuite: "no", quickbooks: "partial", rillet: "yes", xentral: "no",
-                  },
-                  {
-                    feature: "Zero-consultant setup",
-                    desc: "Live in days — no implementation partner required",
-                    ryzha: "yes", netsuite: "no", quickbooks: "yes", rillet: "yes", xentral: "no",
                   },
                   {
                     feature: "ASC 606 revenue recognition",
