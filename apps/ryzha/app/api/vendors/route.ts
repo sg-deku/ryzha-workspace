@@ -31,7 +31,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { name, email, taxId, paymentTerms } = await req.json()
+    const { name, email, taxId, paymentTerms, status, address } = await req.json()
 
     if (!name) {
       return NextResponse.json({ error: "Name is required" }, { status: 400 })
@@ -40,9 +40,11 @@ export async function POST(req: Request) {
     const vendor = await prisma.vendor.create({
       data: {
         name,
-        email,
-        taxId,
-        paymentTerms,
+        email: email || null,
+        taxId: taxId || null,
+        paymentTerms: paymentTerms || "NET30",
+        status: status || "ACTIVE",
+        address: address ?? undefined,
         organizationId: session.user.organizationId,
       },
     })

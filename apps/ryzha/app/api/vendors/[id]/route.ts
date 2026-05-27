@@ -9,7 +9,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     const session = await getServerSession(authOptions)
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
-    const { name, email, taxId, paymentTerms } = await req.json()
+    const { name, email, taxId, paymentTerms, status, address } = await req.json()
 
     const existing = await prisma.vendor.findUnique({
       where: {
@@ -26,9 +26,11 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       where: { id },
       data: {
         name,
-        email,
-        taxId,
-        paymentTerms
+        email: email || null,
+        taxId: taxId || null,
+        paymentTerms: paymentTerms || "NET30",
+        status: status || "ACTIVE",
+        address: address ?? undefined,
       }
     })
 

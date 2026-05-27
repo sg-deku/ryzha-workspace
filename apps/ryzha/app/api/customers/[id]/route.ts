@@ -12,7 +12,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 
   try {
     const data = await req.json()
-    const { name, email, taxId, creditLimit, paymentTerms, status } = data
+    const { name, email, phone, taxId, creditLimit, paymentTerms, status, notes, address } = data
 
     const updated = await prisma.customer.update({
       where: {
@@ -21,11 +21,14 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       },
       data: {
         name,
-        email,
-        taxId,
+        email: email || null,
+        phone: phone || null,
+        taxId: taxId || null,
         creditLimit: Number(creditLimit),
         paymentTerms: paymentTerms || "NET30",
-        status
+        status,
+        notes: notes || null,
+        address: address ?? undefined,
       }
     })
 

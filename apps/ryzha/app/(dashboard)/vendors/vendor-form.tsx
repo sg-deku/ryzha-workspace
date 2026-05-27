@@ -14,15 +14,45 @@ import { AISuggestBar } from "@/components/ai/ai-suggest-bar"
 export default function VendorForm({ initialData }: { initialData?: any }) {
   const router = useRouter()
   const isEditing = !!initialData?.id
-  const [name, setName] = useState(initialData?.name || "")
-  const [email, setEmail] = useState(initialData?.email || "")
-  const [taxId, setTaxId] = useState(initialData?.taxId || "")
-  const [paymentTerms, setPaymentTerms] = useState(initialData?.paymentTerms || "NET30")
   const [isLoading, setIsLoading] = useState(false)
+
+  const addr = initialData?.address ?? {}
+
+  const [formData, setFormData] = useState({
+    name: initialData?.name || "",
+    email: initialData?.email || "",
+    taxId: initialData?.taxId || "",
+    paymentTerms: initialData?.paymentTerms || "NET30",
+    status: initialData?.status || "ACTIVE",
+    addressStreet: addr.street || "",
+    addressCity: addr.city || "",
+    addressCountry: addr.country || "",
+    addressPostalCode: addr.postalCode || "",
+  })
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target
+    setFormData(prev => ({ ...prev, [name]: value }))
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
+
+    const payload = {
+      name: formData.name,
+      email: formData.email,
+      taxId: formData.taxId,
+      paymentTerms: formData.paymentTerms,
+      status: formData.status,
+      address: {
+        street: formData.addressStreet,
+        city: formData.addressCity,
+        country: formData.addressCountry,
+        postalCode: formData.addressPostalCode,
+      },
+    }
+
     try {
       const url = isEditing ? `/api/vendors/${initialData.id}` : "/api/vendors"
       const method = isEditing ? "PUT" : "POST"
@@ -30,7 +60,7 @@ export default function VendorForm({ initialData }: { initialData?: any }) {
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, taxId, paymentTerms })
+        body: JSON.stringify(payload),
       })
 
       if (!res.ok) throw new Error(isEditing ? "Failed to update vendor" : "Failed to create vendor")
@@ -61,36 +91,99 @@ export default function VendorForm({ initialData }: { initialData?: any }) {
           <AISuggestBar
             type="vendor"
             onSuggestion={(data) => {
-              if (data.name) setName(data.name)
-              if (data.email) setEmail(data.email)
-              if (data.taxId) setTaxId(data.taxId)
-              if (data.paymentTerms) setPaymentTerms(data.paymentTerms)
+              setFormData(prev => ({
+                ...prev,
+                name: data.name || prev.name,
+                email: data.email || prev.email,
+                taxId: data.taxId || prev.taxId,
+                paymentTerms: data.paymentTerms || prev.paymentTerms,
+              }))
             }}
           />
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-8 max-w-2xl">
+      <form onSubmit={handleSubmit} className="space-y-6 max-w-2xl">
         <Card>
           <CardHeader>
-            <CardTitle>Vendor Details</CardTitle>
+            <CardTitle>Basic Information</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Company Name *</Label>
+                <Input id="name" name="name" required placeholder="Acme Corp" value={formData.name} onChange={handleChange} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">Contact Email</Label>
+                <Input id="email" name="email" type="email" placeholder="billing@acmecorp.com" value={formData.email} onChange={handleChange} />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="taxId">Tax ID</Label>
+                <Input id="taxId" name="taxId" placeholder="XX-XXXXXXX" value={formData.taxId} onChange={handleChange} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="paymentTerms">Payment Terms</Label>
+                <select
+                  id="paymentTerms"
+                  name="paymentTerms"
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                  value={formData.paymentTerms}
+                  onChange={handleChange}
+                >
+                  <option value="NET7">Net 7</option>
+                  <option value="NET15">Net 15</option>
+                  <option value="NET30">Net 30</option>
+                  <option value="NET45">Net 45</option>
+                  <option value="NET60">Net 60</option>
+                  <option value="NET90">Net 90</option>
+                  <option value="DUE_ON_RECEIPT">Due on Receipt</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="status">Status</Label>
+              <select
+                id="status"
+                name="status"
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                value={formData.status}
+                onChange={handleChange}
+              >
+                <option value="ACTIVE">Active</option>
+                <option value="ON_HOLD">On Hold</option>
+                <option value="INACTIVE">Inactive</option>
+              </select>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Address</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Company Name</Label>
-              <Input id="name" required placeholder="Acme Corp" value={name} onChange={(e) => setName(e.target.value)} />
+              <Label htmlFor="addressStreet">Street</Label>
+              <Input id="addressStreet" name="addressStreet" placeholder="123 Industrial Ave" value={formData.addressStreet} onChange={handleChange} />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="addressCity">City</Label>
+                <Input id="addressCity" name="addressCity" placeholder="Chicago" value={formData.addressCity} onChange={handleChange} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="addressPostalCode">Postal Code</Label>
+                <Input id="addressPostalCode" name="addressPostalCode" placeholder="60601" value={formData.addressPostalCode} onChange={handleChange} />
+              </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="email">Contact Email</Label>
-              <Input id="email" type="email" placeholder="billing@acmecorp.com" value={email} onChange={(e) => setEmail(e.target.value)} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="taxId">Tax ID (Optional)</Label>
-              <Input id="taxId" placeholder="XX-XXXXXXX" value={taxId} onChange={(e) => setTaxId(e.target.value)} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="paymentTerms">Payment Terms</Label>
-              <Input id="paymentTerms" placeholder="NET30" value={paymentTerms} onChange={(e) => setPaymentTerms(e.target.value)} />
+              <Label htmlFor="addressCountry">Country</Label>
+              <Input id="addressCountry" name="addressCountry" placeholder="United States" value={formData.addressCountry} onChange={handleChange} />
             </div>
           </CardContent>
         </Card>
