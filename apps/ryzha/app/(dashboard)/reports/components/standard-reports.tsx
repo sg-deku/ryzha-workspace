@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
-import { FileText, PieChart, TrendingUp, Landmark, ArrowRight, BarChart3, BookOpen } from "lucide-react"
+import { FileText, PieChart, TrendingUp, Landmark, ArrowRight, BarChart3, BookOpen, Scale, Clock, Building2 } from "lucide-react"
 
 export function StandardReports() {
   const reports: any[] = [
@@ -52,6 +52,30 @@ export function StandardReports() {
       icon: BookOpen,
       color: "text-indigo-600",
       bgColor: "bg-indigo-100",
+    },
+    {
+      title: "Balance Sheet",
+      description: "Assets, liabilities, and equity snapshot calculated from your GL entries.",
+      href: "/reports/balance-sheet",
+      icon: Scale,
+      color: "text-cyan-600",
+      bgColor: "bg-cyan-100",
+    },
+    {
+      title: "AR Aging",
+      description: "Outstanding customer invoices bucketed by 0–30, 31–60, 61–90, and 90+ days.",
+      href: "/reports/ar-aging",
+      icon: Clock,
+      color: "text-amber-600",
+      bgColor: "bg-amber-100",
+    },
+    {
+      title: "AP Aging",
+      description: "Outstanding vendor invoices bucketed by age to manage payables.",
+      href: "/reports/ap-aging",
+      icon: Building2,
+      color: "text-rose-600",
+      bgColor: "bg-rose-100",
     },
   ]
 

@@ -25,6 +25,8 @@ import {
   FileX,
   BookOpen,
   Zap,
+  BookMarked,
+  GitMerge,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -87,6 +89,18 @@ export function Sidebar() {
             href="/transactions"
             icon={ArrowLeftRight}
             label="Transactions"
+            collapsed={collapsed}
+          />
+          <SidebarItem
+            href="/journal-entries"
+            icon={BookMarked}
+            label="Journal Entries"
+            collapsed={collapsed}
+          />
+          <SidebarItem
+            href="/bank-reconciliation"
+            icon={GitMerge}
+            label="Bank Reconciliation"
             collapsed={collapsed}
           />
 
