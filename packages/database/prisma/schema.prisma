@@ -59,12 +59,18 @@ model Organization {
   // GL Models
   glEntries       GeneralLedgerEntry[]
   chartOfAccounts ChartOfAccounts[]
+  journalEntries  JournalEntry[]
 
   // Payment Models
   payments         Payment[]
   creditNotes      CreditNote[]
   vendorPayments   VendorPayment[]
   bankTransactions BankTransaction[]
+  bankAccounts     BankAccount[]
+
+  // Ops Models
+  goodsReceipts GoodsReceipt[]
+  dunningLogs   DunningLog[]
 
   // Admin Models
   license      License?
@@ -115,6 +121,7 @@ model PurchaseOrder {
   organization   Organization        @relation(fields: [organizationId], references: [id])
   lineItems      PurchaseOrderLine[]
   vendorInvoices VendorInvoice[]
+  goodsReceipts  GoodsReceipt[]
 }
 
 model PurchaseOrderLine {
@@ -257,6 +264,7 @@ model SalesOrder {
   organization Organization     @relation(fields: [organizationId], references: [id])
   invoice      Invoice?         @relation(fields: [invoiceId], references: [id])
   lineItems    SalesOrderLine[]
+  dunningLogs  DunningLog[]
 }
 
 model SalesOrderLine {
@@ -813,15 +821,21 @@ model GeneralLedgerEntry {
 
 model ChartOfAccounts {
   id             String   @id @default(cuid())
+  accountCode    String?
   accountName    String
   accountType    String
   categoryMatch  String?
+  parentId       String?
   organizationId String
   createdAt      DateTime @default(now())
 
-  organization Organization @relation(fields: [organizationId], references: [id])
+  organization Organization      @relation(fields: [organizationId], references: [id])
+  parent       ChartOfAccounts?  @relation("CoAHierarchy", fields: [parentId], references: [id])
+  children     ChartOfAccounts[] @relation("CoAHierarchy")
 
   @@unique([organizationId, accountName])
+  @@index([organizationId, accountType])
+  @@index([parentId])
 }
 
 model AIUsageLog {
@@ -868,4 +882,105 @@ model AuditLog {
   @@index([action, createdAt])
   @@index([entityType, entityId])
   @@index([organizationId, createdAt])
+}
+
+model BankAccount {
+  id             String   @id @default(cuid())
+  name           String
+  accountNumber  String?
+  routingNumber  String?
+  iban           String?
+  bankName       String?
+  currency       String   @default("USD")
+  currentBalance Float    @default(0)
+  isActive       Boolean  @default(true)
+  organizationId String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId])
+}
+
+model JournalEntry {
+  id             String   @id @default(cuid())
+  entryDate      DateTime
+  reference      String?
+  description    String
+  status         String   @default("DRAFT")
+  organizationId String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization      @relation(fields: [organizationId], references: [id])
+  lines        JournalEntryLine[]
+
+  @@index([organizationId, entryDate])
+  @@index([organizationId, status])
+}
+
+model JournalEntryLine {
+  id             String       @id @default(cuid())
+  journalEntryId String
+  accountType    String
+  accountName    String
+  debit          Float        @default(0)
+  credit         Float        @default(0)
+  description    String?
+
+  journalEntry JournalEntry @relation(fields: [journalEntryId], references: [id])
+
+  @@index([journalEntryId])
+}
+
+model GoodsReceipt {
+  id              String   @id @default(cuid())
+  receiptNumber   String   @unique
+  purchaseOrderId String
+  receivedDate    DateTime @default(now())
+  notes           String?
+  status          String   @default("PENDING")
+  organizationId  String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  purchaseOrder PurchaseOrder     @relation(fields: [purchaseOrderId], references: [id])
+  organization  Organization      @relation(fields: [organizationId], references: [id])
+  lines         GoodsReceiptLine[]
+
+  @@index([organizationId])
+  @@index([purchaseOrderId])
+}
+
+model GoodsReceiptLine {
+  id               String       @id @default(cuid())
+  goodsReceiptId   String
+  description      String
+  quantityOrdered  Float
+  quantityReceived Float
+  unitPrice        Float
+  amount           Float
+
+  goodsReceipt GoodsReceipt @relation(fields: [goodsReceiptId], references: [id])
+
+  @@index([goodsReceiptId])
+}
+
+model DunningLog {
+  id             String   @id @default(cuid())
+  salesOrderId   String
+  channel        String
+  subject        String?
+  message        String?
+  sentAt         DateTime @default(now())
+  status         String   @default("SENT")
+  organizationId String
+  createdAt      DateTime @default(now())
+
+  salesOrder   SalesOrder   @relation(fields: [salesOrderId], references: [id])
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId, sentAt])
+  @@index([salesOrderId])
 }
