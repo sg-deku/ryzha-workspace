@@ -5,7 +5,7 @@ import {
   ArrowRight, BarChart3, ShieldCheck, Zap, Workflow, MessageSquareText,
   ArrowLeftRight, Tag, FilePenLine, BellRing, CheckCircle2, Sparkles,
   TrendingUp, Smartphone, Bell, LayoutDashboard, Wallet, Bot,
-  ChevronRight,
+  ChevronRight, Check, X, Minus,
 } from "lucide-react"
 
 export const dynamic = 'force-dynamic'
@@ -545,6 +545,194 @@ export default async function LandingPage() {
               </div>
             </div>
 
+          </div>
+        </div>
+      </section>
+
+      {/* ─── Competitor Comparison ─── */}
+      <section className="w-full py-20 bg-muted/30">
+        <div className="container px-4 md:px-6">
+          <div className="text-center max-w-2xl mx-auto mb-14">
+            <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-sm font-medium text-primary mb-4">
+              <Sparkles className="h-3.5 w-3.5" />
+              Why teams switch to Ryzha
+            </div>
+            <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-3">
+              The ERP that doesn&apos;t require a consultant
+            </h2>
+            <p className="text-muted-foreground text-lg">
+              NetSuite costs $50K to implement. QuickBooks doesn&apos;t scale. Ryzha gives you enterprise ERP power at a fraction of the cost, live in days — not months.
+            </p>
+          </div>
+
+          <div className="overflow-x-auto rounded-2xl border shadow-sm bg-card">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b bg-muted/50">
+                  <th className="text-left px-6 py-4 font-semibold text-foreground w-64">Feature</th>
+                  <th className="px-6 py-4 text-center w-36">
+                    <div className="flex flex-col items-center gap-1">
+                      <span className="font-black text-primary text-base">Ryzha</span>
+                      <span className="text-[10px] text-muted-foreground font-normal">AI-native ERP</span>
+                    </div>
+                  </th>
+                  <th className="px-6 py-4 text-center w-36">
+                    <div className="flex flex-col items-center gap-1">
+                      <span className="font-bold text-foreground">NetSuite</span>
+                      <span className="text-[10px] text-muted-foreground font-normal">Enterprise ERP</span>
+                    </div>
+                  </th>
+                  <th className="px-6 py-4 text-center w-36">
+                    <div className="flex flex-col items-center gap-1">
+                      <span className="font-bold text-foreground">QuickBooks</span>
+                      <span className="text-[10px] text-muted-foreground font-normal">SMB accounting</span>
+                    </div>
+                  </th>
+                  <th className="px-6 py-4 text-center w-36">
+                    <div className="flex flex-col items-center gap-1">
+                      <span className="font-bold text-foreground">Rillet</span>
+                      <span className="text-[10px] text-muted-foreground font-normal">Startup GL</span>
+                    </div>
+                  </th>
+                  <th className="px-6 py-4 text-center w-36">
+                    <div className="flex flex-col items-center gap-1">
+                      <span className="font-bold text-foreground">Xentral</span>
+                      <span className="text-[10px] text-muted-foreground font-normal">ERP platform</span>
+                    </div>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  {
+                    feature: "AI-native automation",
+                    desc: "Natural language queries, auto-categorisation, anomaly detection",
+                    ryzha: "yes", netsuite: "no", quickbooks: "partial", rillet: "partial", xentral: "no",
+                  },
+                  {
+                    feature: "Full O2C + P2P + GL",
+                    desc: "Order-to-cash, procure-to-pay, and general ledger in one platform",
+                    ryzha: "yes", netsuite: "yes", quickbooks: "no", rillet: "no", xentral: "yes",
+                  },
+                  {
+                    feature: "Startup-friendly pricing",
+                    desc: "No per-module fees, no seat taxes, no hidden professional services",
+                    ryzha: "yes", netsuite: "no", quickbooks: "partial", rillet: "yes", xentral: "no",
+                  },
+                  {
+                    feature: "Zero-consultant setup",
+                    desc: "Live in days — no implementation partner required",
+                    ryzha: "yes", netsuite: "no", quickbooks: "yes", rillet: "yes", xentral: "no",
+                  },
+                  {
+                    feature: "ASC 606 revenue recognition",
+                    desc: "Built-in deferred revenue, multi-element arrangements, schedules",
+                    ryzha: "yes", netsuite: "yes", quickbooks: "no", rillet: "partial", xentral: "no",
+                  },
+                  {
+                    feature: "Real-time bank reconciliation",
+                    desc: "Automatic matching with AI-assisted transaction categorisation",
+                    ryzha: "yes", netsuite: "partial", quickbooks: "partial", rillet: "yes", xentral: "partial",
+                  },
+                  {
+                    feature: "Chart of Accounts hierarchy",
+                    desc: "Full sub-account tree, category mapping, and GL integration",
+                    ryzha: "yes", netsuite: "yes", quickbooks: "partial", rillet: "partial", xentral: "yes",
+                  },
+                  {
+                    feature: "AR & AP aging reports",
+                    desc: "30/60/90+ day buckets with customer and vendor drill-down",
+                    ryzha: "yes", netsuite: "yes", quickbooks: "partial", rillet: "no", xentral: "partial",
+                  },
+                  {
+                    feature: "Mobile app (iOS & Android)",
+                    desc: "Full ERP access, dashboard, Lyla AI chat, approvals on mobile",
+                    ryzha: "partial", netsuite: "partial", quickbooks: "yes", rillet: "no", xentral: "no",
+                  },
+                  {
+                    feature: "Natural language finance chat",
+                    desc: "Ask 'What's our runway?' or 'Show overdue invoices' in plain English",
+                    ryzha: "yes", netsuite: "no", quickbooks: "no", rillet: "no", xentral: "no",
+                  },
+                ].map(({ feature, desc, ryzha, netsuite, quickbooks, rillet, xentral }, i) => {
+                  const Cell = ({ val }: { val: string }) => {
+                    if (val === "yes") return (
+                      <td className="px-6 py-3.5 text-center">
+                        <div className="flex justify-center">
+                          <div className="w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center">
+                            <Check className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                          </div>
+                        </div>
+                      </td>
+                    )
+                    if (val === "partial") return (
+                      <td className="px-6 py-3.5 text-center">
+                        <div className="flex justify-center">
+                          <div className="w-6 h-6 rounded-full bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center">
+                            <Minus className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+                          </div>
+                        </div>
+                      </td>
+                    )
+                    return (
+                      <td className="px-6 py-3.5 text-center">
+                        <div className="flex justify-center">
+                          <div className="w-6 h-6 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                            <X className="h-3.5 w-3.5 text-red-500 dark:text-red-400" />
+                          </div>
+                        </div>
+                      </td>
+                    )
+                  }
+                  return (
+                    <tr key={feature} className={i % 2 === 0 ? "bg-background" : "bg-muted/20"}>
+                      <td className="px-6 py-3.5">
+                        <p className="font-semibold text-sm text-foreground">{feature}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{desc}</p>
+                      </td>
+                      <td className="px-6 py-3.5 text-center bg-primary/5">
+                        <div className="flex justify-center">
+                          {ryzha === "yes" ? (
+                            <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center ring-2 ring-primary/30">
+                              <Check className="h-3.5 w-3.5 text-primary" />
+                            </div>
+                          ) : (
+                            <div className="w-6 h-6 rounded-full bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center">
+                              <Minus className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                      <Cell val={netsuite} />
+                      <Cell val={quickbooks} />
+                      <Cell val={rillet} />
+                      <Cell val={xentral} />
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-center gap-6 mt-8 text-sm text-muted-foreground">
+            <div className="flex items-center gap-2">
+              <div className="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center flex-shrink-0">
+                <Check className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
+              </div>
+              <span>Fully supported</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-5 h-5 rounded-full bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center flex-shrink-0">
+                <Minus className="h-3 w-3 text-amber-600 dark:text-amber-400" />
+              </div>
+              <span>Partial / add-on required</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-5 h-5 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center flex-shrink-0">
+                <X className="h-3 w-3 text-red-500 dark:text-red-400" />
+              </div>
+              <span>Not available</span>
+            </div>
           </div>
         </div>
       </section>
