@@ -32,7 +32,7 @@ export default async function VendorDetailsPage({ params }: { params: Promise<{ 
         orderBy: { createdAt: "desc" },
         take: 50,
         include: {
-          payments: {
+          vendorPayments: {
             select: {
               id: true,
               amount: true,
@@ -49,7 +49,7 @@ export default async function VendorDetailsPage({ params }: { params: Promise<{ 
 
   if (!vendor) return notFound()
 
-  const allPayments = vendor.invoices.flatMap((inv) => inv.payments)
+  const allPayments = vendor.invoices.flatMap((inv) => inv.vendorPayments)
 
   const totalSpend = vendor.invoices
     .filter((inv) => inv.status === "PAID")

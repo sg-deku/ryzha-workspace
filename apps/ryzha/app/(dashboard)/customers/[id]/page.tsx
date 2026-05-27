@@ -28,45 +28,53 @@ export default async function CustomerDetailsPage({ params }: { params: Promise<
         orderBy: { createdAt: "desc" },
         take: 50,
       },
-      invoices: {
-        orderBy: { issueDate: "desc" },
-        take: 50,
-        include: {
-          payments: {
-            select: {
-              id: true,
-              amount: true,
-              paymentDate: true,
-              method: true,
-              referenceNumber: true,
-              invoice: { select: { id: true, invoiceNumber: true } },
-            },
-          },
-          creditNotes: {
-            select: {
-              id: true,
-              amount: true,
-              issueDate: true,
-              reasonCategory: true,
-              reason: true,
-              invoice: { select: { id: true, invoiceNumber: true } },
-            },
-          },
-        },
-      },
     },
   })
 
   if (!customer) return notFound()
 
-  const allPayments = customer.invoices.flatMap((inv) => inv.payments)
-  const allCreditNotes = customer.invoices.flatMap((inv) => inv.creditNotes)
+  const invoices = await prisma.invoice.findMany({
+    where: {
+      organizationId: session.user.organizationId,
+      OR: [
+        { customerId: id },
+        ...(customer.email ? [{ clientEmail: customer.email }] : []),
+      ],
+    },
+    orderBy: { issueDate: "desc" },
+    take: 50,
+    include: {
+      payments: {
+        select: {
+          id: true,
+          amount: true,
+          paymentDate: true,
+          method: true,
+          referenceNumber: true,
+          invoice: { select: { id: true, invoiceNumber: true } },
+        },
+      },
+      creditNotes: {
+        select: {
+          id: true,
+          amount: true,
+          issueDate: true,
+          reasonCategory: true,
+          reason: true,
+          invoice: { select: { id: true, invoiceNumber: true } },
+        },
+      },
+    },
+  })
 
-  const totalRevenue = customer.invoices
+  const allPayments = invoices.flatMap((inv) => inv.payments)
+  const allCreditNotes = invoices.flatMap((inv) => inv.creditNotes)
+
+  const totalRevenue = invoices
     .filter((inv) => inv.status === "PAID")
     .reduce((sum, inv) => sum + inv.total, 0)
 
-  const openBalance = customer.invoices
+  const openBalance = invoices
     .filter((inv) => !["PAID", "VOID", "REFUNDED"].includes(inv.status))
     .reduce((sum, inv) => sum + inv.total, 0)
 
@@ -184,7 +192,7 @@ export default async function CustomerDetailsPage({ params }: { params: Promise<
                 dueDate: o.dueDate?.toISOString() ?? null,
                 createdAt: o.createdAt.toISOString(),
               }))}
-              invoices={customer.invoices.map((inv) => ({
+              invoices={invoices.map((inv) => ({
                 id: inv.id,
                 invoiceNumber: inv.invoiceNumber,
                 status: inv.status,

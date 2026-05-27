@@ -6,7 +6,18 @@ import { ManualTriggerPanel } from "./components/manual-trigger-panel"
 import { LiveExecutionView } from "./components/live-execution-view"
 import { HistoryList } from "./components/history-list"
 
-export default function WorkflowStudioPage() {
+interface EntityOption {
+  id: string
+  name: string
+  email: string | null
+}
+
+interface WorkflowStudioPageProps {
+  customers: EntityOption[]
+  vendors: EntityOption[]
+}
+
+export default function WorkflowStudioPage({ customers, vendors }: WorkflowStudioPageProps) {
   const [activeExecutionId, setActiveExecutionId] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState("trigger")
 
@@ -26,10 +37,14 @@ export default function WorkflowStudioPage() {
         </TabsList>
 
         <TabsContent value="trigger">
-          <ManualTriggerPanel onTrigger={(executionId) => {
-            setActiveExecutionId(executionId)
-            setActiveTab("live")
-          }} />
+          <ManualTriggerPanel
+            customers={customers}
+            vendors={vendors}
+            onTrigger={(executionId) => {
+              setActiveExecutionId(executionId)
+              setActiveTab("live")
+            }}
+          />
         </TabsContent>
 
         <TabsContent value="graph" className="h-[600px]">

@@ -17,23 +17,19 @@ const STRIPE_SCENARIOS = [
   { value: "custom", label: "Custom", amount: "", desc: "" },
 ]
 
-const P2P_SCENARIOS = [
-  { value: "standard", label: "Standard Invoice", amount: "2500", vendor: "Acme Supplies Co.", po: true },
-  { value: "overdue", label: "Overdue Invoice", amount: "8000", vendor: "Global Tech Parts", po: true },
-  { value: "disputed", label: "Disputed Invoice", amount: "15000", vendor: "Premium Services Ltd.", po: false },
-  { value: "software", label: "Software License", amount: "3600", vendor: "SaaS Tools Inc.", po: true },
-  { value: "custom", label: "Custom", amount: "", vendor: "", po: true },
-]
+interface EntityOption {
+  id: string
+  name: string
+  email: string | null
+}
 
-const O2C_SCENARIOS = [
-  { value: "new_customer", label: "New Customer – First Order", amount: "4500", customer: "Acme Corp", email: "billing@acme.com" },
-  { value: "renewal", label: "Annual Renewal", amount: "12000", customer: "TechStart Inc.", email: "finance@techstart.io" },
-  { value: "upgrade", label: "Plan Upgrade", amount: "7500", customer: "GrowthCo", email: "ap@growthco.com" },
-  { value: "churn_risk", label: "Churn Risk – Late Payment", amount: "950", customer: "SmallBiz LLC", email: "owner@smallbiz.com" },
-  { value: "custom", label: "Custom", amount: "", customer: "", email: "" },
-]
+interface ManualTriggerPanelProps {
+  onTrigger: (id: string) => void
+  customers: EntityOption[]
+  vendors: EntityOption[]
+}
 
-export function ManualTriggerPanel({ onTrigger }: { onTrigger: (id: string) => void }) {
+export function ManualTriggerPanel({ onTrigger, customers, vendors }: ManualTriggerPanelProps) {
   const [loading, setLoading] = useState(false)
 
   const [stripeScenario, setStripeScenario] = useState(STRIPE_SCENARIOS[0].value)
@@ -41,15 +37,14 @@ export function ManualTriggerPanel({ onTrigger }: { onTrigger: (id: string) => v
   const [stripeDesc, setStripeDesc] = useState(STRIPE_SCENARIOS[0].desc)
   const [stripeEmail, setStripeEmail] = useState("customer@example.com")
 
-  const [p2pScenario, setP2pScenario] = useState(P2P_SCENARIOS[0].value)
-  const [p2pAmount, setP2pAmount] = useState(P2P_SCENARIOS[0].amount)
-  const [p2pVendor, setP2pVendor] = useState(P2P_SCENARIOS[0].vendor)
-  const [p2pHasPO, setP2pHasPO] = useState(P2P_SCENARIOS[0].po)
+  const defaultVendor = vendors[0]
+  const [p2pVendorId, setP2pVendorId] = useState(defaultVendor?.id ?? "")
+  const [p2pAmount, setP2pAmount] = useState("2500")
+  const [p2pHasPO, setP2pHasPO] = useState(true)
 
-  const [o2cScenario, setO2cScenario] = useState(O2C_SCENARIOS[0].value)
-  const [o2cAmount, setO2cAmount] = useState(O2C_SCENARIOS[0].amount)
-  const [o2cCustomer, setO2cCustomer] = useState(O2C_SCENARIOS[0].customer)
-  const [o2cEmail, setO2cEmail] = useState(O2C_SCENARIOS[0].email)
+  const defaultCustomer = customers[0]
+  const [o2cCustomerId, setO2cCustomerId] = useState(defaultCustomer?.id ?? "")
+  const [o2cAmount, setO2cAmount] = useState("4500")
 
   const handleTrigger = async (type: string, payload: Record<string, any>) => {
     setLoading(true)
@@ -81,25 +76,8 @@ export function ManualTriggerPanel({ onTrigger }: { onTrigger: (id: string) => v
     }
   }
 
-  const applyP2pScenario = (value: string) => {
-    setP2pScenario(value)
-    const s = P2P_SCENARIOS.find(s => s.value === value)
-    if (s && value !== "custom") {
-      setP2pAmount(s.amount)
-      setP2pVendor(s.vendor)
-      setP2pHasPO(s.po)
-    }
-  }
-
-  const applyO2cScenario = (value: string) => {
-    setO2cScenario(value)
-    const s = O2C_SCENARIOS.find(s => s.value === value)
-    if (s && value !== "custom") {
-      setO2cAmount(s.amount)
-      setO2cCustomer(s.customer)
-      setO2cEmail(s.email)
-    }
-  }
+  const selectedVendor = vendors.find(v => v.id === p2pVendorId)
+  const selectedCustomer = customers.find(c => c.id === o2cCustomerId)
 
   return (
     <Card>
@@ -154,39 +132,42 @@ export function ManualTriggerPanel({ onTrigger }: { onTrigger: (id: string) => v
           {/* P2P */}
           <TabsContent value="p2p" className="space-y-4 pt-4 border-t">
             <div className="space-y-2">
-              <Label>Scenario</Label>
-              <Select value={p2pScenario} onValueChange={applyP2pScenario}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {P2P_SCENARIOS.map(s => (
-                    <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label>Vendor</Label>
+              {vendors.length > 0 ? (
+                <Select value={p2pVendorId} onValueChange={setP2pVendorId}>
+                  <SelectTrigger><SelectValue placeholder="Select a vendor" /></SelectTrigger>
+                  <SelectContent>
+                    {vendors.map(v => (
+                      <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <p className="text-sm text-muted-foreground">No vendors found. Add vendors in the Vendors section first.</p>
+              )}
             </div>
+            {selectedVendor?.email && (
+              <p className="text-xs text-muted-foreground -mt-2">Email: {selectedVendor.email}</p>
+            )}
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Vendor Name</Label>
-                <Input value={p2pVendor} onChange={e => setP2pVendor(e.target.value)} />
-              </div>
               <div className="space-y-2">
                 <Label>Invoice Amount ($)</Label>
                 <Input type="number" value={p2pAmount} onChange={e => setP2pAmount(e.target.value)} />
               </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Purchase Order</Label>
-              <Select value={p2pHasPO ? "yes" : "no"} onValueChange={v => setP2pHasPO(v === "yes")}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="yes">Has matching PO (will match)</SelectItem>
-                  <SelectItem value="no">No PO (will flag as disputed)</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="space-y-2">
+                <Label>Purchase Order</Label>
+                <Select value={p2pHasPO ? "yes" : "no"} onValueChange={v => setP2pHasPO(v === "yes")}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="yes">Has matching PO (will match)</SelectItem>
+                    <SelectItem value="no">No PO (will flag as disputed)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             <Button
-              onClick={() => handleTrigger("p2p", { vendorName: p2pVendor, amount: p2pAmount, hasPO: p2pHasPO, scenario: p2pScenario })}
-              disabled={loading}
+              onClick={() => handleTrigger("p2p", { vendorId: p2pVendorId, vendorName: selectedVendor?.name ?? "", amount: p2pAmount, hasPO: p2pHasPO })}
+              disabled={loading || !p2pVendorId}
             >
               {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Zap className="mr-2 h-4 w-4" />}
               Trigger P2P Workflow
@@ -196,33 +177,30 @@ export function ManualTriggerPanel({ onTrigger }: { onTrigger: (id: string) => v
           {/* O2C */}
           <TabsContent value="o2c" className="space-y-4 pt-4 border-t">
             <div className="space-y-2">
-              <Label>Scenario</Label>
-              <Select value={o2cScenario} onValueChange={applyO2cScenario}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {O2C_SCENARIOS.map(s => (
-                    <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label>Customer</Label>
+              {customers.length > 0 ? (
+                <Select value={o2cCustomerId} onValueChange={setO2cCustomerId}>
+                  <SelectTrigger><SelectValue placeholder="Select a customer" /></SelectTrigger>
+                  <SelectContent>
+                    {customers.map(c => (
+                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <p className="text-sm text-muted-foreground">No customers found. Add customers in the Customers section first.</p>
+              )}
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Customer Name</Label>
-                <Input value={o2cCustomer} onChange={e => setO2cCustomer(e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label>Customer Email</Label>
-                <Input type="email" value={o2cEmail} onChange={e => setO2cEmail(e.target.value)} />
-              </div>
-            </div>
+            {selectedCustomer?.email && (
+              <p className="text-xs text-muted-foreground -mt-2">Email: {selectedCustomer.email}</p>
+            )}
             <div className="space-y-2">
               <Label>Order Amount ($)</Label>
               <Input type="number" value={o2cAmount} onChange={e => setO2cAmount(e.target.value)} />
             </div>
             <Button
-              onClick={() => handleTrigger("o2c", { customerName: o2cCustomer, customerEmail: o2cEmail, amount: o2cAmount, scenario: o2cScenario })}
-              disabled={loading}
+              onClick={() => handleTrigger("o2c", { customerId: o2cCustomerId, customerName: selectedCustomer?.name ?? "", customerEmail: selectedCustomer?.email ?? "", amount: o2cAmount })}
+              disabled={loading || !o2cCustomerId}
             >
               {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Zap className="mr-2 h-4 w-4" />}
               Trigger O2C Workflow
