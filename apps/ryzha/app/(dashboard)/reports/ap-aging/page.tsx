@@ -5,7 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft } from "lucide-react"
+import { ArrowLeft, Download } from "lucide-react"
 import Link from "next/link"
 
 export const dynamic = "force-dynamic"
@@ -53,16 +53,23 @@ export default async function APAgingPage() {
 
   return (
     <div className="flex-1 space-y-6 p-8 pt-6">
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" asChild>
-          <Link href="/reports">
-            <ArrowLeft className="h-4 w-4" />
-          </Link>
-        </Button>
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">AP Aging Report</h2>
-          <p className="text-muted-foreground">Outstanding vendor invoices by age</p>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" asChild>
+            <Link href="/reports">
+              <ArrowLeft className="h-4 w-4" />
+            </Link>
+          </Button>
+          <div>
+            <h2 className="text-3xl font-bold tracking-tight">AP Aging Report</h2>
+            <p className="text-muted-foreground">Outstanding vendor invoices by age</p>
+          </div>
         </div>
+        <Button variant="outline" asChild>
+          <a href="/api/reports/export?type=ap-aging" download>
+            <Download className="mr-2 h-4 w-4" /> Export CSV
+          </a>
+        </Button>
       </div>
 
       <div className="grid gap-4 md:grid-cols-5">

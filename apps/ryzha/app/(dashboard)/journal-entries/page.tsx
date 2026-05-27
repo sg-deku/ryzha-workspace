@@ -7,19 +7,36 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { Plus } from "lucide-react"
+import { DataPagination } from "@/components/ui/data-pagination"
+import { Suspense } from "react"
+
+const PAGE_SIZE = 50
 
 export const dynamic = "force-dynamic"
 
-export default async function JournalEntriesPage() {
+export default async function JournalEntriesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>
+}) {
   const session = await getSession()
   if (!session?.user) redirect("/login")
 
-  const entries = await prisma.journalEntry.findMany({
-    where: { organizationId: session.user.organizationId },
-    include: { lines: true },
-    orderBy: { entryDate: "desc" },
-    take: 100,
-  })
+  const { page } = await searchParams
+  const currentPage = Math.max(1, Number(page) || 1)
+
+  const where = { organizationId: session.user.organizationId }
+
+  const [entries, total] = await Promise.all([
+    prisma.journalEntry.findMany({
+      where,
+      include: { lines: true },
+      orderBy: { entryDate: "desc" },
+      take: PAGE_SIZE,
+      skip: (currentPage - 1) * PAGE_SIZE,
+    }),
+    prisma.journalEntry.count({ where }),
+  ])
 
   return (
     <div className="flex-1 space-y-4 p-8 pt-6">
@@ -80,6 +97,9 @@ export default async function JournalEntriesPage() {
               )}
             </TableBody>
           </Table>
+          <Suspense>
+            <DataPagination total={total} pageSize={PAGE_SIZE} currentPage={currentPage} />
+          </Suspense>
         </CardContent>
       </Card>
     </div>

@@ -8,36 +8,45 @@ import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { Plus } from "lucide-react"
 import { ListSearch } from "@/components/ui/list-search"
+import { DataPagination } from "@/components/ui/data-pagination"
 import { Suspense } from "react"
 
+const PAGE_SIZE = 50
 
 export const dynamic = "force-dynamic";
 
 export default async function PurchasesPage({
   searchParams
 }: {
-  searchParams: Promise<{ q?: string; status?: string }>
+  searchParams: Promise<{ q?: string; status?: string; page?: string }>
 }) {
   const session = await getSession()
   if (!session) redirect("/login")
 
-  const { q, status } = await searchParams
+  const { q, status, page } = await searchParams
+  const currentPage = Math.max(1, Number(page) || 1)
 
-  const pos = await prisma.purchaseOrder.findMany({
-    where: {
-      organizationId: session.user.organizationId,
-      ...(status && { status }),
-      ...(q && {
-        OR: [
-          { poNumber: { contains: q, mode: "insensitive" } },
-          { vendor: { name: { contains: q, mode: "insensitive" } } },
-        ]
-      }),
-    },
-    include: { vendor: true },
-    orderBy: { createdAt: "desc" },
-    take: 100,
-  })
+  const where = {
+    organizationId: session.user.organizationId,
+    ...(status && { status }),
+    ...(q && {
+      OR: [
+        { poNumber: { contains: q, mode: "insensitive" as const } },
+        { vendor: { name: { contains: q, mode: "insensitive" as const } } },
+      ]
+    }),
+  }
+
+  const [pos, total] = await Promise.all([
+    prisma.purchaseOrder.findMany({
+      where,
+      include: { vendor: true },
+      orderBy: { createdAt: "desc" },
+      take: PAGE_SIZE,
+      skip: (currentPage - 1) * PAGE_SIZE,
+    }),
+    prisma.purchaseOrder.count({ where }),
+  ])
 
   return (
     <div className="flex-1 space-y-4 p-8 pt-6">
@@ -112,6 +121,9 @@ export default async function PurchasesPage({
               )}
             </TableBody>
           </Table>
+          <Suspense>
+            <DataPagination total={total} pageSize={PAGE_SIZE} currentPage={currentPage} />
+          </Suspense>
         </CardContent>
       </Card>
     </div>
