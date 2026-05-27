@@ -28,6 +28,7 @@ import {
   BookMarked,
   GitMerge,
   ListTree,
+  Book,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -96,6 +97,12 @@ export function Sidebar() {
             href="/journal-entries"
             icon={BookMarked}
             label="Journal Entries"
+            collapsed={collapsed}
+          />
+          <SidebarItem
+            href="/reports/general-ledger"
+            icon={BookOpen}
+            label="General Ledger"
             collapsed={collapsed}
           />
           <SidebarItem
@@ -205,7 +212,7 @@ export function Sidebar() {
           />
           <SidebarItem
             href="/docs"
-            icon={BookOpen}
+            icon={Book}
             label="System Docs"
             collapsed={collapsed}
           />

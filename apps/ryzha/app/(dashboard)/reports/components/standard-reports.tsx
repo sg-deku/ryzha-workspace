@@ -46,14 +46,6 @@ export function StandardReports() {
       bgColor: "bg-emerald-100",
     },
     {
-      title: "General Ledger",
-      description: "Unified ledger of all transactions across invoices, expenses, vendors, and Stripe.",
-      href: "/reports/general-ledger",
-      icon: BookOpen,
-      color: "text-indigo-600",
-      bgColor: "bg-indigo-100",
-    },
-    {
       title: "Balance Sheet",
       description: "Assets, liabilities, and equity snapshot calculated from your GL entries.",
       href: "/reports/balance-sheet",
