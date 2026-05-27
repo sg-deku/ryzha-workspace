@@ -18,11 +18,11 @@ export default async function CollectionsPage() {
   const overdueOrders = await prisma.salesOrder.findMany({
     where: {
       organizationId: session.user.organizationId,
-      status: "INVOICED",
-      createdAt: { lt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) }
+      status: { notIn: ["PAID", "CANCELLED"] },
+      dueDate: { lt: new Date() }
     },
     include: { customer: true },
-    orderBy: { createdAt: "asc" }
+    orderBy: { dueDate: "asc" }
   })
 
   const totalOverdue = overdueOrders.reduce((sum, o) => sum + o.totalAmount, 0)
@@ -73,7 +73,7 @@ export default async function CollectionsPage() {
       <Card>
         <CardHeader>
           <CardTitle>Overdue Invoices</CardTitle>
-          <CardDescription>Customers with outstanding balances past 30 days.</CardDescription>
+          <CardDescription>Customers with outstanding balances past their due date.</CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
@@ -89,7 +89,7 @@ export default async function CollectionsPage() {
             </TableHeader>
             <TableBody>
               {overdueOrders.map((order) => {
-                const days = Math.floor((Date.now() - order.createdAt.getTime()) / (1000 * 60 * 60 * 24))
+                const days = order.dueDate ? Math.floor((Date.now() - order.dueDate.getTime()) / (1000 * 60 * 60 * 24)) : 0
                 return (
                   <TableRow key={order.id}>
                     <TableCell className="font-medium">{order.customer.name}</TableCell>

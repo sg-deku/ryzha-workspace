@@ -18,15 +18,48 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
 
+    const organizationId = session.user.organizationId
+    const expenseAmount = Number(amount)
+
     const expense = await prisma.expense.create({
       data: {
         date: new Date(date),
         description,
-        amount: Number(amount),
+        amount: expenseAmount,
         category: category || null,
         status: "PENDING",
-        organizationId: session.user.organizationId,
+        organizationId,
       },
+    })
+
+    await prisma.generalLedgerEntry.createMany({
+      data: [
+        {
+          organizationId,
+          date: new Date(date),
+          accountType: "Expenses",
+          accountName: category ?? "General Expenses",
+          debit: expenseAmount,
+          credit: 0,
+          amount: expenseAmount,
+          description,
+          sourceType: "expense",
+          sourceId: expense.id,
+        },
+        {
+          organizationId,
+          date: new Date(date),
+          accountType: "Liabilities",
+          accountName: "Accounts Payable",
+          debit: 0,
+          credit: expenseAmount,
+          amount: expenseAmount,
+          description,
+          sourceType: "expense",
+          sourceId: expense.id,
+        },
+      ],
+      skipDuplicates: true,
     })
 
     return NextResponse.json(expense)
