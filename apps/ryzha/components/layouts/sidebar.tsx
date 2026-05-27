@@ -27,6 +27,7 @@ import {
   Zap,
   BookMarked,
   GitMerge,
+  ListTree,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -101,6 +102,12 @@ export function Sidebar() {
             href="/bank-reconciliation"
             icon={GitMerge}
             label="Bank Reconciliation"
+            collapsed={collapsed}
+          />
+          <SidebarItem
+            href="/chart-of-accounts"
+            icon={ListTree}
+            label="Chart of Accounts"
             collapsed={collapsed}
           />
 
