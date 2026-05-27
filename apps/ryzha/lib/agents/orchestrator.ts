@@ -237,6 +237,7 @@ export async function startP2PWorkflow(vendorInvoiceId: string) {
       })
       
       await prisma.generalLedgerEntry.createMany({
+        skipDuplicates: true,
         data: [
           {
             date: new Date(),

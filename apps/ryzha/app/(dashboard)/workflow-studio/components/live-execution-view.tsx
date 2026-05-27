@@ -116,6 +116,7 @@ function groupIsComplete(group: AgentGroup) {
 export function LiveExecutionView({ executionId }: { executionId: string | null }) {
   const [logs, setLogs] = useState<RichLog[]>([])
   const [status, setStatus] = useState<"idle" | "running" | "completed" | "error">("idle")
+  const workflowDone = status === "completed" || status === "error"
   const scrollRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -226,7 +227,7 @@ export function LiveExecutionView({ executionId }: { executionId: string | null 
                             ? <Badge variant="secondary" className="gap-1 text-xs"><Loader2 className="h-3 w-3 animate-spin" />Processing</Badge>
                             : hasError
                               ? <Badge variant="destructive" className="gap-1 text-xs"><AlertCircle className="h-3 w-3" />Failed</Badge>
-                              : isComplete
+                              : (isComplete || workflowDone)
                                 ? <Badge className="gap-1 text-xs bg-emerald-500 hover:bg-emerald-500"><CheckCircle2 className="h-3 w-3" />Complete</Badge>
                                 : <Badge variant="secondary" className="gap-1 text-xs"><Clock className="h-3 w-3" />Pending</Badge>
                           }

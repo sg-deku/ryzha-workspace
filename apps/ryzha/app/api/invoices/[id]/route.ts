@@ -37,6 +37,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
     if (status === "VOID" && existing.status !== "VOID") {
       await prisma.generalLedgerEntry.createMany({
+        skipDuplicates: true,
         data: [
           {
             organizationId: session.user.organizationId,
