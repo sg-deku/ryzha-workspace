@@ -9,6 +9,7 @@ const customerSchema = z.object({
   email: z.string().email().optional().or(z.literal("")),
   taxId: z.string().optional().or(z.literal("")),
   creditLimit: z.number().min(0).default(5000),
+  paymentTerms: z.string().optional().default("NET30"),
   status: z.string().default("ACTIVE"),
 })
 

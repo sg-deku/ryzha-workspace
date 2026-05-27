@@ -20,6 +20,7 @@ export default function CustomerForm({ initialData }: { initialData?: any }) {
     email: initialData?.email || "",
     taxId: initialData?.taxId || "",
     creditLimit: initialData?.creditLimit || 5000,
+    paymentTerms: initialData?.paymentTerms || "NET30",
     status: initialData?.status || "ACTIVE"
   })
 
@@ -113,6 +114,27 @@ export default function CustomerForm({ initialData }: { initialData?: any }) {
               <div className="space-y-2">
                 <Label htmlFor="creditLimit">Credit Limit ($) *</Label>
                 <Input id="creditLimit" name="creditLimit" type="number" required min="0" step="100" value={formData.creditLimit} onChange={handleChange} />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="paymentTerms">Payment Terms</Label>
+                <select
+                  id="paymentTerms"
+                  name="paymentTerms"
+                  className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  value={formData.paymentTerms}
+                  onChange={handleChange}
+                >
+                  <option value="NET7">Net 7</option>
+                  <option value="NET15">Net 15</option>
+                  <option value="NET30">Net 30</option>
+                  <option value="NET45">Net 45</option>
+                  <option value="NET60">Net 60</option>
+                  <option value="NET90">Net 90</option>
+                  <option value="DUE_ON_RECEIPT">Due on Receipt</option>
+                </select>
               </div>
             </div>
             
