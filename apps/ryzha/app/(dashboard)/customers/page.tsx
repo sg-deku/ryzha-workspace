@@ -72,6 +72,7 @@ export default async function CustomersPage({
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-32">ID</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Status</TableHead>
@@ -83,6 +84,7 @@ export default async function CustomersPage({
             <TableBody>
               {customers.map((customer) => (
                 <TableRow key={customer.id}>
+                  <TableCell className="font-mono text-xs text-muted-foreground">{customer.customerNumber || "—"}</TableCell>
                   <TableCell className="font-medium">{customer.name}</TableCell>
                   <TableCell>{customer.email || "-"}</TableCell>
                   <TableCell>
@@ -106,7 +108,7 @@ export default async function CustomersPage({
               ))}
               {customers.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                     No customers found.
                   </TableCell>
                 </TableRow>

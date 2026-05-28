@@ -3,6 +3,7 @@ import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { NextResponse, after } from "next/server"
 import { startO2CWorkflow } from "@/lib/agents/orchestrator"
+import { getNextEntityNumber } from "@/lib/sequences"
 
 export const dynamic = "force-dynamic";
 
@@ -13,13 +14,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { customerId, orderNumber, lineItems } = await req.json()
+    const { customerId, orderNumber: providedOrderNumber, lineItems } = await req.json()
 
-    if (!customerId || !orderNumber || !lineItems || lineItems.length === 0) {
+    if (!customerId || !lineItems || lineItems.length === 0) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
 
     const totalAmount = lineItems.reduce((sum: number, item: any) => sum + (item.quantity * item.unitPrice), 0)
+    const orderNumber = providedOrderNumber || await getNextEntityNumber(session.user.organizationId, "SO")
 
     const salesOrder = await prisma.salesOrder.create({
       data: {

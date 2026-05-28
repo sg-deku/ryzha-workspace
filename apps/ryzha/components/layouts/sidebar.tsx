@@ -31,6 +31,7 @@ import {
   ListTree,
   Book,
   Scale,
+  Hash,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -263,6 +264,12 @@ export function Sidebar() {
               href="/settings/integrations"
               icon={Globe}
               label="Integrations"
+              collapsed={collapsed}
+            />
+            <SidebarItem
+              href="/settings/numbering"
+              icon={Hash}
+              label="Numbering"
               collapsed={collapsed}
             />
           </Authorized>

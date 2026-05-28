@@ -19,6 +19,7 @@ const CategoryChart = dynamic(() => import("@/components/expenses/category-chart
 
 interface Expense {
   id: string
+  expenseNumber?: string | null
   date: string
   description: string
   amount: number

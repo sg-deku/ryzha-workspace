@@ -76,6 +76,10 @@ model Organization {
   // Admin Models
   license      License?
   usageMetrics UsageMetrics[]
+
+  // Numbering
+  entitySequences    EntitySequence[]
+  numberingSettings  NumberingSettings?
 }
 
 model P2PSettings {
@@ -89,6 +93,7 @@ model P2PSettings {
 
 model Vendor {
   id             String   @id @default(cuid())
+  vendorNumber   String?
   name           String
   email          String?
   taxId          String?
@@ -138,6 +143,7 @@ model PurchaseOrderLine {
 
 model VendorInvoice {
   id              String    @id @default(cuid())
+  internalNumber  String?
   invoiceNumber   String
   vendorId        String
   purchaseOrderId String?
@@ -231,6 +237,7 @@ model O2CSettings {
 
 model Customer {
   id             String   @id @default(cuid())
+  customerNumber String?
   name           String
   email          String?
   phone          String?
@@ -456,6 +463,7 @@ model VendorDebitMemo {
 
 model Expense {
   id             String        @id @default(cuid())
+  expenseNumber  String?
   date           DateTime
   description    String
   amount         Float
@@ -718,6 +726,7 @@ model UsageMetrics {
 
 model Transaction {
   id                    String  @id @default(cuid())
+  transactionNumber     String?
   stripePaymentIntentId String  @unique
   amount                Float
   currency              String  @default("usd")
@@ -771,6 +780,7 @@ model Transaction {
 
 model Contract {
   id                    String       @id @default(cuid())
+  contractNumber        String?
   stripePaymentIntentId String       @unique
   customerEmail         String
   amount                Float
@@ -1025,4 +1035,33 @@ model DunningLog {
 
   @@index([organizationId, sentAt])
   @@index([salesOrderId])
+}
+
+model EntitySequence {
+  id             String       @id @default(cuid())
+  organizationId String
+  entityType     String
+  lastValue      Int          @default(0)
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  @@unique([organizationId, entityType])
+  @@index([organizationId])
+}
+
+model NumberingSettings {
+  id             String       @id @default(cuid())
+  organizationId String       @unique
+  customerPrefix String       @default("CUST")
+  vendorPrefix   String       @default("VEN")
+  invoicePrefix  String       @default("INV")
+  soPrefix       String       @default("SO")
+  poPrefix       String       @default("PO")
+  vinvPrefix     String       @default("VINV")
+  expensePrefix  String       @default("EXP")
+  jePrefix       String       @default("JE")
+  txnPrefix      String       @default("TXN")
+  contractPrefix String       @default("CON")
+  dmPrefix       String       @default("DM")
+  padding        Int          @default(5)
+  organization   Organization @relation(fields: [organizationId], references: [id])
 }

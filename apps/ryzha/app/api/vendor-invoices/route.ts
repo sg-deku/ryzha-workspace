@@ -6,6 +6,7 @@ import { after } from "next/server"
 import { createSystemJournalEntry } from "@/lib/reports/general-ledger/je-factory"
 import { mapVendorInvoiceToAccount } from "@/lib/reports/general-ledger/account-mapping"
 import { startP2PWorkflow } from "@/lib/agents/orchestrator"
+import { getNextEntityNumber } from "@/lib/sequences"
 
 export const dynamic = "force-dynamic";
 
@@ -46,10 +47,14 @@ export async function POST(req: Request) {
 
     const totalAmount = lineItems.reduce((sum: number, item: any) => sum + (item.quantity * item.unitPrice), 0)
 
-    const vendor = await prisma.vendor.findUnique({ where: { id: vendorId }, select: { name: true } })
+    const [vendor, internalNumber] = await Promise.all([
+      prisma.vendor.findUnique({ where: { id: vendorId }, select: { name: true } }),
+      getNextEntityNumber(session.user.organizationId, "VINV"),
+    ])
 
     const vendorInvoice = await prisma.vendorInvoice.create({
       data: {
+        internalNumber,
         invoiceNumber,
         vendorId,
         purchaseOrderId: purchaseOrderId || null,

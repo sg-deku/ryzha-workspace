@@ -80,6 +80,7 @@ export default async function VendorInvoicesPage({
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-28">Internal #</TableHead>
                 <TableHead>Invoice #</TableHead>
                 <TableHead>Vendor</TableHead>
                 <TableHead>PO #</TableHead>
@@ -92,6 +93,7 @@ export default async function VendorInvoicesPage({
             <TableBody>
               {invoices.map((inv) => (
                 <TableRow key={inv.id}>
+                  <TableCell className="font-mono text-xs text-muted-foreground">{(inv as any).internalNumber || "—"}</TableCell>
                   <TableCell className="font-medium">{inv.invoiceNumber}</TableCell>
                   <TableCell>{inv.vendor.name}</TableCell>
                   <TableCell>{inv.purchaseOrder?.poNumber || "Direct"}</TableCell>
@@ -116,7 +118,7 @@ export default async function VendorInvoicesPage({
               ))}
               {invoices.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                     No vendor invoices found.
                   </TableCell>
                 </TableRow>

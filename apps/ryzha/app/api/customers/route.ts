@@ -3,6 +3,7 @@ import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { NextResponse } from "next/server"
 import { z } from "zod"
+import { getNextEntityNumber } from "@/lib/sequences"
 
 const customerSchema = z.object({
   name: z.string().min(1),
@@ -45,10 +46,12 @@ export async function POST(req: Request) {
   try {
     const body = await req.json()
     const data = customerSchema.parse(body)
+    const customerNumber = await getNextEntityNumber(session.user.organizationId, "CUSTOMER")
 
     const customer = await prisma.customer.create({
       data: {
         ...data,
+        customerNumber,
         email: data.email || null,
         phone: data.phone || null,
         taxId: data.taxId || null,

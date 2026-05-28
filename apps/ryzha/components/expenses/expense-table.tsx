@@ -38,6 +38,7 @@ import { cn } from "@/lib/utils"
 
 interface Expense {
   id: string
+  expenseNumber?: string | null
   date: string | Date
   description: string
   amount: number
@@ -116,6 +117,7 @@ export function ExpenseTable({ initialExpenses, selectedCategory, onSelectCatego
           data={filteredExpenses}
           fixedHeaderContent={() => (
             <TableRow className="bg-muted/50 hover:bg-muted/50 border-b">
+              <TableHead className="w-28">ID</TableHead>
               <TableHead className="w-12">
                 <Checkbox 
                   checked={selectedIds.length === filteredExpenses.length && filteredExpenses.length > 0}
@@ -132,6 +134,9 @@ export function ExpenseTable({ initialExpenses, selectedCategory, onSelectCatego
           )}
           itemContent={(_index, expense) => (
             <>
+              <TableCell className="font-mono text-xs text-muted-foreground whitespace-nowrap">
+                {expense.expenseNumber || "—"}
+              </TableCell>
               <TableCell>
                 <Checkbox 
                   checked={selectedIds.includes(expense.id)}

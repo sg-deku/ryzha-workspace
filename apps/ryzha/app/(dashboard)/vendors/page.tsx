@@ -71,6 +71,7 @@ export default async function VendorsPage({
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-32">ID</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Status</TableHead>
@@ -82,6 +83,7 @@ export default async function VendorsPage({
             <TableBody>
               {vendors.map((vendor) => (
                 <TableRow key={vendor.id}>
+                  <TableCell className="font-mono text-xs text-muted-foreground">{vendor.vendorNumber || "—"}</TableCell>
                   <TableCell className="font-medium">{vendor.name}</TableCell>
                   <TableCell>{vendor.email || "-"}</TableCell>
                   <TableCell>
@@ -105,7 +107,7 @@ export default async function VendorsPage({
               ))}
               {vendors.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                     No vendors found. Add your first vendor to get started.
                   </TableCell>
                 </TableRow>

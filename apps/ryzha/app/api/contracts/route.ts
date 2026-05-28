@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { NextResponse } from "next/server"
+import { getNextEntityNumber } from "@/lib/sequences"
 
 export async function GET() {
   const session = await getServerSession(authOptions)
@@ -32,12 +33,15 @@ export async function POST(req: Request) {
   }
 
   try {
+    const contractNumber = await getNextEntityNumber(session.user.organizationId, "CONTRACT")
+
     const contract = await prisma.contract.create({
       data: {
         stripePaymentIntentId,
         customerEmail,
         amount: Number(amount),
         status: "signed",
+        contractNumber,
         organizationId: session.user.organizationId,
       },
     })

@@ -2,8 +2,9 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { NextResponse } from "next/server"
-import { syncGLForOrganization, deleteGLEntriesForJournalEntry } from "@/lib/reports/general-ledger/sync"
+import { syncGLForOrganization } from "@/lib/reports/general-ledger/sync"
 import { after } from "next/server"
+import { getNextEntityNumber } from "@/lib/sequences"
 
 export const dynamic = "force-dynamic"
 
@@ -38,6 +39,8 @@ export async function POST(req: Request) {
     const entryType = type || "REGULAR"
     const entryStatus = reqStatus === "DRAFT" ? "DRAFT" : "POSTED"
 
+    const resolvedReference = reference || await getNextEntityNumber(session.user.organizationId, "JE")
+
     const totalDebit = lines.reduce((s: number, l: any) => s + (Number(l.debit) || 0), 0)
     const totalCredit = lines.reduce((s: number, l: any) => s + (Number(l.credit) || 0), 0)
 
@@ -51,7 +54,7 @@ export async function POST(req: Request) {
     const entry = await prisma.journalEntry.create({
       data: {
         entryDate: new Date(entryDate),
-        reference: reference || null,
+        reference: resolvedReference,
         description,
         status: entryStatus,
         type: entryType,

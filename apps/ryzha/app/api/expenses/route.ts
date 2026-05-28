@@ -6,6 +6,7 @@ import { after } from "next/server"
 import { detectAnomalies } from "@/lib/ai/anomaly-detector"
 import { createSystemJournalEntry } from "@/lib/reports/general-ledger/je-factory"
 import { mapExpenseCategoryToAccount } from "@/lib/reports/general-ledger/account-mapping"
+import { getNextEntityNumber } from "@/lib/sequences"
 
 export const dynamic = "force-dynamic";
 
@@ -24,9 +25,11 @@ export async function POST(req: Request) {
 
     const organizationId = session.user.organizationId
     const expenseAmount = Number(amount)
+    const expenseNumber = await getNextEntityNumber(organizationId, "EXPENSE")
 
     const expense = await prisma.expense.create({
       data: {
+        expenseNumber,
         date: new Date(date),
         description,
         amount: expenseAmount,

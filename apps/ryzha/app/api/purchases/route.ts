@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { NextResponse } from "next/server"
 import { runApprovalAgent } from "@/lib/agents/p2p/approval"
 import { createNotification } from "@/lib/notifications"
+import { getNextEntityNumber } from "@/lib/sequences"
 
 export const dynamic = "force-dynamic";
 
@@ -34,13 +35,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { vendorId, poNumber, lineItems } = await req.json()
+    const { vendorId, poNumber: providedPoNumber, lineItems } = await req.json()
 
-    if (!vendorId || !poNumber || !lineItems || lineItems.length === 0) {
+    if (!vendorId || !lineItems || lineItems.length === 0) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
 
     const totalAmount = lineItems.reduce((sum: number, item: any) => sum + (item.quantity * item.unitPrice), 0)
+    const poNumber = providedPoNumber || await getNextEntityNumber(session.user.organizationId, "PO")
 
     const purchaseOrder = await prisma.purchaseOrder.create({
       data: {

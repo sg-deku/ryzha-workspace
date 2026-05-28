@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { after } from "next/server"
 import { createSystemJournalEntry } from "@/lib/reports/general-ledger/je-factory"
+import { getNextEntityNumber } from "@/lib/sequences"
 
 export const dynamic = "force-dynamic"
 
@@ -53,10 +54,7 @@ export async function POST(req: NextRequest) {
   const memoDate = issueDate ? new Date(issueDate) : new Date()
   const memoAmount = parseFloat(amount)
 
-  const count = await prisma.vendorDebitMemo.count({
-    where: { organizationId: session.user.organizationId },
-  })
-  const memoNumber = `DM-${String(count + 1).padStart(4, "0")}`
+  const memoNumber = await getNextEntityNumber(session.user.organizationId, "DM")
 
   const memo = await prisma.vendorDebitMemo.create({
     data: {
