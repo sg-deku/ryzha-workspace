@@ -173,9 +173,17 @@ export default async function JournalEntriesPage({
                 const totalDebit = entry.lines.reduce((s, l) => s + l.debit, 0)
                 const sourceLink = getSourceLink(entry.sourceType, entry.sourceId)
                 return (
-                  <TableRow key={entry.id}>
-                    <TableCell className="whitespace-nowrap text-sm">{entry.entryDate.toLocaleDateString()}</TableCell>
-                    <TableCell className="font-mono text-xs">{entry.reference || "—"}</TableCell>
+                  <TableRow key={entry.id} className="cursor-pointer hover:bg-muted/40">
+                    <TableCell className="whitespace-nowrap text-sm">
+                      <Link href={`/journal-entries/${entry.id}`} className="block">
+                        {entry.entryDate.toLocaleDateString()}
+                      </Link>
+                    </TableCell>
+                    <TableCell className="font-mono text-xs">
+                      <Link href={`/journal-entries/${entry.id}`} className="block hover:underline text-primary">
+                        {entry.reference || "—"}
+                      </Link>
+                    </TableCell>
                     <TableCell className="max-w-xs truncate text-sm">{entry.description}</TableCell>
                     <TableCell className="text-xs">
                       {entry.sourceType ? (
