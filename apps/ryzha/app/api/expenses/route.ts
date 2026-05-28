@@ -38,33 +38,34 @@ export async function POST(req: Request) {
 
     const accountName = mapExpenseCategoryToAccount(category)
 
-    await detectAnomalies(expense.id, organizationId)
-
     after(
-      createSystemJournalEntry({
-        organizationId,
-        sourceType: "Expense",
-        sourceId: expense.id,
-        reference: `EXP-${expense.id.slice(-6)}`,
-        description: `Expense – ${description}`,
-        entryDate: new Date(date),
-        lines: [
-          {
-            accountName,
-            accountType: "Expenses",
-            debit: expenseAmount,
-            credit: 0,
-            description,
-          },
-          {
-            accountName: "Cash",
-            accountType: "Assets",
-            debit: 0,
-            credit: expenseAmount,
-            description: `Cash paid – ${description}`,
-          },
-        ],
-      }).catch(console.error)
+      Promise.all([
+        detectAnomalies(expense.id, organizationId),
+        createSystemJournalEntry({
+          organizationId,
+          sourceType: "Expense",
+          sourceId: expense.id,
+          reference: `EXP-${expense.id.slice(-6)}`,
+          description: `Expense – ${description}`,
+          entryDate: new Date(date),
+          lines: [
+            {
+              accountName,
+              accountType: "Expenses",
+              debit: expenseAmount,
+              credit: 0,
+              description,
+            },
+            {
+              accountName: "Cash",
+              accountType: "Assets",
+              debit: 0,
+              credit: expenseAmount,
+              description: `Cash paid – ${description}`,
+            },
+          ],
+        }),
+      ]).catch(console.error)
     )
 
     return NextResponse.json(expense)
