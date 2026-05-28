@@ -2,21 +2,21 @@ import { getSession } from "@/lib/session"
 import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
-import { Upload } from "lucide-react"
 import { ListSearch } from "@/components/ui/list-search"
 import { DataPagination } from "@/components/ui/data-pagination"
+import { PageShell } from "@/components/ui/page-shell"
 import { Suspense } from "react"
 
 const PAGE_SIZE = 50
 
-export const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic"
 
 export default async function VendorInvoicesPage({
-  searchParams
+  searchParams,
 }: {
   searchParams: Promise<{ q?: string; status?: string; page?: string }>
 }) {
@@ -26,18 +26,19 @@ export default async function VendorInvoicesPage({
   const { q, status, page } = await searchParams
   const currentPage = Math.max(1, Number(page) || 1)
 
+  const orgId = session.user.organizationId
   const where = {
-    organizationId: session.user.organizationId,
+    organizationId: orgId,
     ...(status && { status }),
     ...(q && {
       OR: [
         { invoiceNumber: { contains: q, mode: "insensitive" as const } },
         { vendor: { name: { contains: q, mode: "insensitive" as const } } },
-      ]
+      ],
     }),
   }
 
-  const [invoices, total] = await Promise.all([
+  const [invoices, total, pendingAmount] = await Promise.all([
     prisma.vendorInvoice.findMany({
       where,
       include: { vendor: true, purchaseOrder: true },
@@ -46,37 +47,44 @@ export default async function VendorInvoicesPage({
       skip: (currentPage - 1) * PAGE_SIZE,
     }),
     prisma.vendorInvoice.count({ where }),
+    prisma.vendorInvoice.aggregate({
+      where: { organizationId: orgId, status: { in: ["RECEIVED", "MATCHED", "APPROVED"] } },
+      _sum: { amount: true },
+    }),
   ])
 
-  return (
-    <div className="flex-1 space-y-4 p-8 pt-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-3xl font-bold tracking-tight">Vendor Invoices</h2>
-        <Button asChild>
-          <Link href="/vendor-invoices/upload">
-            <Upload className="mr-2 h-4 w-4" /> Upload Invoice
-          </Link>
-        </Button>
-      </div>
+  const overdueCount = await prisma.vendorInvoice.count({
+    where: { organizationId: orgId, status: { notIn: ["PAID", "REJECTED"] }, dueDate: { lt: new Date() } },
+  })
 
+  return (
+    <PageShell
+      title="Vendor Invoices"
+      subtitle="Review and approve supplier bills through the P2P workflow."
+      newHref="/vendor-invoices/new"
+      newLabel="New Vendor Invoice"
+      kpis={[
+        { label: "Total Invoices", value: total },
+        { label: "Overdue", value: overdueCount },
+        { label: "Pending Payment", value: `$${(pendingAmount._sum.amount ?? 0).toLocaleString()}` },
+      ]}
+    >
       <Suspense>
         <ListSearch
           placeholder="Search by invoice # or vendor..."
           statusOptions={[
-            { value: "PENDING", label: "Pending" },
+            { value: "RECEIVED", label: "Received" },
             { value: "MATCHED", label: "Matched" },
             { value: "APPROVED", label: "Approved" },
             { value: "PAID", label: "Paid" },
+            { value: "DISPUTED", label: "Disputed" },
             { value: "REJECTED", label: "Rejected" },
           ]}
         />
       </Suspense>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Payables</CardTitle>
-        </CardHeader>
-        <CardContent>
+        <CardContent className="pt-4">
           <Table>
             <TableHeader>
               <TableRow>
@@ -93,7 +101,9 @@ export default async function VendorInvoicesPage({
             <TableBody>
               {invoices.map((inv) => (
                 <TableRow key={inv.id}>
-                  <TableCell className="font-mono text-xs text-muted-foreground">{(inv as any).internalNumber || "—"}</TableCell>
+                  <TableCell className="font-mono text-xs text-muted-foreground">
+                    {(inv as any).internalNumber || "—"}
+                  </TableCell>
                   <TableCell className="font-medium">{inv.invoiceNumber}</TableCell>
                   <TableCell>{inv.vendor.name}</TableCell>
                   <TableCell>{inv.purchaseOrder?.poNumber || "Direct"}</TableCell>
@@ -130,6 +140,6 @@ export default async function VendorInvoicesPage({
           </Suspense>
         </CardContent>
       </Card>
-    </div>
+    </PageShell>
   )
 }

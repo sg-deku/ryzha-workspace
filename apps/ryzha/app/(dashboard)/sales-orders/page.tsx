@@ -2,21 +2,21 @@ import { getSession } from "@/lib/session"
 import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
-import { Plus } from "lucide-react"
 import { ListSearch } from "@/components/ui/list-search"
 import { DataPagination } from "@/components/ui/data-pagination"
+import { PageShell } from "@/components/ui/page-shell"
 import { Suspense } from "react"
 
 const PAGE_SIZE = 50
 
-export const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic"
 
 export default async function SalesOrdersPage({
-  searchParams
+  searchParams,
 }: {
   searchParams: Promise<{ q?: string; status?: string; page?: string }>
 }) {
@@ -26,18 +26,19 @@ export default async function SalesOrdersPage({
   const { q, status, page } = await searchParams
   const currentPage = Math.max(1, Number(page) || 1)
 
+  const orgId = session.user.organizationId
   const where = {
-    organizationId: session.user.organizationId,
+    organizationId: orgId,
     ...(status && { status }),
     ...(q && {
       OR: [
         { orderNumber: { contains: q, mode: "insensitive" as const } },
         { customer: { name: { contains: q, mode: "insensitive" as const } } },
-      ]
+      ],
     }),
   }
 
-  const [orders, total] = await Promise.all([
+  const [orders, total, openAmount] = await Promise.all([
     prisma.salesOrder.findMany({
       where,
       include: { customer: true },
@@ -46,19 +47,26 @@ export default async function SalesOrdersPage({
       skip: (currentPage - 1) * PAGE_SIZE,
     }),
     prisma.salesOrder.count({ where }),
+    prisma.salesOrder.aggregate({
+      where: { organizationId: orgId, status: { in: ["APPROVED", "INVOICED"] } },
+      _sum: { totalAmount: true },
+    }),
   ])
 
-  return (
-    <div className="flex-1 space-y-4 p-8 pt-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-3xl font-bold tracking-tight">Sales Orders</h2>
-        <Button asChild>
-          <Link href="/sales-orders/new">
-            <Plus className="mr-2 h-4 w-4" /> New Order
-          </Link>
-        </Button>
-      </div>
+  const draftCount = await prisma.salesOrder.count({ where: { organizationId: orgId, status: "DRAFT" } })
 
+  return (
+    <PageShell
+      title="Sales Orders"
+      subtitle="Track customer orders from creation to fulfillment."
+      newHref="/sales-orders/new"
+      newLabel="New Sales Order"
+      kpis={[
+        { label: "Total Orders", value: total },
+        { label: "Draft", value: draftCount },
+        { label: "Open Value", value: `$${(openAmount._sum.totalAmount ?? 0).toLocaleString()}` },
+      ]}
+    >
       <Suspense>
         <ListSearch
           placeholder="Search by order # or customer..."
@@ -73,10 +81,7 @@ export default async function SalesOrdersPage({
       </Suspense>
 
       <Card>
-        <CardHeader>
-          <CardTitle>All Orders</CardTitle>
-        </CardHeader>
-        <CardContent>
+        <CardContent className="pt-4">
           <Table>
             <TableHeader>
               <TableRow>
@@ -91,12 +96,10 @@ export default async function SalesOrdersPage({
             <TableBody>
               {orders.map((order) => (
                 <TableRow key={order.id}>
-                  <TableCell className="font-medium">{order.orderNumber}</TableCell>
+                  <TableCell className="font-medium font-mono text-sm">{order.orderNumber}</TableCell>
                   <TableCell>{order.customer.name}</TableCell>
                   <TableCell>
-                    <Badge variant="outline">
-                      {order.status}
-                    </Badge>
+                    <Badge variant="outline">{order.status}</Badge>
                   </TableCell>
                   <TableCell>${order.totalAmount.toLocaleString()}</TableCell>
                   <TableCell>{order.createdAt.toLocaleDateString()}</TableCell>
@@ -126,6 +129,6 @@ export default async function SalesOrdersPage({
           </Suspense>
         </CardContent>
       </Card>
-    </div>
+    </PageShell>
   )
 }

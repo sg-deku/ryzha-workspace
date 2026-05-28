@@ -1,54 +1,52 @@
 import { getSession } from "@/lib/session"
 import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
-import Link from "next/link"
-import { Plus, Upload } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { Upload } from "lucide-react"
 import { InvoiceTable } from "@/components/invoices/invoice-table"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
+import { PageShell } from "@/components/ui/page-shell"
 
-export const dynamic = 'force-dynamic'
+export const dynamic = "force-dynamic"
 
 export default async function InvoicesPage() {
   const session = await getSession()
   if (!session?.user) redirect("/login")
 
-  const invoices = await prisma.invoice.findMany({
-    where: { organizationId: session.user.organizationId },
-    orderBy: { createdAt: "desc" }
-  })
+  const orgId = session.user.organizationId
+
+  const [invoices, draftCount, overdueCount, totalRevenue] = await Promise.all([
+    prisma.invoice.findMany({
+      where: { organizationId: orgId },
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.invoice.count({ where: { organizationId: orgId, status: "DRAFT" } }),
+    prisma.invoice.count({
+      where: { organizationId: orgId, status: "SENT", dueDate: { lt: new Date() } },
+    }),
+    prisma.invoice.aggregate({ where: { organizationId: orgId, status: "PAID" }, _sum: { total: true } }),
+  ])
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Invoices</h1>
-          <p className="text-muted-foreground">Manage your client billing and payments.</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" asChild>
-            <Link href="/invoices/upload">
-              <Upload className="mr-2 h-4 w-4" />
-              Upload CSV
-            </Link>
-          </Button>
-          <Button asChild>
-            <Link href="/invoices/new">
-              <Plus className="mr-2 h-4 w-4" />
-              Create Invoice
-            </Link>
-          </Button>
-        </div>
-      </div>
-
+    <PageShell
+      title="Invoices"
+      subtitle="Manage your client billing and payment collection."
+      newHref="/invoices/new"
+      newLabel="New Invoice"
+      actions={[
+        { label: "Upload CSV", href: "/invoices/upload", variant: "outline", icon: <Upload className="h-4 w-4" /> },
+      ]}
+      kpis={[
+        { label: "Total Invoices", value: invoices.length },
+        { label: "Draft", value: draftCount },
+        { label: "Overdue", value: overdueCount },
+        { label: "Revenue Collected", value: `$${(totalRevenue._sum.total ?? 0).toLocaleString()}` },
+      ]}
+    >
       <Card>
-        <CardHeader>
-          <CardTitle>Invoice History</CardTitle>
-        </CardHeader>
-        <CardContent>
+        <CardContent className="pt-4">
           <InvoiceTable initialInvoices={JSON.parse(JSON.stringify(invoices))} />
         </CardContent>
       </Card>
-    </div>
+    </PageShell>
   )
 }

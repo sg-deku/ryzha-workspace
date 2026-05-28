@@ -2,21 +2,21 @@ import { getSession } from "@/lib/session"
 import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
-import { Plus } from "lucide-react"
 import { ListSearch } from "@/components/ui/list-search"
 import { DataPagination } from "@/components/ui/data-pagination"
+import { PageShell } from "@/components/ui/page-shell"
 import { Suspense } from "react"
 
 const PAGE_SIZE = 50
 
-export const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic"
 
 export default async function VendorsPage({
-  searchParams
+  searchParams,
 }: {
   searchParams: Promise<{ q?: string; status?: string; page?: string }>
 }) {
@@ -26,13 +26,14 @@ export default async function VendorsPage({
   const { q, status, page } = await searchParams
   const currentPage = Math.max(1, Number(page) || 1)
 
+  const orgId = session.user.organizationId
   const where = {
-    organizationId: session.user.organizationId,
+    organizationId: orgId,
     ...(q && { name: { contains: q, mode: "insensitive" as const } }),
     ...(status && { status }),
   }
 
-  const [vendors, total] = await Promise.all([
+  const [vendors, total, activeCount] = await Promise.all([
     prisma.vendor.findMany({
       where,
       orderBy: { name: "asc" },
@@ -40,22 +41,24 @@ export default async function VendorsPage({
       skip: (currentPage - 1) * PAGE_SIZE,
     }),
     prisma.vendor.count({ where }),
+    prisma.vendor.count({ where: { organizationId: orgId, status: "ACTIVE" } }),
   ])
 
   return (
-    <div className="flex-1 space-y-4 p-8 pt-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-3xl font-bold tracking-tight">Vendors</h2>
-        <Button asChild>
-          <Link href="/vendors/new">
-            <Plus className="mr-2 h-4 w-4" /> Add Vendor
-          </Link>
-        </Button>
-      </div>
-
+    <PageShell
+      title="Vendors"
+      subtitle="Manage your supplier relationships and payment terms."
+      newHref="/vendors/new"
+      newLabel="New Vendor"
+      kpis={[
+        { label: "Total Vendors", value: total },
+        { label: "Active", value: activeCount },
+        { label: "Inactive", value: total - activeCount },
+      ]}
+    >
       <Suspense>
         <ListSearch
-          placeholder="Search vendors..."
+          placeholder="Search by name..."
           statusOptions={[
             { value: "ACTIVE", label: "Active" },
             { value: "INACTIVE", label: "Inactive" },
@@ -64,10 +67,7 @@ export default async function VendorsPage({
       </Suspense>
 
       <Card>
-        <CardHeader>
-          <CardTitle>All Vendors</CardTitle>
-        </CardHeader>
-        <CardContent>
+        <CardContent className="pt-4">
           <Table>
             <TableHeader>
               <TableRow>
@@ -83,16 +83,18 @@ export default async function VendorsPage({
             <TableBody>
               {vendors.map((vendor) => (
                 <TableRow key={vendor.id}>
-                  <TableCell className="font-mono text-xs text-muted-foreground">{vendor.vendorNumber || "—"}</TableCell>
+                  <TableCell className="font-mono text-xs text-muted-foreground">
+                    {vendor.vendorNumber || "—"}
+                  </TableCell>
                   <TableCell className="font-medium">{vendor.name}</TableCell>
-                  <TableCell>{vendor.email || "-"}</TableCell>
+                  <TableCell>{vendor.email || "—"}</TableCell>
                   <TableCell>
                     <Badge variant={vendor.status === "ACTIVE" ? "default" : "secondary"}>
                       {vendor.status}
                     </Badge>
                   </TableCell>
-                  <TableCell>{vendor.taxId || "N/A"}</TableCell>
-                  <TableCell>{vendor.paymentTerms}</TableCell>
+                  <TableCell>{vendor.taxId || "—"}</TableCell>
+                  <TableCell>{vendor.paymentTerms || "—"}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
                       <Button variant="ghost" size="sm" asChild>
@@ -108,7 +110,7 @@ export default async function VendorsPage({
               {vendors.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                    No vendors found. Add your first vendor to get started.
+                    No vendors found.
                   </TableCell>
                 </TableRow>
               )}
@@ -119,6 +121,6 @@ export default async function VendorsPage({
           </Suspense>
         </CardContent>
       </Card>
-    </div>
+    </PageShell>
   )
 }

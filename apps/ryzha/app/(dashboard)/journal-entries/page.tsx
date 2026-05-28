@@ -4,12 +4,12 @@ import { redirect } from "next/navigation"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import Link from "next/link"
-import { Plus, BookOpen, TrendingUp } from "lucide-react"
+import { TrendingUp } from "lucide-react"
 import { DataPagination } from "@/components/ui/data-pagination"
 import { Suspense } from "react"
 import { JournalEntryActions } from "./journal-entry-actions"
+import { PageShell } from "@/components/ui/page-shell"
 
 const PAGE_SIZE = 50
 
@@ -83,59 +83,20 @@ export default async function JournalEntriesPage({
   const draftCount = counts.find((c) => c.status === "DRAFT")?._count ?? 0
 
   return (
-    <div className="flex-1 space-y-6 p-8 pt-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">Journal Entries</h2>
-          <p className="text-muted-foreground">Manual double-entry bookkeeping — all entries post directly to the General Ledger</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" asChild>
-            <Link href="/trial-balance">
-              <TrendingUp className="mr-2 h-4 w-4" /> Trial Balance
-            </Link>
-          </Button>
-          <Button asChild>
-            <Link href="/journal-entries/new">
-              <Plus className="mr-2 h-4 w-4" /> New Entry
-            </Link>
-          </Button>
-        </div>
-      </div>
-
-      <div className="grid gap-4 grid-cols-3">
-        <Card>
-          <CardContent className="pt-6 flex items-center gap-4">
-            <BookOpen className="h-8 w-8 text-muted-foreground" />
-            <div>
-              <div className="text-2xl font-bold">{postedCount + draftCount}</div>
-              <div className="text-sm text-muted-foreground">Total Entries</div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6 flex items-center gap-4">
-            <div className="h-8 w-8 rounded-full bg-green-100 dark:bg-green-900/40 flex items-center justify-center">
-              <div className="h-3 w-3 rounded-full bg-green-500" />
-            </div>
-            <div>
-              <div className="text-2xl font-bold">{postedCount}</div>
-              <div className="text-sm text-muted-foreground">Posted to GL</div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6 flex items-center gap-4">
-            <div className="h-8 w-8 rounded-full bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center">
-              <div className="h-3 w-3 rounded-full bg-amber-500" />
-            </div>
-            <div>
-              <div className="text-2xl font-bold">{draftCount}</div>
-              <div className="text-sm text-muted-foreground">Drafts</div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+    <PageShell
+      title="Journal Entries"
+      subtitle="Double-entry bookkeeping — all entries post directly to the General Ledger."
+      newHref="/journal-entries/new"
+      newLabel="New Entry"
+      actions={[
+        { label: "Trial Balance", href: "/trial-balance", variant: "outline", icon: <TrendingUp className="h-4 w-4" /> },
+      ]}
+      kpis={[
+        { label: "Total Entries", value: postedCount + draftCount },
+        { label: "Posted to GL", value: postedCount },
+        { label: "Drafts", value: draftCount },
+      ]}
+    >
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between pb-3">
@@ -243,6 +204,6 @@ export default async function JournalEntriesPage({
           </Suspense>
         </CardContent>
       </Card>
-    </div>
+    </PageShell>
   )
 }
