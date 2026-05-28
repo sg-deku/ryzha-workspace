@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { createSystemJournalEntry } from "@/lib/reports/general-ledger/je-factory"
 
 export const dynamic = "force-dynamic"
 
@@ -28,47 +29,38 @@ export async function POST(req: Request) {
     return NextResponse.json({ released: 0, message: "No deferred revenue due for release." })
   }
 
-  const orgMap = new Map<string, typeof due>()
-  for (const row of due) {
-    const orgId = row.transaction.organizationId
-    if (!orgMap.has(orgId)) orgMap.set(orgId, [])
-    orgMap.get(orgId)!.push(row)
-  }
-
   let totalReleased = 0
 
-  for (const [orgId, rows] of Array.from(orgMap.entries())) {
-    for (const row of rows) {
-      const periodLabel = row.period.toLocaleString("default", { month: "short", year: "numeric" })
+  for (const row of due) {
+    const orgId = row.transaction.organizationId
+    const periodLabel = row.period.toLocaleString("default", { month: "short", year: "numeric" })
 
-      const drEntry = await prisma.generalLedgerEntry.create({
-        data: {
-          date: row.period,
-          accountType: "Liabilities",
-          accountName: "Deferred Revenue",
-          debit: row.amount,
-          credit: 0,
-          amount: row.amount,
-          description: `Deferred revenue release — ${periodLabel} | Tx: ${row.transactionId}`,
-          sourceType: "deferred_release",
-          sourceId: `${row.id}-dr`,
-          organizationId: orgId,
-        },
-      })
-
-      await prisma.generalLedgerEntry.create({
-        data: {
-          date: row.period,
-          accountType: "Revenue",
-          accountName: "Subscription Revenue",
-          debit: 0,
-          credit: row.amount,
-          amount: row.amount,
-          description: `Deferred revenue release — ${periodLabel} | ${row.transaction.description ?? row.transactionId}`,
-          sourceType: "deferred_release",
-          sourceId: `${row.id}-rev`,
-          organizationId: orgId,
-        },
+    try {
+      const je = await createSystemJournalEntry({
+        organizationId: orgId,
+        sourceType: "DeferredRelease",
+        sourceId: row.id,
+        reference: `DEF-${row.id.slice(-6)}`,
+        description: `Deferred revenue release – ${periodLabel}`,
+        entryDate: row.period,
+        type: "ADJUSTING",
+        period: row.period.toISOString().slice(0, 7),
+        lines: [
+          {
+            accountName: "Deferred Revenue",
+            accountType: "Liabilities",
+            debit: row.amount,
+            credit: 0,
+            description: `Deferred revenue released – ${periodLabel}`,
+          },
+          {
+            accountName: "Subscription Revenue",
+            accountType: "Revenue",
+            debit: 0,
+            credit: row.amount,
+            description: `${row.transaction.description ?? row.transactionId} – ${periodLabel}`,
+          },
+        ],
       })
 
       await prisma.deferredRevenueSchedule.update({
@@ -76,16 +68,18 @@ export async function POST(req: Request) {
         data: {
           recognized: true,
           recognizedAt: now,
-          glEntryId: drEntry.id,
+          glEntryId: je.id,
         },
       })
 
       totalReleased++
+    } catch (err) {
+      console.error(`[deferred-release] Failed for schedule ${row.id}:`, err)
     }
   }
 
   return NextResponse.json({
     released: totalReleased,
-    message: `Released ${totalReleased} deferred revenue schedule entries across ${orgMap.size} organizations.`,
+    message: `Released ${totalReleased} deferred revenue schedule entries.`,
   })
 }

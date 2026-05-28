@@ -38,7 +38,7 @@ const TabsTrigger = React.forwardRef<
   React.ElementRef<typeof TabsPrimitive.Trigger>,
   React.ComponentPropsWithoutRef<typeof TabsPrimitive.Trigger> & { className?: string; children?: React.ReactNode }
 >(({ className, ...props }, ref) => {
-  const Trigger = TabsPrimitive.Trigger as React.ComponentType<AnyProps>
+  const Trigger = TabsPrimitive.Trigger as unknown as React.ComponentType<AnyProps>
   return (
     <Trigger
       ref={ref}
@@ -56,7 +56,7 @@ const TabsContent = React.forwardRef<
   React.ElementRef<typeof TabsPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof TabsPrimitive.Content> & { className?: string; children?: React.ReactNode }
 >(({ className, ...props }, ref) => {
-  const Content = TabsPrimitive.Content as React.ComponentType<AnyProps>
+  const Content = TabsPrimitive.Content as unknown as React.ComponentType<AnyProps>
   return (
     <Content
       ref={ref}

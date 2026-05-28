@@ -70,7 +70,6 @@ export async function POST(req: Request) {
       totalTax,
       total,
       status: "DRAFT",
-      notes: notes ?? "",
       lineItems: {
         create: lineItems.map((l: any) => ({
           description: l.description,

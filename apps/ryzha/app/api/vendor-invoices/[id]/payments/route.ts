@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { after } from "next/server"
 import { startVendorPaymentWorkflow } from "@/lib/agents/orchestrator"
+import { createSystemJournalEntry } from "@/lib/reports/general-ledger/je-factory"
 
 export const dynamic = "force-dynamic"
 
@@ -32,7 +34,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   const invoice = await prisma.vendorInvoice.findUnique({
     where: { id, organizationId: session.user.organizationId },
-    include: { vendorPayments: { select: { amount: true } } },
+    include: { vendor: { select: { name: true } }, vendorPayments: { select: { amount: true } } },
   })
   if (!invoice) return NextResponse.json({ error: "Vendor invoice not found" }, { status: 404 })
 
@@ -46,11 +48,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     )
   }
 
+  const paidDate = paymentDate ? new Date(paymentDate) : new Date()
+
   const vendorPayment = await prisma.vendorPayment.create({
     data: {
       vendorInvoiceId: id,
       amount: parseFloat(amount),
-      paymentDate: paymentDate ? new Date(paymentDate) : new Date(),
+      paymentDate: paidDate,
       method: method || "bank_transfer",
       referenceNumber: referenceNumber || null,
       notes: notes || null,
@@ -59,7 +63,35 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     },
   })
 
-  startVendorPaymentWorkflow(vendorPayment.id, session.user.organizationId).catch(console.error)
+  after(
+    Promise.all([
+      createSystemJournalEntry({
+        organizationId: session.user.organizationId,
+        sourceType: "VendorPayment",
+        sourceId: vendorPayment.id,
+        reference: `VPAY-${vendorPayment.id.slice(-6)}`,
+        description: `Vendor payment – ${invoice.vendor.name} (${invoice.invoiceNumber})`,
+        entryDate: paidDate,
+        lines: [
+          {
+            accountName: "Accounts Payable",
+            accountType: "Liabilities",
+            debit: parseFloat(amount),
+            credit: 0,
+            description: `AP cleared – ${invoice.invoiceNumber}`,
+          },
+          {
+            accountName: "Cash",
+            accountType: "Assets",
+            debit: 0,
+            credit: parseFloat(amount),
+            description: `Cash paid to ${invoice.vendor.name}`,
+          },
+        ],
+      }),
+      startVendorPaymentWorkflow(vendorPayment.id, session.user.organizationId),
+    ]).catch(console.error)
+  )
 
   return NextResponse.json(vendorPayment, { status: 201 })
 }

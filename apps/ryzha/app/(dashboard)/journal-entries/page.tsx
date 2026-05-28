@@ -15,6 +15,22 @@ const PAGE_SIZE = 50
 
 export const dynamic = "force-dynamic"
 
+function getSourceLink(sourceType: string | null, sourceId: string | null): string | null {
+  if (!sourceType || !sourceId) return null
+  switch (sourceType) {
+    case "Invoice": return `/invoices/${sourceId}`
+    case "Expense": return `/expenses/${sourceId}`
+    case "VendorInvoice": return `/vendor-invoices/${sourceId}`
+    case "CreditNote": return null
+    case "StripePayment": return `/transactions`
+    case "StripePayout": return `/transactions`
+    case "Refund": return `/transactions`
+    case "DeferredRelease": return null
+    case "VendorPayment": return null
+    default: return null
+  }
+}
+
 const TYPE_COLORS: Record<string, string> = {
   REGULAR: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300",
   ADJUSTING: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300",
@@ -31,18 +47,19 @@ const STATUS_VARIANTS: Record<string, "default" | "secondary" | "destructive" | 
 export default async function JournalEntriesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; status?: string; type?: string }>
+  searchParams: Promise<{ page?: string; status?: string; type?: string; origin?: string }>
 }) {
   const session = await getSession()
   if (!session?.user) redirect("/login")
 
-  const { page, status, type } = await searchParams
+  const { page, status, type, origin } = await searchParams
   const currentPage = Math.max(1, Number(page) || 1)
 
   const where = {
     organizationId: session.user.organizationId,
     ...(status ? { status } : {}),
     ...(type ? { type } : {}),
+    ...(origin === "manual" ? { isSystem: false } : origin === "system" ? { isSystem: true } : {}),
   }
 
   const [entries, total, counts] = await Promise.all([
@@ -122,10 +139,13 @@ export default async function JournalEntriesPage({
       <Card>
         <CardHeader className="flex flex-row items-center justify-between pb-3">
           <CardTitle>All Entries</CardTitle>
-          <div className="flex gap-2 text-sm">
-            <Link href="/journal-entries" className={!status && !type ? "font-semibold underline" : "text-muted-foreground hover:text-foreground"}>All</Link>
+          <div className="flex gap-2 text-sm flex-wrap justify-end">
+            <Link href="/journal-entries" className={!status && !type && !origin ? "font-semibold underline" : "text-muted-foreground hover:text-foreground"}>All</Link>
             <Link href="/journal-entries?status=DRAFT" className={status === "DRAFT" ? "font-semibold underline" : "text-muted-foreground hover:text-foreground"}>Drafts</Link>
             <Link href="/journal-entries?status=POSTED" className={status === "POSTED" ? "font-semibold underline" : "text-muted-foreground hover:text-foreground"}>Posted</Link>
+            <span className="text-muted-foreground">|</span>
+            <Link href="/journal-entries?origin=manual" className={origin === "manual" ? "font-semibold underline" : "text-muted-foreground hover:text-foreground"}>Manual</Link>
+            <Link href="/journal-entries?origin=system" className={origin === "system" ? "font-semibold underline" : "text-muted-foreground hover:text-foreground"}>System</Link>
             <span className="text-muted-foreground">|</span>
             <Link href="/journal-entries?type=ADJUSTING" className={type === "ADJUSTING" ? "font-semibold underline" : "text-muted-foreground hover:text-foreground"}>Adjusting</Link>
             <Link href="/journal-entries?type=CLOSING" className={type === "CLOSING" ? "font-semibold underline" : "text-muted-foreground hover:text-foreground"}>Closing</Link>
@@ -139,6 +159,7 @@ export default async function JournalEntriesPage({
                 <TableHead>Date</TableHead>
                 <TableHead>Reference</TableHead>
                 <TableHead>Description</TableHead>
+                <TableHead>Source</TableHead>
                 <TableHead>Type</TableHead>
                 <TableHead>Period</TableHead>
                 <TableHead>Status</TableHead>
@@ -150,11 +171,34 @@ export default async function JournalEntriesPage({
             <TableBody>
               {entries.map((entry) => {
                 const totalDebit = entry.lines.reduce((s, l) => s + l.debit, 0)
+                const sourceLink = getSourceLink(entry.sourceType, entry.sourceId)
                 return (
                   <TableRow key={entry.id}>
                     <TableCell className="whitespace-nowrap text-sm">{entry.entryDate.toLocaleDateString()}</TableCell>
                     <TableCell className="font-mono text-xs">{entry.reference || "—"}</TableCell>
                     <TableCell className="max-w-xs truncate text-sm">{entry.description}</TableCell>
+                    <TableCell className="text-xs">
+                      {entry.sourceType ? (
+                        <div className="flex items-center gap-1.5">
+                          {entry.isSystem && (
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400">
+                              AUTO
+                            </span>
+                          )}
+                          {sourceLink ? (
+                            <Link href={sourceLink} className="text-primary underline underline-offset-2 hover:no-underline">
+                              {entry.sourceType}
+                            </Link>
+                          ) : (
+                            <span className="text-muted-foreground">{entry.sourceType}</span>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300">
+                          MANUAL
+                        </span>
+                      )}
+                    </TableCell>
                     <TableCell>
                       <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${TYPE_COLORS[entry.type] ?? "bg-gray-100 text-gray-700"}`}>
                         {entry.type}
@@ -178,7 +222,7 @@ export default async function JournalEntriesPage({
               })}
               {entries.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center py-12 text-muted-foreground">
+                  <TableCell colSpan={10} className="text-center py-12 text-muted-foreground">
                     No journal entries found. <Link href="/journal-entries/new" className="underline">Create your first entry</Link>.
                   </TableCell>
                 </TableRow>

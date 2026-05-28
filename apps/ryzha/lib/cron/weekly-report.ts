@@ -8,7 +8,6 @@ import React from 'react'
 export async function processWeeklyReports() {
   const schedules = await prisma.reportSchedule.findMany({
     where: { 
-      active: true,
       frequency: 'WEEKLY'
     },
     include: { organization: true }

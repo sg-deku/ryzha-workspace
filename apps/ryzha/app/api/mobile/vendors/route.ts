@@ -29,7 +29,7 @@ export async function POST(req: Request) {
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
   const body = await req.json()
-  const { name, email, phone, paymentTerms } = body
+  const { name, email, paymentTerms } = body
 
   if (!name?.trim()) return NextResponse.json({ error: "name is required" }, { status: 400 })
 
@@ -38,7 +38,6 @@ export async function POST(req: Request) {
       organizationId: session.organizationId,
       name: name.trim(),
       email: email?.trim() ?? "",
-      phone: phone?.trim() ?? "",
       paymentTerms: paymentTerms ?? "NET30",
       status: "ACTIVE",
     },

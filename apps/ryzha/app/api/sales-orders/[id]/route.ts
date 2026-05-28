@@ -26,7 +26,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       return NextResponse.json({ error: "Only draft sales orders can be edited" }, { status: 400 })
     }
 
-    const amount = lineItems.reduce((sum: number, item: any) => sum + (Number(item.quantity) * Number(item.unitPrice)), 0)
+    const totalAmount = lineItems.reduce((sum: number, item: any) => sum + (Number(item.quantity) * Number(item.unitPrice)), 0)
 
     const updated = await prisma.$transaction([
       prisma.salesOrderLine.deleteMany({
@@ -37,7 +37,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         data: {
           customerId,
           orderNumber,
-          amount,
+          totalAmount,
           lineItems: {
             create: lineItems.map((item: any) => ({
               description: item.description,

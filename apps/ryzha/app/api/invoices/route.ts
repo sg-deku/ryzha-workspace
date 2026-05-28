@@ -3,8 +3,9 @@ import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { generateInvoiceNumber } from "@/lib/invoice-number"
 import { NextResponse } from "next/server"
-import { syncGLForOrganization } from "@/lib/reports/general-ledger/sync"
 import { after } from "next/server"
+import { createSystemJournalEntry } from "@/lib/reports/general-ledger/je-factory"
+import { mapInvoiceToAccount } from "@/lib/reports/general-ledger/account-mapping"
 
 export const dynamic = "force-dynamic";
 
@@ -71,7 +72,50 @@ export async function POST(req: Request) {
       include: { lineItems: true }
     })
 
-    after(syncGLForOrganization(session.user.organizationId).catch(console.error))
+    const orgId = session.user.organizationId
+    const jeLines: Array<{ accountName: string; accountType?: string; debit: number; credit: number; description?: string }> = []
+
+    jeLines.push({
+      accountName: "Accounts Receivable",
+      accountType: "Assets",
+      debit: total,
+      credit: 0,
+      description: `${invoiceNumber} – Amount due (${clientName})`,
+    })
+
+    for (const li of invoice.lineItems) {
+      const accountName = mapInvoiceToAccount(li.description)
+      jeLines.push({
+        accountName,
+        accountType: "Revenue",
+        debit: 0,
+        credit: li.amount,
+        description: `${invoiceNumber} – ${li.description}`,
+      })
+    }
+
+    if (totalTax > 0) {
+      jeLines.push({
+        accountName: "Tax Payable",
+        accountType: "Liabilities",
+        debit: 0,
+        credit: totalTax,
+        description: `${invoiceNumber} – Sales Tax`,
+      })
+    }
+
+    after(
+      createSystemJournalEntry({
+        organizationId: orgId,
+        sourceType: "Invoice",
+        sourceId: invoice.id,
+        reference: invoiceNumber,
+        description: `Invoice issued – ${clientName}`,
+        entryDate: new Date(issueDate),
+        lines: jeLines,
+      }).catch(console.error)
+    )
+
     return NextResponse.json(invoice)
   } catch (error: any) {
     console.error("Invoice creation error:", error)

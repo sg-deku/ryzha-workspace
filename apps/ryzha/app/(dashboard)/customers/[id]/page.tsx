@@ -1,5 +1,6 @@
 import { getSession } from "@/lib/session"
 import { prisma } from "@/lib/prisma"
+import { Prisma } from "@prisma/client"
 import { notFound, redirect } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -33,7 +34,7 @@ export default async function CustomerDetailsPage({ params }: { params: Promise<
         organizationId: session.user.organizationId,
         OR: [
           { customerId: id },
-          ...(customer.email ? [{ clientEmail: { equals: customer.email, mode: "insensitive" } }] : []),
+          ...(customer.email ? [{ clientEmail: { equals: customer.email, mode: Prisma.QueryMode.insensitive } }] : []),
         ],
       },
       orderBy: { issueDate: "desc" },

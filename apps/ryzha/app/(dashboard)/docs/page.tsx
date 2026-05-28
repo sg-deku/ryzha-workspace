@@ -1465,10 +1465,10 @@ export default function DocsPage() {
                   <p className="text-sm text-muted-foreground">All journal entries flow directly to the General Ledger upon posting. The pipeline ensures complete audit trails and balance integrity.</p>
                   <div className="space-y-3">
                     {[
-                      { step: 1, title: "Create Entry (DRAFT)", desc: "Enter date, reference, period, and type. Add debit/credit lines using the CoA-backed account picker. Save as Draft — not yet in GL.", badge: "Draft", badgeVariant: "secondary" as const },
-                      { step: 2, title: "Balance Check", desc: "The system enforces ΣDebits = ΣCredits before allowing posting. The UI shows a live 'Balanced / Off by $X' indicator on each save.", badge: "Validation", badgeVariant: "outline" as const },
-                      { step: 3, title: "Post to GL (POSTED)", desc: "Posting materializes each JE line as a GeneralLedgerEntry record via syncGLForOrganization(). The entry is locked — no edits allowed.", badge: "Posted", badgeVariant: "default" as const },
-                      { step: 4, title: "Trial Balance", desc: "The Trial Balance page aggregates all GL entries by account, groups by type (Assets / Liabilities / Equity / Revenue / Expenses), and verifies ΣDR = ΣCR.", badge: "Reconciliation", badgeVariant: "outline" as const, isLast: true },
+                      { step: 1, title: "Create Entry (DRAFT)", description: "Enter date, reference, period, and type. Add debit/credit lines using the CoA-backed account picker. Save as Draft — not yet in GL.", badge: "Draft", badgeVariant: "secondary" as const },
+                      { step: 2, title: "Balance Check", description: "The system enforces ΣDebits = ΣCredits before allowing posting. The UI shows a live 'Balanced / Off by $X' indicator on each save.", badge: "Validation", badgeVariant: "outline" as const },
+                      { step: 3, title: "Post to GL (POSTED)", description: "Posting materializes each JE line as a GeneralLedgerEntry record via syncGLForOrganization(). The entry is locked — no edits allowed.", badge: "Posted", badgeVariant: "default" as const },
+                      { step: 4, title: "Trial Balance", description: "The Trial Balance page aggregates all GL entries by account, groups by type (Assets / Liabilities / Equity / Revenue / Expenses), and verifies ΣDR = ΣCR.", badge: "Reconciliation", badgeVariant: "outline" as const, isLast: true },
                     ].map((s) => <FlowStep key={s.step} {...s} />)}
                   </div>
                 </CardContent>
