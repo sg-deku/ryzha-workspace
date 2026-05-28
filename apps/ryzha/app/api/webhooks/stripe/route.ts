@@ -280,59 +280,84 @@ export async function POST(req: Request) {
   else if (event.type === "charge.refunded") {
     const charge = event.data.object as Stripe.Charge
     try {
-      const transaction = await prisma.transaction.findFirst({
+      const paymentIntentId = typeof charge.payment_intent === "string" ? charge.payment_intent : null
+
+      let transaction = await prisma.transaction.findFirst({
         where: { stripeChargeId: charge.id }
       })
+      if (!transaction && paymentIntentId) {
+        transaction = await prisma.transaction.findFirst({
+          where: { stripePaymentIntentId: paymentIntentId }
+        })
+      }
 
-      if (transaction) {
-        const existingCreditNote = await prisma.creditNote.findFirst({
-          where: { transactionId: transaction.id }
+      if (!transaction) {
+        console.warn("[stripe webhook] charge.refunded: no matching transaction for charge", charge.id, "/ pi", paymentIntentId)
+      } else {
+        const existingJE = await prisma.journalEntry.findUnique({
+          where: { organizationId_sourceType_sourceId: { organizationId: transaction.organizationId, sourceType: "Refund", sourceId: charge.id } }
         })
 
-        if (!existingCreditNote && transaction.invoiceId) {
-          const invoice = await prisma.invoice.findUnique({ where: { id: transaction.invoiceId } })
+        if (!existingJE) {
+          const refundAmount = (charge.amount_refunded || charge.amount) / 100
+          const refundDate = new Date()
 
-          if (invoice) {
-            const refundAmount = (charge.amount_refunded || charge.amount) / 100
-            const creditNote = await prisma.creditNote.create({
-              data: {
-                invoiceId: invoice.id,
-                amount: refundAmount,
-                reason: "Refunded via Stripe",
-                reasonCategory: "other",
-                transactionId: transaction.id,
-                organizationId: transaction.organizationId,
-                refundMethod: "stripe",
-              }
+          let invoiceNumber = "—"
+          let invoiceId: string | null = transaction.invoiceId ?? null
+
+          if (invoiceId) {
+            const invoice = await prisma.invoice.findUnique({
+              where: { id: invoiceId },
+              select: { id: true, invoiceNumber: true, total: true, clientName: true }
             })
-
-            after(
-              createSystemJournalEntry({
-                organizationId: transaction.organizationId,
-                sourceType: "Refund",
-                sourceId: charge.id,
-                reference: `REF-${charge.id.slice(-8)}`,
-                description: `Stripe refund – ${invoice.invoiceNumber}`,
-                entryDate: new Date(),
-                lines: [
-                  {
-                    accountName: "Service Revenue",
-                    accountType: "Revenue",
-                    debit: refundAmount,
-                    credit: 0,
-                    description: `Revenue reversed – ${invoice.invoiceNumber}`,
-                  },
-                  {
-                    accountName: "Stripe Clearing Account",
-                    accountType: "Assets",
-                    debit: 0,
-                    credit: refundAmount,
-                    description: `Stripe refund settlement – ${invoice.invoiceNumber}`,
-                  },
-                ],
-              }).catch(console.error)
-            )
+            if (invoice) {
+              invoiceNumber = invoice.invoiceNumber
+              const existingCN = await prisma.creditNote.findFirst({ where: { transactionId: transaction.id } })
+              if (!existingCN) {
+                await prisma.creditNote.create({
+                  data: {
+                    invoiceId: invoice.id,
+                    amount: refundAmount,
+                    reason: "Refunded via Stripe",
+                    reasonCategory: "other",
+                    refundType: "stripe_refund",
+                    transactionId: transaction.id,
+                    organizationId: transaction.organizationId,
+                    refundMethod: "stripe",
+                  }
+                })
+              }
+            }
           }
+
+          after(
+            createSystemJournalEntry({
+              organizationId: transaction.organizationId,
+              sourceType: "Refund",
+              sourceId: charge.id,
+              reference: `REF-${charge.id.slice(-8)}`,
+              description: invoiceId
+                ? `Stripe refund – ${invoiceNumber} ($${refundAmount.toFixed(2)})`
+                : `Stripe refund – ${charge.id} ($${refundAmount.toFixed(2)})`,
+              entryDate: refundDate,
+              lines: [
+                {
+                  accountName: "Service Revenue",
+                  accountType: "Revenue",
+                  debit: refundAmount,
+                  credit: 0,
+                  description: invoiceId ? `Revenue reversed – ${invoiceNumber}` : `Revenue reversed – Stripe refund ${charge.id}`,
+                },
+                {
+                  accountName: "Stripe Clearing Account",
+                  accountType: "Assets",
+                  debit: 0,
+                  credit: refundAmount,
+                  description: `Stripe refund settlement – ${charge.id}`,
+                },
+              ],
+            }).catch(console.error)
+          )
         }
       }
     } catch (e) {

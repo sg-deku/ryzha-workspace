@@ -92,6 +92,7 @@ interface Invoice {
   lineItems: LineItem[]
   payments: Payment[]
   creditNotes: CreditNote[]
+  hasStripePayment?: boolean
 }
 
 const PAYMENT_METHODS = [
@@ -150,10 +151,14 @@ export function InvoiceDetail({ invoice: initialInvoice }: { invoice: Invoice })
     reason: "",
     reasonCategory: "other",
     refundType: "credit_memo",
+    stripeRefundMode: "immediate",
     issueDate: new Date().toISOString().slice(0, 10),
     refundMethod: "none",
     notes: "",
   })
+  const [submittingStripeRefund, setSubmittingStripeRefund] = useState(false)
+
+  const hasStripePayment = invoice.payments?.some((p: any) => p.method === "stripe")
 
   const totalPaid = invoice.payments.reduce((s, p) => s + p.amount, 0)
   const totalCredits = invoice.creditNotes.reduce((s, c) => s + c.amount, 0)
@@ -267,7 +272,7 @@ export function InvoiceDetail({ invoice: initialInvoice }: { invoice: Invoice })
         setInvoice((prev) => ({ ...prev, creditNotes: [cn, ...prev.creditNotes] }))
         toast.success("Credit note issued — reversal pipeline triggered")
         setCreditNoteDialogOpen(false)
-        setCreditNoteForm({ amount: "", reason: "", reasonCategory: "other", refundType: "credit_memo", issueDate: new Date().toISOString().slice(0, 10), refundMethod: "none", notes: "" })
+        setCreditNoteForm({ amount: "", reason: "", reasonCategory: "other", refundType: "credit_memo", stripeRefundMode: "immediate", issueDate: new Date().toISOString().slice(0, 10), refundMethod: "none", notes: "" })
       } else {
         const err = await res.json()
         toast.error(err.error || "Failed to issue credit note")
@@ -276,6 +281,39 @@ export function InvoiceDetail({ invoice: initialInvoice }: { invoice: Invoice })
       toast.error("An error occurred")
     } finally {
       setSubmittingCreditNote(false)
+    }
+  }
+
+  const handleStripeRefundNow = async () => {
+    if (!creditNoteForm.amount || parseFloat(creditNoteForm.amount) <= 0) {
+      toast.error("Enter a valid amount")
+      return
+    }
+    setSubmittingStripeRefund(true)
+    try {
+      const res = await fetch(`/api/invoices/${invoice.id}/stripe-refund`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          amount: parseFloat(creditNoteForm.amount),
+          reason: creditNoteForm.reason || `Stripe refund – ${invoice.invoiceNumber}`,
+          stripeRefundMode: creditNoteForm.stripeRefundMode,
+        }),
+      })
+      if (res.ok) {
+        const data = await res.json()
+        toast.success(`Stripe refund submitted (${data.stripeRefundId}) — credit note created`)
+        setCreditNoteDialogOpen(false)
+        setCreditNoteForm({ amount: "", reason: "", reasonCategory: "other", refundType: "credit_memo", stripeRefundMode: "immediate", issueDate: new Date().toISOString().slice(0, 10), refundMethod: "none", notes: "" })
+        router.refresh()
+      } else {
+        const err = await res.json()
+        toast.error(err.error || "Stripe refund failed")
+      }
+    } catch {
+      toast.error("An error occurred")
+    } finally {
+      setSubmittingStripeRefund(false)
     }
   }
 
@@ -710,7 +748,9 @@ export function InvoiceDetail({ invoice: initialInvoice }: { invoice: Invoice })
                 <SelectContent>
                   <SelectItem value="credit_memo">Credit Memo — Apply to account / future invoices</SelectItem>
                   <SelectItem value="cash_refund">Cash Refund — Bank transfer / cheque</SelectItem>
-                  <SelectItem value="stripe_refund">Stripe Refund — Reverse via Stripe</SelectItem>
+                  {hasStripePayment && (
+                    <SelectItem value="stripe_refund">Stripe Refund — Reverse via Stripe API</SelectItem>
+                  )}
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">
@@ -719,12 +759,35 @@ export function InvoiceDetail({ invoice: initialInvoice }: { invoice: Invoice })
                 {creditNoteForm.refundType === "stripe_refund" && "GL: DR Service Revenue / CR Stripe Clearing Account"}
               </p>
             </div>
+            {creditNoteForm.refundType === "stripe_refund" && (
+              <div className="space-y-1.5">
+                <Label>Stripe Refund Mode</Label>
+                <Select value={creditNoteForm.stripeRefundMode} onValueChange={(v) => setCreditNoteForm((f) => ({ ...f, stripeRefundMode: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="immediate">Refund Immediately — funds returned to card now</SelectItem>
+                    <SelectItem value="reduce_next_payout">Reduce Next Payout — deducted from next Stripe payout</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  {creditNoteForm.stripeRefundMode === "immediate"
+                    ? "Stripe will process the refund to the customer's card immediately."
+                    : "The refund amount will be deducted from your next scheduled Stripe payout."}
+                </p>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setCreditNoteDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleIssueCreditNote} disabled={submittingCreditNote}>
-              {submittingCreditNote ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Issuing...</> : "Issue Credit Note"}
-            </Button>
+            {creditNoteForm.refundType === "stripe_refund" ? (
+              <Button onClick={handleStripeRefundNow} disabled={submittingStripeRefund}>
+                {submittingStripeRefund ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Processing...</> : "Submit Stripe Refund"}
+              </Button>
+            ) : (
+              <Button onClick={handleIssueCreditNote} disabled={submittingCreditNote}>
+                {submittingCreditNote ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Issuing...</> : "Issue Credit Note"}
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
