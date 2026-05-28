@@ -7,6 +7,26 @@ import { createNotification } from "@/lib/notifications"
 
 export const dynamic = "force-dynamic";
 
+export async function GET(req: Request) {
+  const session = await getServerSession(authOptions)
+  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+
+  const { searchParams } = new URL(req.url)
+  const vendorId = searchParams.get("vendorId")
+
+  const orders = await prisma.purchaseOrder.findMany({
+    where: {
+      organizationId: session.user.organizationId,
+      ...(vendorId ? { vendorId } : {}),
+    },
+    select: { id: true, poNumber: true, status: true, totalAmount: true },
+    orderBy: { createdAt: "desc" },
+    take: 100,
+  })
+
+  return NextResponse.json(orders)
+}
+
 export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions)

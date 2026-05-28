@@ -20,6 +20,7 @@ export default function VendorInvoiceForm({ initialData }: { initialData?: any }
   const [vendorId, setVendorId] = useState(initialData?.vendorId || "")
   const [invoiceNumber, setInvoiceNumber] = useState(initialData?.invoiceNumber || `INV-${Date.now().toString().slice(-6)}`)
   const [purchaseOrderId, setPurchaseOrderId] = useState(initialData?.purchaseOrderId || "")
+  const [purchaseOrders, setPurchaseOrders] = useState<{ id: string; poNumber: string; status: string; totalAmount: number }[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [lineItems, setLineItems] = useState(
     initialData?.lineItems?.length > 0 
@@ -30,11 +31,17 @@ export default function VendorInvoiceForm({ initialData }: { initialData?: any }
   useEffect(() => {
     fetch("/api/vendors")
       .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data)) setVendors(data)
-      })
+      .then(data => { if (Array.isArray(data)) setVendors(data) })
       .catch(err => console.error(err))
   }, [])
+
+  const fetchPurchaseOrders = (vid: string) => {
+    if (!vid) { setPurchaseOrders([]); setPurchaseOrderId(""); return }
+    fetch(`/api/purchases?vendorId=${vid}`)
+      .then(res => res.json())
+      .then(data => { if (Array.isArray(data)) setPurchaseOrders(data) })
+      .catch(() => setPurchaseOrders([]))
+  }
 
   const addLineItem = () => {
     setLineItems([...lineItems, { description: "", quantity: 1, unitPrice: 0 }])
@@ -138,7 +145,7 @@ export default function VendorInvoiceForm({ initialData }: { initialData?: any }
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="vendor">Vendor</Label>
-                <Select value={vendorId} onValueChange={setVendorId} required>
+                <Select value={vendorId} onValueChange={(v) => { setVendorId(v); fetchPurchaseOrders(v) }} required>
                   <SelectTrigger>
                     <SelectValue placeholder="Select a vendor" />
                   </SelectTrigger>
@@ -154,8 +161,20 @@ export default function VendorInvoiceForm({ initialData }: { initialData?: any }
                 <Input value={invoiceNumber} onChange={e => setInvoiceNumber(e.target.value)} required />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="purchaseOrderId">PO Number (Optional)</Label>
-                <Input value={purchaseOrderId} onChange={e => setPurchaseOrderId(e.target.value)} placeholder="e.g. PO-123456" />
+                <Label htmlFor="purchaseOrderId">Linked Purchase Order (Optional)</Label>
+                <Select value={purchaseOrderId || "_none"} onValueChange={(v) => setPurchaseOrderId(v === "_none" ? "" : v)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={vendorId ? (purchaseOrders.length === 0 ? "No POs found for this vendor" : "Select a PO") : "Select a vendor first"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="_none">— None —</SelectItem>
+                    {purchaseOrders.map((po) => (
+                      <SelectItem key={po.id} value={po.id}>
+                        {po.poNumber} ({po.status}) — ${po.totalAmount.toFixed(2)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </CardContent>
