@@ -85,7 +85,7 @@ export default async function PurchasesPage({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>PO Number</TableHead>
+                <TableHead>External ID</TableHead>
                 <TableHead>Vendor</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Total</TableHead>

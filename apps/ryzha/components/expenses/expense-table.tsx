@@ -117,7 +117,7 @@ export function ExpenseTable({ initialExpenses, selectedCategory, onSelectCatego
           data={filteredExpenses}
           fixedHeaderContent={() => (
             <TableRow className="bg-muted/50 hover:bg-muted/50 border-b">
-              <TableHead className="w-28">ID</TableHead>
+              <TableHead className="w-32">External ID</TableHead>
               <TableHead className="w-12">
                 <Checkbox 
                   checked={selectedIds.length === filteredExpenses.length && filteredExpenses.length > 0}

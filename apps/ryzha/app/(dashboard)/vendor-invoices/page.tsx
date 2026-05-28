@@ -88,7 +88,7 @@ export default async function VendorInvoicesPage({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-28">Internal #</TableHead>
+                <TableHead className="w-32">External ID</TableHead>
                 <TableHead>Invoice #</TableHead>
                 <TableHead>Vendor</TableHead>
                 <TableHead>PO #</TableHead>

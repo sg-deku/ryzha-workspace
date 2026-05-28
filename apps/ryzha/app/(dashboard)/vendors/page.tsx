@@ -71,7 +71,7 @@ export default async function VendorsPage({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-32">ID</TableHead>
+                <TableHead className="w-32">External ID</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Status</TableHead>

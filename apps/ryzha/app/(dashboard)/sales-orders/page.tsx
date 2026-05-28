@@ -85,7 +85,7 @@ export default async function SalesOrdersPage({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Order #</TableHead>
+                <TableHead>External ID</TableHead>
                 <TableHead>Customer</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Amount</TableHead>
