@@ -29,22 +29,26 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Expense not found" }, { status: 404 })
     }
 
-    const aiResult = await categorizeExpense(
-      expense.description, 
-      expense.amount, 
-      session.user.organizationId
-    )
-    
-    // Auto-approve if confidence > 0.7
-    const status = aiResult.confidence > 0.7 ? "CATEGORIZED" : "REVIEWED"
-    
+    const [aiResult, existingAnomalies, settings] = await Promise.all([
+      categorizeExpense(expense.description, expense.amount, session.user.organizationId),
+      prisma.expenseAnomaly.findMany({ where: { expenseId }, take: 1 }),
+      prisma.financialSettings.findUnique({ where: { organizationId: session.user.organizationId } }),
+    ])
+
+    const anomalyThreshold = settings?.anomalyThreshold ?? 10000
+    const isHighValue = expense.amount >= anomalyThreshold
+    const hasAnomalies = existingAnomalies.length > 0 || isHighValue
+
+    // Never auto-approve high-value or already-flagged expenses — keep at REVIEWED for human sign-off
+    const status = (aiResult.confidence > 0.7 && !hasAnomalies) ? "CATEGORIZED" : "REVIEWED"
+
     const updated = await prisma.expense.update({
       where: { id: expenseId },
-      data: { 
-        category: aiResult.category, 
-        taxRelevant: aiResult.taxRelevant, 
-        status 
-      }
+      data: {
+        category: aiResult.category,
+        taxRelevant: aiResult.taxRelevant,
+        status,
+      },
     })
 
     return NextResponse.json(updated)
