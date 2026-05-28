@@ -31,7 +31,6 @@ export async function startAgentWorkflow(transactionId: string) {
     }
   }
 
-  // Helper to log and publish
   const logAndPublish = async (agent: string, message: string) => {
     const logEntry = {
       agent,
@@ -40,6 +39,11 @@ export async function startAgentWorkflow(transactionId: string) {
     }
     
     logs.push(logEntry)
+
+    await prisma.transaction.update({
+      where: { id: transactionId },
+      data: { agentLogs: [...currentLogs, ...logs] },
+    })
 
     await publishEvent(`org:${orgId}:events`, {
       type: "agent_log",
@@ -189,6 +193,10 @@ export async function startP2PWorkflow(vendorInvoiceId: string) {
   const appendP2PLog = async (agent: string, message: string) => {
     const logEntry = { agent, message, timestamp: new Date().toISOString() }
     logs.push(logEntry)
+    await prisma.vendorInvoice.update({
+      where: { id: vendorInvoiceId },
+      data: { agentLogs: [...currentLogs, ...logs] },
+    })
     await publishEvent(`org:${orgId}:events`, { type: "agent_log", transactionId: vendorInvoiceId, ...logEntry })
   }
 
@@ -307,6 +315,10 @@ export async function startO2CWorkflow(salesOrderId: string, scenario?: string) 
   const appendO2CLog = async (agent: string, message: string) => {
     const logEntry = { agent, message, timestamp: new Date().toISOString() }
     logs.push(logEntry)
+    await prisma.salesOrder.update({
+      where: { id: salesOrderId },
+      data: { agentLogs: [...currentLogs, ...logs] },
+    })
     await publishEvent(`org:${orgId}:events`, { type: "agent_log", transactionId: salesOrderId, ...logEntry })
   }
 
