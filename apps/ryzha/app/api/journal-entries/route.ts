@@ -2,6 +2,8 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { NextResponse } from "next/server"
+import { syncGLForOrganization, deleteGLEntriesForJournalEntry } from "@/lib/reports/general-ledger/sync"
+import { after } from "next/server"
 
 export const dynamic = "force-dynamic"
 
@@ -24,7 +26,7 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json()
-    const { entryDate, reference, description, lines } = body
+    const { entryDate, reference, description, lines, type, period, status: reqStatus } = body
 
     if (!entryDate || !description || !lines || lines.length < 2) {
       return NextResponse.json(
@@ -33,12 +35,15 @@ export async function POST(req: Request) {
       )
     }
 
+    const entryType = type || "REGULAR"
+    const entryStatus = reqStatus === "DRAFT" ? "DRAFT" : "POSTED"
+
     const totalDebit = lines.reduce((s: number, l: any) => s + (Number(l.debit) || 0), 0)
     const totalCredit = lines.reduce((s: number, l: any) => s + (Number(l.credit) || 0), 0)
 
-    if (Math.abs(totalDebit - totalCredit) > 0.01) {
+    if (entryStatus === "POSTED" && Math.abs(totalDebit - totalCredit) > 0.01) {
       return NextResponse.json(
-        { error: `Entry is not balanced. Total debits (${totalDebit}) must equal total credits (${totalCredit})` },
+        { error: `Entry is not balanced. Debits (${totalDebit.toFixed(2)}) must equal credits (${totalCredit.toFixed(2)})` },
         { status: 400 }
       )
     }
@@ -48,7 +53,9 @@ export async function POST(req: Request) {
         entryDate: new Date(entryDate),
         reference: reference || null,
         description,
-        status: "POSTED",
+        status: entryStatus,
+        type: entryType,
+        period: period || null,
         organizationId: session.user.organizationId,
         lines: {
           create: lines.map((l: any) => ({
@@ -62,6 +69,11 @@ export async function POST(req: Request) {
       },
       include: { lines: true },
     })
+
+    if (entryStatus === "POSTED") {
+      const orgId = session.user.organizationId
+      after(syncGLForOrganization(orgId).catch(console.error))
+    }
 
     return NextResponse.json(entry)
   } catch (err: any) {

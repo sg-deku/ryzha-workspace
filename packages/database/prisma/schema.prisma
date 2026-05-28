@@ -909,6 +909,10 @@ model JournalEntry {
   reference      String?
   description    String
   status         String   @default("DRAFT")
+  type           String   @default("REGULAR")
+  period         String?
+  reversalOf     String?
+  reversedById   String?
   organizationId String
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
@@ -918,6 +922,8 @@ model JournalEntry {
 
   @@index([organizationId, entryDate])
   @@index([organizationId, status])
+  @@index([organizationId, type])
+  @@index([organizationId, period])
 }
 
 model JournalEntryLine {

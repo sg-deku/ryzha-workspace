@@ -3,6 +3,8 @@ import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { generateInvoiceNumber } from "@/lib/invoice-number"
 import { NextResponse } from "next/server"
+import { syncGLForOrganization } from "@/lib/reports/general-ledger/sync"
+import { after } from "next/server"
 
 export const dynamic = "force-dynamic";
 
@@ -69,6 +71,7 @@ export async function POST(req: Request) {
       include: { lineItems: true }
     })
 
+    after(syncGLForOrganization(session.user.organizationId).catch(console.error))
     return NextResponse.json(invoice)
   } catch (error: any) {
     console.error("Invoice creation error:", error)

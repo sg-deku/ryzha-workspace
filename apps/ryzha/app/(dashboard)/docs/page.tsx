@@ -319,6 +319,7 @@ const SECTIONS = [
   { id: "r2r", label: "Record-to-Report (R2R)", icon: RefreshCw },
   { id: "fpna", label: "FP&A Module", icon: TrendingUp },
   { id: "agents", label: "AI Agents", icon: Brain },
+  { id: "journal-entries", label: "Journal Entries", icon: BookOpen },
   { id: "integrations", label: "Integrations", icon: Webhook },
   { id: "schema", label: "Data Model", icon: Database },
 ]
@@ -1423,6 +1424,132 @@ export default function DocsPage() {
                         ))}
                       </div>
                     </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </section>
+        )}
+
+        {(activeSection === "journal-entries" || activeSection === "all") && (
+          <section id="journal-entries">
+            <SectionTitle icon={BookOpen} title="Journal Entry System" subtitle="Double-entry bookkeeping — manual GL entries, trial balance, and period-end controls" />
+
+            <div className="space-y-6">
+              <Card>
+                <CardHeader><CardTitle className="text-base">What is a Journal Entry?</CardTitle></CardHeader>
+                <CardContent className="space-y-4">
+                  <p className="text-sm text-muted-foreground">Every financial transaction in Ryzha follows the double-entry principle: every debit has an equal and opposite credit. Journal entries are the mechanism for recording transactions that fall outside the automated agent pipelines — adjustments, accruals, closing entries, and reversals.</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {[
+                      { title: "Regular Entry", badge: "REGULAR", color: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300", desc: "Day-to-day transactions. E.g. purchasing equipment: DR Equipment / CR Cash." },
+                      { title: "Adjusting Entry", badge: "ADJUSTING", color: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300", desc: "Period-end accruals and deferrals. E.g. DR Utilities Expense / CR Utilities Payable for December bill not yet received." },
+                      { title: "Closing Entry", badge: "CLOSING", color: "bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300", desc: "Year-end transfers. DR Revenue / CR Income Summary to clear temporary accounts into Retained Earnings." },
+                      { title: "Reversing Entry", badge: "REVERSING", color: "bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-300", desc: "Automatically reverses a prior adjusting entry at the start of the next period to prevent double-counting." },
+                    ].map((t) => (
+                      <div key={t.title} className="rounded-lg border p-4 space-y-2">
+                        <div className="flex items-center gap-2">
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${t.color}`}>{t.badge}</span>
+                          <span className="font-semibold text-sm">{t.title}</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground">{t.desc}</p>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader><CardTitle className="text-base">The JE → GL Pipeline</CardTitle></CardHeader>
+                <CardContent className="space-y-4">
+                  <p className="text-sm text-muted-foreground">All journal entries flow directly to the General Ledger upon posting. The pipeline ensures complete audit trails and balance integrity.</p>
+                  <div className="space-y-3">
+                    {[
+                      { step: 1, title: "Create Entry (DRAFT)", desc: "Enter date, reference, period, and type. Add debit/credit lines using the CoA-backed account picker. Save as Draft — not yet in GL.", badge: "Draft", badgeVariant: "secondary" as const },
+                      { step: 2, title: "Balance Check", desc: "The system enforces ΣDebits = ΣCredits before allowing posting. The UI shows a live 'Balanced / Off by $X' indicator on each save.", badge: "Validation", badgeVariant: "outline" as const },
+                      { step: 3, title: "Post to GL (POSTED)", desc: "Posting materializes each JE line as a GeneralLedgerEntry record via syncGLForOrganization(). The entry is locked — no edits allowed.", badge: "Posted", badgeVariant: "default" as const },
+                      { step: 4, title: "Trial Balance", desc: "The Trial Balance page aggregates all GL entries by account, groups by type (Assets / Liabilities / Equity / Revenue / Expenses), and verifies ΣDR = ΣCR.", badge: "Reconciliation", badgeVariant: "outline" as const, isLast: true },
+                    ].map((s) => <FlowStep key={s.step} {...s} />)}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Card>
+                  <CardHeader><CardTitle className="text-base">Example: Adjusting Entry (Accrual)</CardTitle></CardHeader>
+                  <CardContent className="space-y-3">
+                    <Badge variant="outline">ADJUSTING · Dec 31</Badge>
+                    <p className="text-sm text-muted-foreground">Accrue December utility expense that will be billed in January. The expense is recognised in the correct period per the matching principle.</p>
+                    <div className="rounded-md border bg-muted/30 p-4 font-mono text-sm space-y-1">
+                      <div className="flex justify-between"><span className="text-green-600 dark:text-green-400">DR Utilities Expense</span><span className="font-semibold">$300.00</span></div>
+                      <div className="flex justify-between pl-6"><span className="text-blue-600 dark:text-blue-400">CR Utilities Payable</span><span className="font-semibold">$300.00</span></div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader><CardTitle className="text-base">Example: Reversing Entry (Feb 1)</CardTitle></CardHeader>
+                  <CardContent className="space-y-3">
+                    <Badge variant="outline">REVERSING · Feb 1</Badge>
+                    <p className="text-sm text-muted-foreground">On the first day of the new period, the December accrual is automatically reversed so that the actual January bill is not double-counted.</p>
+                    <div className="rounded-md border bg-muted/30 p-4 font-mono text-sm space-y-1">
+                      <div className="flex justify-between"><span className="text-green-600 dark:text-green-400">DR Utilities Payable</span><span className="font-semibold">$300.00</span></div>
+                      <div className="flex justify-between pl-6"><span className="text-blue-600 dark:text-blue-400">CR Utilities Expense</span><span className="font-semibold">$300.00</span></div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <Card>
+                <CardHeader><CardTitle className="text-base">Double-Entry Rules (US GAAP)</CardTitle></CardHeader>
+                <CardContent>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b text-xs text-muted-foreground">
+                          <th className="text-left py-2 pr-4 font-semibold">Account Type</th>
+                          <th className="text-left py-2 pr-4 font-semibold">Increases with</th>
+                          <th className="text-left py-2 font-semibold">Decreases with</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y">
+                        {[
+                          { type: "Assets", inc: "Debit (DR)", dec: "Credit (CR)", color: "text-blue-600 dark:text-blue-400" },
+                          { type: "Liabilities", inc: "Credit (CR)", dec: "Debit (DR)", color: "text-orange-600 dark:text-orange-400" },
+                          { type: "Equity", inc: "Credit (CR)", dec: "Debit (DR)", color: "text-purple-600 dark:text-purple-400" },
+                          { type: "Revenue", inc: "Credit (CR)", dec: "Debit (DR)", color: "text-green-600 dark:text-green-400" },
+                          { type: "Expenses", inc: "Debit (DR)", dec: "Credit (CR)", color: "text-red-600 dark:text-red-400" },
+                        ].map((r) => (
+                          <tr key={r.type}>
+                            <td className={`py-2 pr-4 font-semibold ${r.color}`}>{r.type}</td>
+                            <td className="py-2 pr-4 text-muted-foreground">{r.inc}</td>
+                            <td className="py-2 text-muted-foreground">{r.dec}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader><CardTitle className="text-base">GL Sync Sources</CardTitle></CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground mb-4">The General Ledger is populated from multiple sources, all unified through <code className="text-xs bg-muted rounded px-1 py-0.5">syncGLForOrganization()</code>.</p>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {[
+                      { src: "Invoices", desc: "Revenue recognition + Tax Payable + AR" },
+                      { src: "Payments (Stripe)", desc: "Cash, Stripe Clearing, Merchant Fees, FX Fees" },
+                      { src: "Expenses", desc: "Expense debit + Cash credit" },
+                      { src: "Vendor Invoices", desc: "Vendor Expense + Accounts Payable" },
+                      { src: "Journal Entries", desc: "Manual POSTED JEs — any account, any type" },
+                      { src: "Deferred Revenue", desc: "DR Deferred Revenue / CR Service Revenue on schedule release" },
+                    ].map((s) => (
+                      <div key={s.src} className="rounded-lg border p-3">
+                        <p className="font-semibold text-sm">{s.src}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">{s.desc}</p>
+                      </div>
+                    ))}
                   </div>
                 </CardContent>
               </Card>

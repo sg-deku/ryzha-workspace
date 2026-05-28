@@ -3,6 +3,8 @@ import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { NextResponse } from "next/server"
 import { detectAnomalies } from "@/lib/ai/anomaly-detector"
+import { syncGLForOrganization } from "@/lib/reports/general-ledger/sync"
+import { after } from "next/server"
 
 export const dynamic = "force-dynamic";
 
@@ -33,38 +35,8 @@ export async function POST(req: Request) {
       },
     })
 
-    // Run anomaly detection
     await detectAnomalies(expense.id, organizationId)
-
-    await prisma.generalLedgerEntry.createMany({
-      data: [
-        {
-          organizationId,
-          date: new Date(date),
-          accountType: "Expenses",
-          accountName: category ?? "General Expenses",
-          debit: expenseAmount,
-          credit: 0,
-          amount: expenseAmount,
-          description,
-          sourceType: "expense",
-          sourceId: expense.id,
-        },
-        {
-          organizationId,
-          date: new Date(date),
-          accountType: "Liabilities",
-          accountName: "Accounts Payable",
-          debit: 0,
-          credit: expenseAmount,
-          amount: expenseAmount,
-          description,
-          sourceType: "expense",
-          sourceId: expense.id,
-        },
-      ],
-      skipDuplicates: true,
-    })
+    after(syncGLForOrganization(organizationId).catch(console.error))
 
     return NextResponse.json(expense)
   } catch (error) {

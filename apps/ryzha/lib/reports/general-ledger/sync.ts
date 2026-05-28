@@ -3,6 +3,7 @@ import {
   mapExpenseCategoryToAccount,
   mapInvoiceToAccount,
   mapVendorInvoiceToAccount,
+  resolveAccountName,
 } from "./account-mapping"
 
 export async function syncGLForOrganization(organizationId: string) {
@@ -11,6 +12,7 @@ export async function syncGLForOrganization(organizationId: string) {
     syncExpenses(organizationId),
     syncVendorInvoices(organizationId),
     syncTransactions(organizationId),
+    syncJournalEntries(organizationId),
   ])
 }
 
@@ -119,7 +121,10 @@ async function syncExpenses(organizationId: string) {
   })
 
   for (const expense of expenses) {
-    const accountName = mapExpenseCategoryToAccount(expense.category)
+    const accountName = await resolveAccountName(
+      organizationId,
+      mapExpenseCategoryToAccount(expense.category)
+    )
     await upsertGLEntry({
       organizationId,
       sourceType: "Expense",
@@ -131,6 +136,18 @@ async function syncExpenses(organizationId: string) {
       credit: 0,
       amount: expense.amount,
       description: expense.description,
+    })
+    await upsertGLEntry({
+      organizationId,
+      sourceType: "Expense",
+      sourceId: `${expense.id}-cash`,
+      date: expense.date,
+      accountType: "Assets",
+      accountName: await resolveAccountName(organizationId, "Cash"),
+      debit: 0,
+      credit: expense.amount,
+      amount: -expense.amount,
+      description: `Cash paid – ${expense.description}`,
     })
   }
 }
@@ -320,4 +337,40 @@ async function syncTransactions(organizationId: string) {
       })
     }
   }
+}
+
+async function syncJournalEntries(organizationId: string) {
+  const entries = await prisma.journalEntry.findMany({
+    where: { organizationId, status: "POSTED" },
+    include: { lines: true },
+  })
+
+  for (const je of entries) {
+    for (const line of je.lines) {
+      await upsertGLEntry({
+        organizationId,
+        sourceType: "JournalEntry",
+        sourceId: `${je.id}-${line.id}`,
+        date: je.entryDate,
+        accountType: line.accountType,
+        accountName: line.accountName,
+        debit: line.debit,
+        credit: line.credit,
+        amount: line.debit > 0 ? line.debit : -line.credit,
+        description: line.description
+          ? `[${je.reference || je.id.slice(-6)}] ${line.description}`
+          : `[${je.reference || je.id.slice(-6)}] ${je.description}`,
+      })
+    }
+  }
+}
+
+export async function deleteGLEntriesForJournalEntry(journalEntryId: string, organizationId: string) {
+  await prisma.generalLedgerEntry.deleteMany({
+    where: {
+      organizationId,
+      sourceType: "JournalEntry",
+      sourceId: { startsWith: journalEntryId },
+    },
+  })
 }

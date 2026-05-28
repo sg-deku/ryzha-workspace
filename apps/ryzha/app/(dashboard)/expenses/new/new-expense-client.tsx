@@ -32,6 +32,7 @@ export default function NewExpenseClient({ categories }: { categories: string[] 
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...formData,
+          category: formData.category === "uncategorized" ? "" : formData.category,
           amount: Number(formData.amount)
         })
       })
@@ -111,7 +112,7 @@ export default function NewExpenseClient({ categories }: { categories: string[] 
                   <SelectValue placeholder="Select a category" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Uncategorized</SelectItem>
+                  <SelectItem value="uncategorized">Uncategorized</SelectItem>
                   {categories.map((c) => (
                     <SelectItem key={c} value={c}>{c}</SelectItem>
                   ))}

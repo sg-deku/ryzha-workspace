@@ -1,3 +1,5 @@
+import { prisma } from "@/lib/prisma"
+
 export type AccountType = "Revenue" | "Expenses" | "Assets" | "Liabilities" | "Equity"
 
 export interface AccountMapping {
@@ -87,4 +89,30 @@ export function mapVendorInvoiceToAccount(vendorName?: string, description?: str
     return "Professional Services"
   }
   return "Vendor Expense"
+}
+
+const _resolveCache = new Map<string, string>()
+
+export async function resolveAccountName(
+  organizationId: string,
+  defaultName: string
+): Promise<string> {
+  const cacheKey = `${organizationId}:${defaultName}`
+  if (_resolveCache.has(cacheKey)) return _resolveCache.get(cacheKey)!
+  const acct = await prisma.chartOfAccounts.findFirst({
+    where: { organizationId, accountName: defaultName },
+    select: { accountName: true },
+  })
+  const resolved = acct?.accountName ?? defaultName
+  _resolveCache.set(cacheKey, resolved)
+  return resolved
+}
+
+export function clearAccountCache() {
+  _resolveCache.clear()
+}
+
+export function getAccountTypeForName(accountName: string): AccountType {
+  const acct = DEFAULT_CHART_OF_ACCOUNTS.find((a) => a.accountName === accountName)
+  return acct?.accountType ?? "Expenses"
 }

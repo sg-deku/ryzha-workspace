@@ -6,28 +6,46 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
-import { Plus } from "lucide-react"
+import { Plus, BookOpen, TrendingUp } from "lucide-react"
 import { DataPagination } from "@/components/ui/data-pagination"
 import { Suspense } from "react"
+import { JournalEntryActions } from "./journal-entry-actions"
 
 const PAGE_SIZE = 50
 
 export const dynamic = "force-dynamic"
 
+const TYPE_COLORS: Record<string, string> = {
+  REGULAR: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300",
+  ADJUSTING: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300",
+  CLOSING: "bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300",
+  REVERSING: "bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-300",
+}
+
+const STATUS_VARIANTS: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
+  POSTED: "default",
+  DRAFT: "secondary",
+  REVERSED: "outline",
+}
+
 export default async function JournalEntriesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string }>
+  searchParams: Promise<{ page?: string; status?: string; type?: string }>
 }) {
   const session = await getSession()
   if (!session?.user) redirect("/login")
 
-  const { page } = await searchParams
+  const { page, status, type } = await searchParams
   const currentPage = Math.max(1, Number(page) || 1)
 
-  const where = { organizationId: session.user.organizationId }
+  const where = {
+    organizationId: session.user.organizationId,
+    ...(status ? { status } : {}),
+    ...(type ? { type } : {}),
+  }
 
-  const [entries, total] = await Promise.all([
+  const [entries, total, counts] = await Promise.all([
     prisma.journalEntry.findMany({
       where,
       include: { lines: true },
@@ -36,25 +54,83 @@ export default async function JournalEntriesPage({
       skip: (currentPage - 1) * PAGE_SIZE,
     }),
     prisma.journalEntry.count({ where }),
+    prisma.journalEntry.groupBy({
+      by: ["status"],
+      where: { organizationId: session.user.organizationId },
+      _count: true,
+    }),
   ])
 
+  const postedCount = counts.find((c) => c.status === "POSTED")?._count ?? 0
+  const draftCount = counts.find((c) => c.status === "DRAFT")?._count ?? 0
+
   return (
-    <div className="flex-1 space-y-4 p-8 pt-6">
+    <div className="flex-1 space-y-6 p-8 pt-6">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-3xl font-bold tracking-tight">Journal Entries</h2>
-          <p className="text-muted-foreground">Manual double-entry bookkeeping</p>
+          <p className="text-muted-foreground">Manual double-entry bookkeeping — all entries post directly to the General Ledger</p>
         </div>
-        <Button asChild>
-          <Link href="/journal-entries/new">
-            <Plus className="mr-2 h-4 w-4" /> New Entry
-          </Link>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" asChild>
+            <Link href="/trial-balance">
+              <TrendingUp className="mr-2 h-4 w-4" /> Trial Balance
+            </Link>
+          </Button>
+          <Button asChild>
+            <Link href="/journal-entries/new">
+              <Plus className="mr-2 h-4 w-4" /> New Entry
+            </Link>
+          </Button>
+        </div>
+      </div>
+
+      <div className="grid gap-4 grid-cols-3">
+        <Card>
+          <CardContent className="pt-6 flex items-center gap-4">
+            <BookOpen className="h-8 w-8 text-muted-foreground" />
+            <div>
+              <div className="text-2xl font-bold">{postedCount + draftCount}</div>
+              <div className="text-sm text-muted-foreground">Total Entries</div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6 flex items-center gap-4">
+            <div className="h-8 w-8 rounded-full bg-green-100 dark:bg-green-900/40 flex items-center justify-center">
+              <div className="h-3 w-3 rounded-full bg-green-500" />
+            </div>
+            <div>
+              <div className="text-2xl font-bold">{postedCount}</div>
+              <div className="text-sm text-muted-foreground">Posted to GL</div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6 flex items-center gap-4">
+            <div className="h-8 w-8 rounded-full bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center">
+              <div className="h-3 w-3 rounded-full bg-amber-500" />
+            </div>
+            <div>
+              <div className="text-2xl font-bold">{draftCount}</div>
+              <div className="text-sm text-muted-foreground">Drafts</div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between pb-3">
           <CardTitle>All Entries</CardTitle>
+          <div className="flex gap-2 text-sm">
+            <Link href="/journal-entries" className={!status && !type ? "font-semibold underline" : "text-muted-foreground hover:text-foreground"}>All</Link>
+            <Link href="/journal-entries?status=DRAFT" className={status === "DRAFT" ? "font-semibold underline" : "text-muted-foreground hover:text-foreground"}>Drafts</Link>
+            <Link href="/journal-entries?status=POSTED" className={status === "POSTED" ? "font-semibold underline" : "text-muted-foreground hover:text-foreground"}>Posted</Link>
+            <span className="text-muted-foreground">|</span>
+            <Link href="/journal-entries?type=ADJUSTING" className={type === "ADJUSTING" ? "font-semibold underline" : "text-muted-foreground hover:text-foreground"}>Adjusting</Link>
+            <Link href="/journal-entries?type=CLOSING" className={type === "CLOSING" ? "font-semibold underline" : "text-muted-foreground hover:text-foreground"}>Closing</Link>
+            <Link href="/journal-entries?type=REVERSING" className={type === "REVERSING" ? "font-semibold underline" : "text-muted-foreground hover:text-foreground"}>Reversing</Link>
+          </div>
         </CardHeader>
         <CardContent>
           <Table>
@@ -63,9 +139,12 @@ export default async function JournalEntriesPage({
                 <TableHead>Date</TableHead>
                 <TableHead>Reference</TableHead>
                 <TableHead>Description</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Period</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Lines</TableHead>
-                <TableHead className="text-right">Total Debit</TableHead>
+                <TableHead className="text-center">Lines</TableHead>
+                <TableHead className="text-right">Debit Total</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -73,25 +152,34 @@ export default async function JournalEntriesPage({
                 const totalDebit = entry.lines.reduce((s, l) => s + l.debit, 0)
                 return (
                   <TableRow key={entry.id}>
-                    <TableCell>{entry.entryDate.toLocaleDateString()}</TableCell>
+                    <TableCell className="whitespace-nowrap text-sm">{entry.entryDate.toLocaleDateString()}</TableCell>
                     <TableCell className="font-mono text-xs">{entry.reference || "—"}</TableCell>
-                    <TableCell className="max-w-xs truncate">{entry.description}</TableCell>
+                    <TableCell className="max-w-xs truncate text-sm">{entry.description}</TableCell>
                     <TableCell>
-                      <Badge variant={entry.status === "POSTED" ? "default" : "secondary"}>
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${TYPE_COLORS[entry.type] ?? "bg-gray-100 text-gray-700"}`}>
+                        {entry.type}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{entry.period || "—"}</TableCell>
+                    <TableCell>
+                      <Badge variant={STATUS_VARIANTS[entry.status] ?? "outline"}>
                         {entry.status}
                       </Badge>
                     </TableCell>
-                    <TableCell>{entry.lines.length}</TableCell>
-                    <TableCell className="text-right font-semibold">
+                    <TableCell className="text-center text-sm">{entry.lines.length}</TableCell>
+                    <TableCell className="text-right font-mono text-sm">
                       ${totalDebit.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <JournalEntryActions entry={entry} />
                     </TableCell>
                   </TableRow>
                 )
               })}
               {entries.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                    No journal entries yet. Create your first entry.
+                  <TableCell colSpan={9} className="text-center py-12 text-muted-foreground">
+                    No journal entries found. <Link href="/journal-entries/new" className="underline">Create your first entry</Link>.
                   </TableCell>
                 </TableRow>
               )}

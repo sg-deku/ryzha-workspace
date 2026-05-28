@@ -27,7 +27,6 @@ export default function RootLayout({
       <body className="min-h-screen bg-muted/20 font-sans antialiased">
         <Providers>
           {children}
-          <Toaster position="top-right" richColors />
         </Providers>
         <Analytics />
       </body>

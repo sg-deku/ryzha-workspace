@@ -29,6 +29,7 @@ import {
   GitMerge,
   ListTree,
   Book,
+  Scale,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -115,6 +116,12 @@ export function Sidebar() {
             href="/chart-of-accounts"
             icon={ListTree}
             label="Chart of Accounts"
+            collapsed={collapsed}
+          />
+          <SidebarItem
+            href="/trial-balance"
+            icon={Scale}
+            label="Trial Balance"
             collapsed={collapsed}
           />
 
