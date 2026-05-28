@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma"
 import { callLLM } from "@/lib/ai/llm"
 import { parseAIJson } from "@/lib/ai/client"
+import { createSystemJournalEntry } from "@/lib/reports/general-ledger/je-factory"
 
 async function recalculateVendorInvoiceStatus(vendorInvoiceId: string) {
   const invoice = await prisma.vendorInvoice.findUnique({
@@ -82,34 +83,29 @@ export async function runPaymentSchedulerAgent(vendorPaymentId: string, organiza
 
   await prisma.vendorPayment.update({ where: { id: vendorPaymentId }, data: { expenseId: expense.id } })
 
-  await prisma.generalLedgerEntry.create({
-    data: {
-      date: vendorPayment.paymentDate,
-      accountType: "Liabilities",
-      accountName: "Accounts Payable",
-      debit: vendorPayment.amount,
-      credit: 0,
-      amount: vendorPayment.amount,
-      description: `AP payment to ${vendor.name} — ${invoice.invoiceNumber}`,
-      sourceType: "vendor_payment",
-      sourceId: vendorPaymentId,
-      organizationId,
-    },
-  })
-
-  await prisma.generalLedgerEntry.create({
-    data: {
-      date: vendorPayment.paymentDate,
-      accountType: "Assets",
-      accountName: "Cash",
-      debit: 0,
-      credit: vendorPayment.amount,
-      amount: vendorPayment.amount,
-      description: `Cash paid to ${vendor.name} — ${invoice.invoiceNumber}`,
-      sourceType: "vendor_payment",
-      sourceId: vendorPaymentId,
-      organizationId,
-    },
+  await createSystemJournalEntry({
+    organizationId,
+    sourceType: "VendorPayment",
+    sourceId: vendorPaymentId,
+    reference: `VP-${vendorPaymentId.slice(-6)}`,
+    description: `Vendor payment to ${vendor.name} — ${invoice.invoiceNumber}`,
+    entryDate: vendorPayment.paymentDate,
+    lines: [
+      {
+        accountName: "Accounts Payable",
+        accountType: "Liabilities",
+        debit: vendorPayment.amount,
+        credit: 0,
+        description: `AP cleared — ${invoice.invoiceNumber}`,
+      },
+      {
+        accountName: "Cash",
+        accountType: "Assets",
+        debit: 0,
+        credit: vendorPayment.amount,
+        description: `Cash paid to ${vendor.name} — ${invoice.invoiceNumber}`,
+      },
+    ],
   })
 
   await recalculateVendorInvoiceStatus(invoice.id)

@@ -97,36 +97,6 @@ export async function runCreditNoteAgent(creditNoteId: string, organizationId: s
 
   await prisma.creditNote.update({ where: { id: creditNoteId }, data: { transactionId: reversalTx.id } })
 
-  await prisma.generalLedgerEntry.createMany({
-    data: [
-      {
-        date: creditNote.issueDate,
-        accountType: "Revenue",
-        accountName: "Service Revenue",
-        debit: creditNote.amount,
-        credit: 0,
-        amount: creditNote.amount,
-        description: `Revenue reversal — Credit note ${creditNoteId} on Invoice ${invoice.invoiceNumber}`,
-        sourceType: "credit_note",
-        sourceId: `${creditNoteId}-rev`,
-        organizationId,
-      },
-      {
-        date: creditNote.issueDate,
-        accountType: "Assets",
-        accountName: "Accounts Receivable",
-        debit: 0,
-        credit: creditNote.amount,
-        amount: creditNote.amount,
-        description: `AR credit — Credit note ${creditNoteId} on Invoice ${invoice.invoiceNumber}`,
-        sourceType: "credit_note",
-        sourceId: `${creditNoteId}-ar`,
-        organizationId,
-      },
-    ],
-    skipDuplicates: true,
-  })
-
   const statusResult = await recalculateInvoiceStatus(invoice.id)
 
   const needsRefund = !!creditNote.refundMethod

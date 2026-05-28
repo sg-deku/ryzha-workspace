@@ -237,38 +237,7 @@ export async function startP2PWorkflow(vendorInvoiceId: string) {
         },
       })
 
-      // Run anomaly detection on the newly created expense
       await detectAnomalies(expense.id, orgId)
-      
-      await prisma.generalLedgerEntry.createMany({
-        skipDuplicates: true,
-        data: [
-          {
-            date: new Date(),
-            accountType: "Expenses",
-            accountName: category,
-            debit: updated.amount,
-            credit: 0,
-            amount: updated.amount,
-            description: `AP Voucher — ${updated.invoiceNumber} from ${invoice.vendor?.name ?? "unknown"}`,
-            sourceType: "vendor_invoice",
-            sourceId: vendorInvoiceId,
-            organizationId: orgId,
-          },
-          {
-            date: new Date(),
-            accountType: "Liabilities",
-            accountName: "Accounts Payable",
-            debit: 0,
-            credit: updated.amount,
-            amount: -updated.amount,
-            description: `AP Voucher — ${updated.invoiceNumber} from ${invoice.vendor?.name ?? "unknown"}`,
-            sourceType: "vendor_invoice",
-            sourceId: vendorInvoiceId,
-            organizationId: orgId,
-          }
-        ]
-      })
 
       await appendP2PLog("Orchestrator", `Expense record created | Expense ID: ${expense.id} | Amount: $${expense.amount} | Category: ${expense.category}`)
       await appendP2PLog("Orchestrator", `P2P Workflow COMPLETED | Invoice #${updated.invoiceNumber} from ${invoice.vendor?.name ?? "vendor"} approved and expensed.`)
