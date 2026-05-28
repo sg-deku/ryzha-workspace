@@ -3,6 +3,7 @@ import { authOptions } from "@/lib/auth"
 import { NextResponse, after } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { startAgentWorkflow, startP2PWorkflow, startO2CWorkflow } from "@/lib/agents/orchestrator"
+import { createSystemJournalEntry } from "@/lib/reports/general-ledger/je-factory"
 
 export const dynamic = "force-dynamic"
 
@@ -51,7 +52,23 @@ export async function POST(req: Request) {
         },
       })
       executionId = transaction.id
-      after(startAgentWorkflow(executionId).catch(console.error))
+      after(
+        Promise.all([
+          createSystemJournalEntry({
+            organizationId: orgId,
+            sourceType: "StripePayment",
+            sourceId: intentId,
+            reference: `SIM-${intentId.slice(-8)}`,
+            description: `Simulated Stripe payment – ${customerEmail}`,
+            entryDate: new Date(),
+            lines: [
+              { accountName: "Stripe Clearing Account", accountType: "Assets", debit: amount, credit: 0 },
+              { accountName: "Subscription Revenue", accountType: "Revenue", debit: 0, credit: amount },
+            ],
+          }),
+          startAgentWorkflow(executionId),
+        ]).catch(console.error)
+      )
 
     } else if (type === "p2p") {
       const amount = Number(payload?.amount) || 500
@@ -92,7 +109,23 @@ export async function POST(req: Request) {
         },
       })
       executionId = invoice.id
-      after(startP2PWorkflow(executionId).catch(console.error))
+      after(
+        Promise.all([
+          createSystemJournalEntry({
+            organizationId: orgId,
+            sourceType: "VendorInvoice",
+            sourceId: invoice.id,
+            reference: invoice.invoiceNumber,
+            description: `Vendor invoice – ${vendor.name}`,
+            entryDate: new Date(),
+            lines: [
+              { accountName: "Operating Expenses", accountType: "Expenses", debit: amount, credit: 0, description: `${invoice.invoiceNumber} – ${vendor.name}` },
+              { accountName: "Accounts Payable", accountType: "Liabilities", debit: 0, credit: amount, description: `Amount owed to ${vendor.name}` },
+            ],
+          }),
+          startP2PWorkflow(executionId),
+        ]).catch(console.error)
+      )
 
     } else if (type === "o2c") {
       const amount = Number(payload?.amount) || 1500
