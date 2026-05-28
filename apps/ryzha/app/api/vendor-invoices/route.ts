@@ -5,6 +5,7 @@ import { NextResponse } from "next/server"
 import { after } from "next/server"
 import { createSystemJournalEntry } from "@/lib/reports/general-ledger/je-factory"
 import { mapVendorInvoiceToAccount } from "@/lib/reports/general-ledger/account-mapping"
+import { startP2PWorkflow } from "@/lib/agents/orchestrator"
 
 export const dynamic = "force-dynamic";
 
@@ -93,15 +94,18 @@ export async function POST(req: Request) {
     })
 
     after(
-      createSystemJournalEntry({
-        organizationId: orgId,
-        sourceType: "VendorInvoice",
-        sourceId: vendorInvoice.id,
-        reference: invoiceNumber,
-        description: `Vendor invoice – ${vendorName}`,
-        entryDate: new Date(),
-        lines: jeLines,
-      }).catch(console.error)
+      Promise.all([
+        createSystemJournalEntry({
+          organizationId: orgId,
+          sourceType: "VendorInvoice",
+          sourceId: vendorInvoice.id,
+          reference: invoiceNumber,
+          description: `Vendor invoice – ${vendorName}`,
+          entryDate: new Date(),
+          lines: jeLines,
+        }),
+        startP2PWorkflow(vendorInvoice.id),
+      ]).catch(console.error)
     )
 
     return NextResponse.json(vendorInvoice)
