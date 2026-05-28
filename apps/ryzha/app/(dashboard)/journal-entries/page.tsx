@@ -119,7 +119,7 @@ export default async function JournalEntriesPage({
             <TableHeader>
               <TableRow>
                 <TableHead>Date</TableHead>
-                <TableHead>Reference</TableHead>
+                <TableHead>External ID</TableHead>
                 <TableHead>Description</TableHead>
                 <TableHead>Source</TableHead>
                 <TableHead>Type</TableHead>

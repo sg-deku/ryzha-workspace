@@ -75,7 +75,12 @@ export function PageShell({
       </div>
 
       {kpis && kpis.length > 0 && (
-        <div className={cn("grid gap-4", `grid-cols-${Math.min(kpis.length, 4)}`)}>
+        <div className={cn("grid gap-4", {
+          "grid-cols-1": kpis.length === 1,
+          "grid-cols-2": kpis.length === 2,
+          "grid-cols-3": kpis.length === 3,
+          "grid-cols-4": kpis.length >= 4,
+        })}>
           {kpis.map((kpi) => (
             <div
               key={kpi.label}
