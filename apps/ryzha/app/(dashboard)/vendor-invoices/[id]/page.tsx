@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { notFound, redirect } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, Pencil } from "lucide-react"
+import { ArrowLeft, Pencil, Plus, FileMinus } from "lucide-react"
 import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -26,6 +26,7 @@ export default async function VendorInvoiceDetailsPage({ params }: { params: Pro
       purchaseOrder: true,
       lineItems: true,
       vendorPayments: { orderBy: { paymentDate: "desc" } },
+      debitMemos: { orderBy: { issueDate: "desc" } },
     }
   })
 
@@ -102,6 +103,59 @@ export default async function VendorInvoiceDetailsPage({ params }: { params: Pro
                   <p className={outstanding > 0 ? "font-bold text-destructive" : "font-bold text-green-600"}>${outstanding.toFixed(2)}</p>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-3">
+              <CardTitle>Debit Memos</CardTitle>
+              <Button size="sm" variant="outline" asChild>
+                <Link href={`/vendor-debit-memos/new?vendorId=${invoice.vendorId}&vendorInvoiceId=${invoice.id}`}>
+                  <Plus className="mr-1 h-3 w-3" /> New Debit Memo
+                </Link>
+              </Button>
+            </CardHeader>
+            <CardContent className="p-0">
+              {invoice.debitMemos.length === 0 ? (
+                <p className="text-sm text-muted-foreground px-6 py-4">No debit memos on this invoice.</p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="pl-6">Memo #</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Reason</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right pr-6">Amount</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {invoice.debitMemos.map((dm) => (
+                      <TableRow key={dm.id}>
+                        <TableCell className="pl-6 font-mono text-sm font-semibold">
+                          <Link href="/vendor-debit-memos" className="text-primary hover:underline flex items-center gap-1">
+                            <FileMinus className="h-3 w-3" /> {dm.memoNumber}
+                          </Link>
+                        </TableCell>
+                        <TableCell className="text-xs">
+                          <Badge variant={dm.debitType === "cash_refund" ? "default" : "secondary"}>
+                            {dm.debitType === "cash_refund" ? "Cash Refund" : "Vendor Credit"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">{dm.reason}</TableCell>
+                        <TableCell>
+                          <Badge variant={dm.status === "VOID" ? "outline" : dm.status === "OPEN" ? "secondary" : "default"}>
+                            {dm.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right font-mono text-green-700 dark:text-green-400 font-semibold pr-6">
+                          ${dm.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
 

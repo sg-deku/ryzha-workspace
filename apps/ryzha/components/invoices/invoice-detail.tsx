@@ -149,6 +149,7 @@ export function InvoiceDetail({ invoice: initialInvoice }: { invoice: Invoice })
     amount: "",
     reason: "",
     reasonCategory: "other",
+    refundType: "credit_memo",
     issueDate: new Date().toISOString().slice(0, 10),
     refundMethod: "none",
     notes: "",
@@ -266,7 +267,7 @@ export function InvoiceDetail({ invoice: initialInvoice }: { invoice: Invoice })
         setInvoice((prev) => ({ ...prev, creditNotes: [cn, ...prev.creditNotes] }))
         toast.success("Credit note issued — reversal pipeline triggered")
         setCreditNoteDialogOpen(false)
-        setCreditNoteForm({ amount: "", reason: "", reasonCategory: "other", issueDate: new Date().toISOString().slice(0, 10), refundMethod: "none", notes: "" })
+        setCreditNoteForm({ amount: "", reason: "", reasonCategory: "other", refundType: "credit_memo", issueDate: new Date().toISOString().slice(0, 10), refundMethod: "none", notes: "" })
       } else {
         const err = await res.json()
         toast.error(err.error || "Failed to issue credit note")
@@ -703,16 +704,20 @@ export function InvoiceDetail({ invoice: initialInvoice }: { invoice: Invoice })
               />
             </div>
             <div className="space-y-1.5">
-              <Label>Refund Method <span className="text-muted-foreground text-xs">(leave blank for credit on account)</span></Label>
-              <Select value={creditNoteForm.refundMethod} onValueChange={(v) => setCreditNoteForm((f) => ({ ...f, refundMethod: v }))}>
-                <SelectTrigger><SelectValue placeholder="Credit on account (no cash refund)" /></SelectTrigger>
+              <Label>Refund Type</Label>
+              <Select value={creditNoteForm.refundType} onValueChange={(v) => setCreditNoteForm((f) => ({ ...f, refundType: v }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">Credit on account</SelectItem>
-                  {PAYMENT_METHODS.map((m) => (
-                    <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
-                  ))}
+                  <SelectItem value="credit_memo">Credit Memo — Apply to account / future invoices</SelectItem>
+                  <SelectItem value="cash_refund">Cash Refund — Bank transfer / cheque</SelectItem>
+                  <SelectItem value="stripe_refund">Stripe Refund — Reverse via Stripe</SelectItem>
                 </SelectContent>
               </Select>
+              <p className="text-xs text-muted-foreground">
+                {creditNoteForm.refundType === "credit_memo" && "GL: DR Service Revenue / CR Accounts Receivable"}
+                {creditNoteForm.refundType === "cash_refund" && "GL: DR Service Revenue / CR Cash"}
+                {creditNoteForm.refundType === "stripe_refund" && "GL: DR Service Revenue / CR Stripe Clearing Account"}
+              </p>
             </div>
           </div>
           <DialogFooter>

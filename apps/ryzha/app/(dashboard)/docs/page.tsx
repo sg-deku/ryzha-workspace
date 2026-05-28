@@ -125,11 +125,11 @@ const DB_SCHEMA: DbEntity[] = [
                     children: [],
                   },
                   {
-                    name: "CreditNote", cardinality: "1:N", desc: "Revenue reversal — posts DR Revenue / CR AR",
+                    name: "CreditNote", cardinality: "1:N", desc: "Revenue reversal — GL routed by refundType: credit_memo | cash_refund | stripe_refund",
                     dotColor: "bg-purple-500", borderColor: "border-purple-200 dark:border-purple-800", bgColor: "bg-purple-50/50 dark:bg-purple-950/20", textColor: "text-purple-700 dark:text-purple-400",
                     fields: [
                       { name: "amount", type: "Float" }, { name: "reason", type: "String" },
-                      { name: "reasonCategory", type: "String" }, { name: "refundMethod", type: "String?" },
+                      { name: "reasonCategory", type: "String" }, { name: "refundType", type: "String" }, { name: "refundMethod", type: "String?" },
                       { name: "transactionId", type: "String?", fk: true }, { name: "invoiceId", type: "String", fk: true },
                     ],
                     children: [],
@@ -218,7 +218,20 @@ const DB_SCHEMA: DbEntity[] = [
               { name: "dueDate", type: "DateTime" },
               { name: "vendorId", type: "String", fk: true }, { name: "purchaseOrderId", type: "String?", fk: true },
             ],
-            children: [],
+            children: [
+              {
+                name: "VendorDebitMemo", cardinality: "1:N", desc: "Vendor credit or cash refund — reduces AP or records cash in",
+                dotColor: "bg-teal-500", borderColor: "border-teal-200 dark:border-teal-800", bgColor: "bg-teal-50/50 dark:bg-teal-950/20", textColor: "text-teal-700 dark:text-teal-400",
+                fields: [
+                  { name: "memoNumber", type: "String" }, { name: "amount", type: "Float" },
+                  { name: "debitType", type: "String", note: "vendor_credit | cash_refund" },
+                  { name: "reasonCategory", type: "String", note: "overcharge | defective_goods | ..." },
+                  { name: "status", type: "String", note: "OPEN | APPLIED | PAID | VOID" },
+                  { name: "vendorId", type: "String", fk: true }, { name: "vendorInvoiceId", type: "String?", fk: true },
+                ],
+                children: [],
+              },
+            ],
           },
         ],
       },
@@ -892,9 +905,9 @@ export default function DocsPage() {
                       {
                         name: "Credit Note",
                         file: "o2c/credit-note.ts",
-                        trigger: "Manual issue or refund event",
-                        actions: ["Creates CreditNote linked to original Invoice", "Posts reversal GL: DR Service Revenue / CR AR", "Partially or fully reduces invoice balance", "Updates Invoice.status → REFUNDED / PARTIAL"],
-                        output: "CreditNote + reversal GL entries",
+                        trigger: "Manual issue or Stripe charge.refunded event",
+                        actions: ["Creates CreditNote with refundType: credit_memo | cash_refund | stripe_refund", "Routes GL based on refundType and invoice payment status", "Credit Memo: DR Service Revenue / CR AR (unpaid)", "Cash Refund: DR Service Revenue / CR Cash (invoice paid)", "Stripe Refund: DR Service Revenue / CR Stripe Clearing Account", "AI agent determines accounting treatment under ASC 606"],
+                        output: "CreditNote + correctly-routed reversal GL entry",
                       },
                       {
                         name: "Customer Validation",
@@ -1523,11 +1536,15 @@ export default function DocsPage() {
                           { event: "Invoice created", src: "Invoice", lines: "DR Accounts Receivable / CR Service Revenue (per line) / CR Tax Payable (if tax > 0)" },
                           { event: "Stripe payment received", src: "StripePayment", lines: "DR Stripe Clearing / DR Merchant Fee Exp / DR FX Exp (if intl) / CR AR or CR Subscription Revenue" },
                           { event: "Stripe payout to bank", src: "StripePayout", lines: "DR Cash / CR Stripe Clearing Account" },
-                          { event: "Stripe refund", src: "Refund", lines: "DR Service Revenue / CR Accounts Receivable" },
+                          { event: "Stripe refund (webhook)", src: "Refund", lines: "DR Service Revenue / CR Stripe Clearing Account" },
                           { event: "Expense recorded", src: "Expense", lines: "DR [Expense Category Account] / CR Cash" },
                           { event: "Vendor invoice received", src: "VendorInvoice", lines: "DR [Vendor Expense per line] / CR Accounts Payable" },
                           { event: "Vendor invoice paid", src: "VendorPayment", lines: "DR Accounts Payable / CR Cash" },
-                          { event: "Credit note issued", src: "CreditNote", lines: "DR Service Revenue / CR Accounts Receivable" },
+                          { event: "Credit note — Credit Memo", src: "CreditNote", lines: "DR Service Revenue / CR Accounts Receivable (invoice unpaid)" },
+                          { event: "Credit note — Cash Refund", src: "CreditNote", lines: "DR Service Revenue / CR Cash (invoice already paid)" },
+                          { event: "Credit note — Stripe Refund", src: "CreditNote", lines: "DR Service Revenue / CR Stripe Clearing Account" },
+                          { event: "Vendor Debit Memo — Vendor Credit", src: "VendorDebitMemo", lines: "DR Accounts Payable / CR Operating Expenses" },
+                          { event: "Vendor Debit Memo — Cash Refund", src: "VendorDebitMemo", lines: "DR Cash / CR Operating Expenses" },
                           { event: "Deferred revenue released", src: "DeferredRelease", lines: "DR Deferred Revenue / CR Subscription Revenue (ADJUSTING type)" },
                         ].map((r) => (
                           <tr key={r.src}>

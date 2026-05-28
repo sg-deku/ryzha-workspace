@@ -8,6 +8,28 @@ import { mapVendorInvoiceToAccount } from "@/lib/reports/general-ledger/account-
 
 export const dynamic = "force-dynamic";
 
+export async function GET(req: Request) {
+  const session = await getServerSession(authOptions)
+  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+
+  const { searchParams } = new URL(req.url)
+  const vendorId = searchParams.get("vendorId")
+  const status = searchParams.get("status")
+
+  const invoices = await prisma.vendorInvoice.findMany({
+    where: {
+      organizationId: session.user.organizationId,
+      ...(vendorId ? { vendorId } : {}),
+      ...(status ? { status } : {}),
+    },
+    select: { id: true, invoiceNumber: true, amount: true, status: true, dueDate: true },
+    orderBy: { createdAt: "desc" },
+    take: 100,
+  })
+
+  return NextResponse.json(invoices)
+}
+
 export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions)

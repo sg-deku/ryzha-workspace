@@ -29,6 +29,7 @@ function getSourceLink(sourceType: string | null, sourceId: string | null): stri
     case "Invoice": return `/invoices/${sourceId}`
     case "Expense": return `/expenses/${sourceId}`
     case "VendorInvoice": return `/vendor-invoices/${sourceId}`
+    case "VendorDebitMemo": return `/vendor-debit-memos`
     case "StripePayment":
     case "StripePayout":
     case "Refund": return `/transactions`

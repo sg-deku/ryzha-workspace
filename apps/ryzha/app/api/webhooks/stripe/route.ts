@@ -323,11 +323,11 @@ export async function POST(req: Request) {
                     description: `Revenue reversed – ${invoice.invoiceNumber}`,
                   },
                   {
-                    accountName: "Accounts Receivable",
+                    accountName: "Stripe Clearing Account",
                     accountType: "Assets",
                     debit: 0,
                     credit: refundAmount,
-                    description: `AR credit – ${invoice.invoiceNumber}`,
+                    description: `Stripe refund settlement – ${invoice.invoiceNumber}`,
                   },
                 ],
               }).catch(console.error)

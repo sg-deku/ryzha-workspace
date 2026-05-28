@@ -23,6 +23,7 @@ import {
   Landmark,
   Banknote,
   FileX,
+  FileMinus,
   BookOpen,
   Zap,
   BookMarked,
@@ -196,6 +197,12 @@ export function Sidebar() {
             href="/expenses"
             icon={CreditCard}
             label="Expenses"
+            collapsed={collapsed}
+          />
+          <SidebarItem
+            href="/vendor-debit-memos"
+            icon={FileMinus}
+            label="Debit Memos"
             collapsed={collapsed}
           />
 
