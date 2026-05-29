@@ -92,6 +92,7 @@ export async function POST(req: Request) {
 
     let stripeFee = 0
     let fxFee = 0
+    let reconciliationDiff = 0
     let stripeNet = amount / 100
     let stripeChargeId: string | undefined
     let chargeCurrency: string = currency
@@ -121,12 +122,11 @@ export async function POST(req: Request) {
 
           const amountRounded = Math.round((amount / 100) * 100) / 100
           const accountedFor = Math.round((stripeNet + stripeFee + fxFee) * 100) / 100
-          const residual = Math.round((amountRounded - accountedFor) * 100) / 100
-          if (residual > 0.01) {
+          reconciliationDiff = Math.round((amountRounded - accountedFor) * 100) / 100
+          if (reconciliationDiff > 0.01) {
             console.warn(
-              `[stripe webhook] JE residual $${residual} on ${id} — stripeNet(${stripeNet}) + stripeFee(${stripeFee}) + fxFee(${fxFee}) != amount(${amountRounded}). Absorbing into bank fees.`
+              `[stripe webhook] balance transaction gap $${reconciliationDiff} on ${id} — balanceTx.amount($${accountedFor}) != payment_intent.amount($${amountRounded}). Posting to Stripe Reconciliation Difference.`
             )
-            stripeFee = Math.round((stripeFee + residual) * 100) / 100
           }
         }
       } catch (e) {
@@ -211,6 +211,16 @@ export async function POST(req: Request) {
         debit: fxFee,
         credit: 0,
         description: `Stripe FX fee – ${id}`,
+      })
+    }
+
+    if (reconciliationDiff > 0.01) {
+      jeLines.push({
+        accountName: "Stripe Reconciliation Difference",
+        accountType: "Expenses",
+        debit: reconciliationDiff,
+        credit: 0,
+        description: `Balance tx gap – ${id} (investigate: balanceTx.amount != payment_intent.amount)`,
       })
     }
 

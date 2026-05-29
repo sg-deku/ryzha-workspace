@@ -31,6 +31,7 @@ export const DEFAULT_CHART_OF_ACCOUNTS: AccountMapping[] = [
   { accountName: "Retained Earnings", accountType: "Equity" },
   { accountName: "Merchant Processing Fees", accountType: "Expenses" },
   { accountName: "Foreign Exchange Expense", accountType: "Expenses" },
+  { accountName: "Stripe Reconciliation Difference", accountType: "Expenses" },
 ]
 
 const EXPENSE_CATEGORY_MAP: Record<string, string> = {
