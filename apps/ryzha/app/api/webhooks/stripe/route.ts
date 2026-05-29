@@ -8,6 +8,22 @@ import { createSystemJournalEntry } from "@/lib/reports/general-ledger/je-factor
 
 export const dynamic = "force-dynamic"
 
+async function resolveStripeAccounts(organizationId: string) {
+  const accounts = await prisma.chartOfAccounts.findMany({
+    where: {
+      organizationId,
+      categoryMatch: { in: ["stripe_clearing", "bank_fees", "accounts_receivable"] },
+    },
+    select: { categoryMatch: true, accountName: true },
+  })
+  const byCategory = Object.fromEntries(accounts.map((a) => [a.categoryMatch!, a.accountName]))
+  return {
+    stripeClearing: byCategory["stripe_clearing"] ?? "Stripe Clearing Account",
+    bankFees: byCategory["bank_fees"] ?? "Bank Fees",
+    accountsReceivable: byCategory["accounts_receivable"] ?? "Accounts Receivable",
+  }
+}
+
 export async function POST(req: Request) {
   const url = new URL(req.url)
   const queryOrgId = url.searchParams.get("orgId")
@@ -78,22 +94,40 @@ export async function POST(req: Request) {
     let fxFee = 0
     let stripeNet = amount / 100
     let stripeChargeId: string | undefined
+    let chargeCurrency: string = currency
 
     if (latest_charge) {
       try {
         const charge = await stripe.charges.retrieve(latest_charge as string)
         stripeChargeId = charge.id
+        chargeCurrency = charge.currency ?? currency
         if (charge.balance_transaction) {
           const balanceTx = await stripe.balanceTransactions.retrieve(charge.balance_transaction as string, {
             expand: ["fee_details"]
           })
-          stripeFee = balanceTx.fee / 100
-          if (balanceTx.fee_details) {
+          const totalFee = balanceTx.fee / 100
+          stripeNet = balanceTx.net / 100
+
+          const isForeignCurrency = chargeCurrency.toLowerCase() !== (balanceTx.currency ?? "usd").toLowerCase()
+
+          if (isForeignCurrency && balanceTx.fee_details && balanceTx.fee_details.length > 0) {
             fxFee = balanceTx.fee_details
               .filter((f) => f.type === "currency_conversion")
               .reduce((s, f) => s + f.amount, 0) / 100
+            stripeFee = Math.round((totalFee - fxFee) * 100) / 100
+          } else {
+            stripeFee = totalFee
           }
-          stripeNet = balanceTx.net / 100
+
+          const amountRounded = Math.round((amount / 100) * 100) / 100
+          const accountedFor = Math.round((stripeNet + stripeFee + fxFee) * 100) / 100
+          const residual = Math.round((amountRounded - accountedFor) * 100) / 100
+          if (residual > 0.01) {
+            console.warn(
+              `[stripe webhook] JE residual $${residual} on ${id} — stripeNet(${stripeNet}) + stripeFee(${stripeFee}) + fxFee(${fxFee}) != amount(${amountRounded}). Absorbing into bank fees.`
+            )
+            stripeFee = Math.round((stripeFee + residual) * 100) / 100
+          }
         }
       } catch (e) {
         console.error("[stripe webhook] Failed to fetch charge details:", e)
@@ -149,10 +183,11 @@ export async function POST(req: Request) {
     })
 
     const paymentDate = new Date(paymentIntent.created * 1000)
+    const accounts = await resolveStripeAccounts(orgId)
     const jeLines: Array<{ accountName: string; accountType: string; debit: number; credit: number; description?: string }> = []
 
     jeLines.push({
-      accountName: "Stripe Clearing Account",
+      accountName: accounts.stripeClearing,
       accountType: "Assets",
       debit: stripeNet,
       credit: 0,
@@ -161,7 +196,7 @@ export async function POST(req: Request) {
 
     if (stripeFee > 0) {
       jeLines.push({
-        accountName: "Merchant Processing Fees",
+        accountName: accounts.bankFees,
         accountType: "Expenses",
         debit: stripeFee,
         credit: 0,
@@ -181,7 +216,7 @@ export async function POST(req: Request) {
 
     if (matchedInvoice) {
       jeLines.push({
-        accountName: "Accounts Receivable",
+        accountName: accounts.accountsReceivable,
         accountType: "Assets",
         debit: 0,
         credit: amountInDollars,
