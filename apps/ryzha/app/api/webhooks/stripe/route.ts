@@ -125,22 +125,26 @@ export async function POST(req: Request) {
 
           const isForeignCurrency = chargeCurrency.toLowerCase() !== (balanceTx.currency ?? "usd").toLowerCase()
 
-          if (isForeignCurrency && balanceTx.fee_details && balanceTx.fee_details.length > 0) {
-            fxFee = balanceTx.fee_details
-              .filter((f) => f.type === "currency_conversion")
-              .reduce((s, f) => s + f.amount, 0) / 100
-            stripeFee = Math.round((totalFee - fxFee) * 100) / 100
+          if (isForeignCurrency) {
+            // Balance transaction amounts are in settlement currency (e.g. EUR) but payment_intent.amount
+            // is in the charge currency (e.g. USD). Convert proportionally using the implicit rate
+            // that Stripe has already applied: rate = paymentIntentAmount / balanceTxAmount.
+            // This expresses stripeNet in USD without needing an external rate feed.
+            // stripeFee is computed as the remainder so the JE always balances to the cent.
+            const netFraction = balanceTx.net / balanceTx.amount
+            stripeNet = Math.round(netFraction * amount) / 100
+            stripeFee = Math.round((amount / 100 - stripeNet) * 100) / 100
+            fxFee = 0
           } else {
             stripeFee = totalFee
-          }
-
-          const amountRounded = Math.round((amount / 100) * 100) / 100
-          const accountedFor = Math.round((stripeNet + stripeFee + fxFee) * 100) / 100
-          reconciliationDiff = Math.round((amountRounded - accountedFor) * 100) / 100
-          if (reconciliationDiff > 0.01) {
-            console.warn(
-              `[stripe webhook] balance transaction gap $${reconciliationDiff} on ${id} — isForeignCurrency:${isForeignCurrency} balanceTx.amount(${balanceTx.amount}) != payment_intent.amount(${amount}). Gap posted to Stripe Reconciliation Difference.`
-            )
+            const amountRounded = Math.round((amount / 100) * 100) / 100
+            const accountedFor = Math.round((stripeNet + stripeFee) * 100) / 100
+            reconciliationDiff = Math.round((amountRounded - accountedFor) * 100) / 100
+            if (reconciliationDiff > 0.01) {
+              console.warn(
+                `[stripe webhook] domestic balance transaction gap $${reconciliationDiff} on ${id} — balanceTx.amount(${balanceTx.amount}) != payment_intent.amount(${amount}). Gap posted to Stripe Reconciliation Difference.`
+              )
+            }
           }
         }
       } catch (e) {
