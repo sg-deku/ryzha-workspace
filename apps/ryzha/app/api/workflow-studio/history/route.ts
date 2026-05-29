@@ -30,25 +30,32 @@ export async function GET() {
     take: 20
   });
 
+  function mapWorkflowStatus(workflowStatus: string | null): string {
+    if (workflowStatus === "completed") return "COMPLETED"
+    if (workflowStatus === "error") return "ERROR"
+    if (workflowStatus === "running") return "RUNNING"
+    return "PENDING"
+  }
+
   const history = [
     ...transactions.map(t => ({
       id: t.id,
       type: "stripe",
       startedAt: t.createdAt.toISOString(),
-      status: t.workflowStatus === "completed" ? "COMPLETED" : t.workflowStatus === "error" ? "ERROR" : "RUNNING"
+      status: mapWorkflowStatus(t.workflowStatus),
     })),
     ...vendorInvoices.map(v => ({
       id: v.id,
       type: "p2p",
       startedAt: v.createdAt.toISOString(),
-      status: v.status === "MATCHED" || v.status === "PAID" ? "COMPLETED" : "PENDING"
+      status: mapWorkflowStatus(v.workflowStatus),
     })),
     ...salesOrders.map(s => ({
       id: s.id,
       type: "o2c",
       startedAt: s.createdAt.toISOString(),
-      status: s.status === "PAID" ? "COMPLETED" : "PENDING"
-    }))
+      status: mapWorkflowStatus(s.workflowStatus),
+    })),
   ];
 
   // Sort by startedAt desc
