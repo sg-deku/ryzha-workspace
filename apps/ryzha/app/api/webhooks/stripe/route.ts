@@ -109,6 +109,20 @@ export async function POST(req: Request) {
           const totalFee = balanceTx.fee / 100
           stripeNet = balanceTx.net / 100
 
+          console.log(`[stripe webhook] balanceTx debug for ${id}:`, {
+            balanceTxId: balanceTx.id,
+            balanceTxType: balanceTx.type,
+            balanceTxStatus: balanceTx.status,
+            balanceTxCurrency: balanceTx.currency,
+            chargeCurrency,
+            paymentIntentCurrency: currency,
+            balanceTxAmount: balanceTx.amount,
+            balanceTxFee: balanceTx.fee,
+            balanceTxNet: balanceTx.net,
+            paymentIntentAmount: amount,
+            feeDetails: balanceTx.fee_details?.map(f => ({ type: f.type, amount: f.amount, currency: f.currency })) ?? [],
+          })
+
           const isForeignCurrency = chargeCurrency.toLowerCase() !== (balanceTx.currency ?? "usd").toLowerCase()
 
           if (isForeignCurrency && balanceTx.fee_details && balanceTx.fee_details.length > 0) {
@@ -125,7 +139,7 @@ export async function POST(req: Request) {
           reconciliationDiff = Math.round((amountRounded - accountedFor) * 100) / 100
           if (reconciliationDiff > 0.01) {
             console.warn(
-              `[stripe webhook] balance transaction gap $${reconciliationDiff} on ${id} — balanceTx.amount($${accountedFor}) != payment_intent.amount($${amountRounded}). Posting to Stripe Reconciliation Difference.`
+              `[stripe webhook] balance transaction gap $${reconciliationDiff} on ${id} — isForeignCurrency:${isForeignCurrency} balanceTx.amount(${balanceTx.amount}) != payment_intent.amount(${amount}). Gap posted to Stripe Reconciliation Difference.`
             )
           }
         }
