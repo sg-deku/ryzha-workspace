@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
 import { sendSignupThankYouEmail } from "@/lib/email"
+import { seedDefaultChartOfAccounts } from "@/lib/default-chart-of-accounts"
 
 export const dynamic = "force-dynamic";
 
@@ -40,6 +41,8 @@ export async function POST(req: Request) {
           deferredRevenueRules: ["annual", "yearly", "subscription"],
         }
       })
+
+      await seedDefaultChartOfAccounts(organization.id, tx)
 
       // 2. Ensure default permissions exist (or at least the ones we need)
       // For MVP, we'll just use names. In a real app, you might seed these.

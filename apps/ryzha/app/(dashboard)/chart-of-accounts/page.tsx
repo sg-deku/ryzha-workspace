@@ -6,8 +6,9 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Plus, Pencil, Trash2 } from "lucide-react"
+import { Plus, Pencil, Sparkles } from "lucide-react"
 import { CoaDeleteButton } from "./coa-delete-button"
+import { CoaSeedButton } from "./coa-seed-button"
 
 export const dynamic = "force-dynamic"
 
@@ -57,20 +58,30 @@ export default async function ChartOfAccountsPage() {
             {accounts.length} account{accounts.length !== 1 ? "s" : ""} across {allTypes.length} type{allTypes.length !== 1 ? "s" : ""}
           </p>
         </div>
-        <Button asChild>
-          <Link href="/chart-of-accounts/new">
-            <Plus className="mr-2 h-4 w-4" /> New Account
-          </Link>
-        </Button>
+        <div className="flex items-center gap-2">
+          <CoaSeedButton />
+          <Button asChild>
+            <Link href="/chart-of-accounts/new">
+              <Plus className="mr-2 h-4 w-4" /> New Account
+            </Link>
+          </Button>
+        </div>
       </div>
 
       {allTypes.length === 0 && (
         <Card>
-          <CardContent className="flex flex-col items-center justify-center py-16 gap-3">
-            <p className="text-muted-foreground">No accounts yet.</p>
-            <Button asChild variant="outline">
-              <Link href="/chart-of-accounts/new">Add your first account</Link>
-            </Button>
+          <CardContent className="flex flex-col items-center justify-center py-16 gap-4">
+            <Sparkles className="h-10 w-10 text-muted-foreground/40" />
+            <div className="text-center space-y-1">
+              <p className="font-medium">No accounts yet</p>
+              <p className="text-sm text-muted-foreground">Seed the standard chart of accounts or add one manually.</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <CoaSeedButton />
+              <Button asChild variant="outline">
+                <Link href="/chart-of-accounts/new">Add manually</Link>
+              </Button>
+            </div>
           </CardContent>
         </Card>
       )}
