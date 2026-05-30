@@ -39,9 +39,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { vendorId, purchaseOrderId, invoiceNumber, lineItems } = await req.json()
+    const { vendorId, purchaseOrderId, invoiceNumber: clientInvoiceNumber, lineItems } = await req.json()
 
-    if (!vendorId || !invoiceNumber || !lineItems || lineItems.length === 0) {
+    if (!vendorId || !lineItems || lineItems.length === 0) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
 
@@ -51,6 +51,8 @@ export async function POST(req: Request) {
       prisma.vendor.findUnique({ where: { id: vendorId }, select: { name: true } }),
       getNextEntityNumber(session.user.organizationId, "VINV"),
     ])
+
+    const invoiceNumber = clientInvoiceNumber || internalNumber
 
     const vendorInvoice = await prisma.vendorInvoice.create({
       data: {
