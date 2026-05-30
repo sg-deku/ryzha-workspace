@@ -354,6 +354,20 @@ type ReleaseNote = {
 
 const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "v0.9.8",
+    date: "May 30, 2026",
+    title: "Bank Statement Reconciliation — AI-Powered Import & Matching",
+    summary: "Full bank statement reconciliation flow: import any CSV bank statement, run AI matching against open vendor payments (P2P) and customer invoice payments (O2C), auto-confirm high-confidence matches, and review medium-confidence suggestions in one click. The /bank-reconciliation page is now fully operational.",
+    changes: [
+      { type: "feat", text: "CSV Bank Statement Import — POST /api/bank-reconciliation/import. Auto-detects column headers across common bank CSV formats (Date, Description, Amount, Reference, Balance, Counterparty). Deduplicates by date+amount+description to prevent re-importing the same row. Accepts optional closing balance to store against the organization for reconciliation verification." },
+      { type: "feat", text: "AI Reconciliation Agent (lib/agents/bank/ai-reconciliation.ts) — rule-based scoring on amount (±2% tolerance), date proximity (±14 days), and description keyword overlap for both P2P debits (bank debit ↔ VendorPayment) and O2C credits (bank credit ↔ Payment). Score ≥92 → auto_confirm. Score 60–92 → review. AI LLM adjustment layer applied for medium-confidence matches." },
+      { type: "feat", text: "POST /api/bank-reconciliation/match — runs the AI agent across all unmatched bank transactions for the organization. Auto-confirms high-confidence matches directly (sets matchStatus=auto_matched). Returns the full match list for UI review." },
+      { type: "feat", text: "POST /api/bank-reconciliation/confirm — manual confirmation endpoint. Accepts bankTransactionId + matchType + matchedId. Sets matchStatus=matched and reconciledAt timestamp. Validates both sides belong to the same organization." },
+      { type: "feat", text: "reconciledAt field added to BankTransaction schema — records when a transaction was matched. Pushed to both local and Vercel/Prisma Accelerate databases." },
+      { type: "improve", text: "Bank Reconciliation page overhauled — 4 KPI cards (Unmatched, Auto Matched, Manually Matched, % Reconciled). Import panel with CSV upload and optional closing balance. AI Matching panel with Run AI Matching button, result summary (total / auto-confirmed / awaiting review). Review queue showing pending matches with confidence badge, match type (P2P/O2C), amount variance, and Confirm/Dismiss buttons. Transaction table now includes Reconciled date column." },
+    ]
+  },
+  {
     version: "v0.9.7",
     date: "May 30, 2026",
     title: "P2P Payment Pipeline — 6-Agent Agentic Flow for Vendor Payments",
@@ -651,7 +665,7 @@ export default function DocsPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
               {[
                 { icon: Layers, title: "3 Core ERP Processes", desc: "Order-to-Cash (O2C), Procure-to-Pay (P2P), and Record-to-Report (R2R) are the backbone of all financial operations." },
-                { icon: Brain, title: "6 AI Agents", desc: "O2C, P2P, R2R, O&M, FP&A, and Auditor — each agent owns a complete ERP process. O2C and P2P each contain 9 specialized sub-agents that run in sequence." },
+                { icon: Brain, title: "7 AI Agents", desc: "O2C, P2P, Bank Reconciliation, R2R, O&M, FP&A, and Auditor — each agent owns a complete ERP process. O2C and P2P contain specialized sub-agents running in sequence." },
                 { icon: GitBranch, title: "Orchestrator", desc: "A central workflow engine coordinates agent pipelines, ensuring proper sequencing and error isolation for every transaction." },
               ].map((item) => (
                 <Card key={item.title}>
@@ -1221,6 +1235,63 @@ export default function DocsPage() {
                           {sub.actions.map((a, i) => (
                             <li key={i} className="flex items-start gap-1.5 text-xs text-muted-foreground">
                               <CheckCircle2 className="h-3 w-3 text-orange-500 mt-0.5 flex-shrink-0" />
+                              {a}
+                            </li>
+                          ))}
+                        </ul>
+                        <p className="text-xs"><span className="font-medium text-foreground/70">Output:</span> <span className="text-muted-foreground">{sub.output}</span></p>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Bank Reconciliation Agent */}
+              <Card className="border-emerald-200 dark:border-emerald-800">
+                <CardHeader>
+                  <div className="flex items-center gap-3">
+                    <div className="h-4 w-4 rounded-full bg-emerald-500 flex-shrink-0" />
+                    <div>
+                      <CardTitle className="text-base">Bank Reconciliation Agent</CardTitle>
+                      <CardDescription>Matches bank statement transactions to vendor payments and customer receipts — auto-confirms high-confidence matches, queues medium-confidence for review</CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {[
+                      {
+                        name: "CSV Import",
+                        trigger: "User uploads bank statement",
+                        actions: ["Auto-detects column headers (Date, Description, Amount, Reference, Balance, Counterparty)", "Parses quoted CSV fields correctly", "Deduplicates by date + amount + description prefix", "Stores optional closing balance on Organization", "Creates BankTransaction rows with source=csv_import"],
+                        output: "BankTransaction records with matchStatus=unmatched",
+                      },
+                      {
+                        name: "AI Matching Engine",
+                        trigger: "POST /api/bank-reconciliation/match",
+                        actions: ["Scores each unmatched bank debit against open VendorPayments (P2P)", "Scores each unmatched bank credit against open Payments (O2C)", "3-factor scoring: amount tolerance ±2%, date proximity ±14 days, description keyword overlap", "AI LLM adjustment layer for medium-confidence matches (score 60–92)", "Score ≥92 → auto_confirm; 60–92 → review queue; <60 → skipped"],
+                        output: "Match candidates with confidence, type, and suggested action",
+                      },
+                      {
+                        name: "Auto-Confirm",
+                        trigger: "Score ≥92 from AI Matching Engine",
+                        actions: ["Sets BankTransaction.matchStatus = auto_matched", "Links matchedVendorPaymentId or matchedPaymentId FK", "Sets reconciledAt timestamp", "No user action required — fully automated"],
+                        output: "BankTransaction reconciled without review",
+                      },
+                      {
+                        name: "Manual Confirm",
+                        trigger: "User clicks Confirm in review queue",
+                        actions: ["POST /api/bank-reconciliation/confirm", "Validates both bank transaction and matched record belong to org", "Sets matchStatus = matched and reconciledAt", "Supports both vendor_payment and invoice_payment match types"],
+                        output: "BankTransaction.matchStatus = matched",
+                      },
+                    ].map((sub) => (
+                      <div key={sub.name} className="rounded-md border bg-muted/20 p-3 space-y-2">
+                        <p className="text-sm font-semibold">{sub.name}</p>
+                        <p className="text-xs text-muted-foreground"><span className="font-medium text-foreground/70">Trigger:</span> {sub.trigger}</p>
+                        <ul className="space-y-0.5">
+                          {sub.actions.map((a, i) => (
+                            <li key={i} className="flex items-start gap-1.5 text-xs text-muted-foreground">
+                              <CheckCircle2 className="h-3 w-3 text-emerald-500 mt-0.5 flex-shrink-0" />
                               {a}
                             </li>
                           ))}
