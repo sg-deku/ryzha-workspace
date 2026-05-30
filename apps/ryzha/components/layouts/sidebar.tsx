@@ -170,6 +170,13 @@ export function Sidebar() {
             label="Contracts"
             collapsed={collapsed}
           />
+
+          {/* MASTER DATA */}
+          <div className="pt-4 pb-2 px-3">
+            {!collapsed && <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Master Data</span>}
+            {collapsed && <div className="border-t mx-2" />}
+          </div>
+
           <SidebarItem
             href="/products"
             icon={Package}

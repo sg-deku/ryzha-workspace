@@ -131,10 +131,10 @@ export default function ProductForm({ initialData }: { initialData?: any }) {
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label>Default GL Account Code</Label>
-              <Select value={accountCode} onValueChange={setAccountCode}>
+              <Select value={accountCode || "__none__"} onValueChange={v => setAccountCode(v === "__none__" ? "" : v)}>
                 <SelectTrigger><SelectValue placeholder="Select or leave blank" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">— None —</SelectItem>
+                  <SelectItem value="__none__">— None —</SelectItem>
                   {COA_SUGGESTIONS.map(c => (
                     <SelectItem key={c.code} value={c.code}>{c.label}</SelectItem>
                   ))}
