@@ -268,7 +268,7 @@ export default async function TransactionsPage() {
                           </span>
                         </td>
                         <td className="py-3 pr-1">
-                          {!isOutbound && <TransactionListRerunButton transactionId={tx.id} />}
+                          <TransactionListRerunButton transactionId={tx.id} />
                         </td>
                         <td className="py-3">
                           <Link href={`/transactions/${tx.id}`} className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors">

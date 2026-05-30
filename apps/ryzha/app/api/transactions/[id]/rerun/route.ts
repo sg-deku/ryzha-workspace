@@ -2,7 +2,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { NextResponse, after } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { startAgentWorkflow } from "@/lib/agents/orchestrator"
+import { startAgentWorkflow, startVendorPaymentWorkflow } from "@/lib/agents/orchestrator"
 
 export const dynamic = "force-dynamic"
 
@@ -26,7 +26,15 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     },
   })
 
-  after(startAgentWorkflow(id).catch(console.error))
+  const isP2P = (transaction as any).transactionType === "VendorPayment"
+
+  if (isP2P) {
+    const vendorPaymentId = (transaction as any).vendorPaymentId
+    if (!vendorPaymentId) return NextResponse.json({ error: "No vendor payment linked to this transaction" }, { status: 400 })
+    after(startVendorPaymentWorkflow(vendorPaymentId, session.user.organizationId, id).catch(console.error))
+  } else {
+    after(startAgentWorkflow(id).catch(console.error))
+  }
 
   return NextResponse.json({ success: true, transactionId: id })
 }

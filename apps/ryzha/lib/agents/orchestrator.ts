@@ -543,7 +543,7 @@ export async function startCreditNoteWorkflow(creditNoteId: string, organization
   }
 }
 
-export async function startVendorPaymentWorkflow(vendorPaymentId: string, organizationId: string) {
+export async function startVendorPaymentWorkflow(vendorPaymentId: string, organizationId: string, existingTransactionId?: string) {
   const vendorPayment = await prisma.vendorPayment.findUnique({
     where: { id: vendorPaymentId },
     include: {
@@ -557,27 +557,36 @@ export async function startVendorPaymentWorkflow(vendorPaymentId: string, organi
   const invoice = vendorPayment.vendorInvoice
   const vendorName = invoice.vendor.name
 
-  const txNumber = await getNextEntityNumber(organizationId, "TXN")
-  const transaction = await prisma.transaction.create({
-    data: {
-      transactionNumber: txNumber,
-      direction: "outbound",
-      transactionType: "VendorPayment",
-      amount: vendorPayment.amount,
-      currency: "usd",
-      description: `Payment to ${vendorName} — ${invoice.invoiceNumber}`,
-      vendorPaymentId,
-      vendorName,
-      paymentMethod: vendorPayment.method,
-      clearingStatus: "pending",
-      workflowStatus: "pending",
-      auditStatus: "pending",
-      agentLogs: [],
-      organizationId,
-    },
-  })
+  let transactionId: string
 
-  const transactionId = transaction.id
+  if (existingTransactionId) {
+    transactionId = existingTransactionId
+    await prisma.transaction.update({
+      where: { id: existingTransactionId },
+      data: { workflowStatus: "pending", auditStatus: "pending", agentLogs: [] },
+    })
+  } else {
+    const txNumber = await getNextEntityNumber(organizationId, "TXN")
+    const transaction = await prisma.transaction.create({
+      data: {
+        transactionNumber: txNumber,
+        direction: "outbound",
+        transactionType: "VendorPayment",
+        amount: vendorPayment.amount,
+        currency: "usd",
+        description: `Payment to ${vendorName} — ${invoice.invoiceNumber}`,
+        vendorPaymentId,
+        vendorName,
+        paymentMethod: vendorPayment.method,
+        clearingStatus: "pending",
+        workflowStatus: "pending",
+        auditStatus: "pending",
+        agentLogs: [],
+        organizationId,
+      },
+    })
+    transactionId = transaction.id
+  }
   const logs: any[] = []
 
   const log = async (agent: string, message: string) => {
@@ -593,7 +602,7 @@ export async function startVendorPaymentWorkflow(vendorPaymentId: string, organi
   try {
     await prisma.transaction.update({ where: { id: transactionId }, data: { workflowStatus: "running" } })
 
-    await log("Orchestrator", `Payment Pipeline started | ${txNumber} | Vendor: ${vendorName} | Invoice: ${invoice.invoiceNumber} | Amount: $${vendorPayment.amount} | Method: ${vendorPayment.method}`)
+    await log("Orchestrator", `Payment Pipeline started | ${transactionId} | Vendor: ${vendorName} | Invoice: ${invoice.invoiceNumber} | Amount: $${vendorPayment.amount} | Method: ${vendorPayment.method}`)
 
     // Step 1: Three-Way Match
     await log("Orchestrator", `[1/6] Three-Way Match — verifying invoice status and PO alignment...`)
