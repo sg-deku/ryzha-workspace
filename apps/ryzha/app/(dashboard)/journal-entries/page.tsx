@@ -143,7 +143,7 @@ export default async function JournalEntriesPage({
                     </TableCell>
                     <TableCell className="font-mono text-xs">
                       <Link href={`/journal-entries/${entry.id}`} className="block hover:underline text-primary">
-                        {entry.reference || "—"}
+                        {entry.reference || `JE-${entry.id.slice(-8)}`}
                       </Link>
                     </TableCell>
                     <TableCell className="max-w-xs truncate text-sm">{entry.description}</TableCell>

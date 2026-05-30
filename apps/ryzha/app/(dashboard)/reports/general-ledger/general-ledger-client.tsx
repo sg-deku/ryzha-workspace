@@ -428,30 +428,59 @@ export function GeneralLedgerClient() {
           <CardHeader>
             <CardTitle className="text-base">Account Detail Breakdown</CardTitle>
           </CardHeader>
-          <CardContent className="max-h-64 overflow-y-auto">
-            {Object.entries(groupedSummary).map(([type, rows]) => (
-              <div key={type} className="mb-4">
-                <div className="flex items-center gap-2 mb-1">
-                  <span
-                    className="inline-block h-2 w-2 rounded-full"
-                    style={{ backgroundColor: ACCOUNT_TYPE_COLORS[type] ?? "#6b7280" }}
-                  />
-                  <span className="text-xs font-bold uppercase tracking-wide text-muted-foreground">{type}</span>
-                </div>
-                {rows.map((row) => (
-                  <button
-                    key={row.accountName}
-                    className="flex w-full items-center justify-between py-1 px-2 rounded hover:bg-muted/50 transition-colors text-sm cursor-pointer"
-                    onClick={() => setDrilldownAccount(row.accountName)}
-                  >
-                    <span className="truncate text-left">{row.accountName}</span>
-                    <span className={`font-mono text-xs ml-2 ${row.amount < 0 ? "text-red-500" : "text-green-600"}`}>
-                      {row.amount < 0 ? "-" : ""}{formatCurrency(row.amount)}
+          <CardContent className="max-h-72 overflow-y-auto">
+            {Object.entries(groupedSummary).map(([type, rows]) => {
+              const groupDR = rows.reduce((s, r) => s + r.debit, 0)
+              const groupCR = rows.reduce((s, r) => s + r.credit, 0)
+              return (
+                <div key={type} className="mb-4">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span
+                      className="inline-block h-2 w-2 rounded-full"
+                      style={{ backgroundColor: ACCOUNT_TYPE_COLORS[type] ?? "#6b7280" }}
+                    />
+                    <span className="text-xs font-bold uppercase tracking-wide text-muted-foreground">{type}</span>
+                  </div>
+                  {rows.map((row) => (
+                    <button
+                      key={row.accountName}
+                      className="flex w-full items-center justify-between py-1 px-2 rounded hover:bg-muted/50 transition-colors text-sm cursor-pointer"
+                      onClick={() => setDrilldownAccount(row.accountName)}
+                    >
+                      <span className="truncate text-left">{row.accountName}</span>
+                      <span className="flex gap-3 ml-2 shrink-0">
+                        <span className="font-mono text-xs text-green-700 dark:text-green-400 w-20 text-right">
+                          {row.debit > 0 ? formatCurrency(row.debit) : "—"}
+                        </span>
+                        <span className="font-mono text-xs text-blue-700 dark:text-blue-400 w-20 text-right">
+                          {row.credit > 0 ? formatCurrency(row.credit) : "—"}
+                        </span>
+                      </span>
+                    </button>
+                  ))}
+                  <div className="flex items-center justify-between py-1 px-2 border-t mt-1 text-xs font-semibold text-muted-foreground">
+                    <span>{type} Total</span>
+                    <span className="flex gap-3 shrink-0">
+                      <span className="font-mono w-20 text-right text-green-700 dark:text-green-400">{formatCurrency(groupDR)}</span>
+                      <span className="font-mono w-20 text-right text-blue-700 dark:text-blue-400">{formatCurrency(groupCR)}</span>
                     </span>
-                  </button>
-                ))}
+                  </div>
+                </div>
+              )
+            })}
+            {summary.length > 0 && (
+              <div className="flex items-center justify-between py-2 px-2 border-t-2 mt-1 text-xs font-bold">
+                <span>Grand Total</span>
+                <span className="flex gap-3 shrink-0">
+                  <span className="font-mono w-20 text-right text-green-700 dark:text-green-400">
+                    {formatCurrency(summary.reduce((s, r) => s + r.debit, 0))}
+                  </span>
+                  <span className="font-mono w-20 text-right text-blue-700 dark:text-blue-400">
+                    {formatCurrency(summary.reduce((s, r) => s + r.credit, 0))}
+                  </span>
+                </span>
               </div>
-            ))}
+            )}
             {summary.length === 0 && !loading && (
               <p className="text-sm text-muted-foreground text-center py-8">No data for selected filters</p>
             )}

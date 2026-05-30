@@ -54,6 +54,15 @@ export default async function JournalEntryDetailPage({
 
   if (!entry) notFound()
 
+  const accountCodes = await prisma.chartOfAccounts.findMany({
+    where: {
+      organizationId: session.user.organizationId,
+      accountName: { in: entry.lines.map((l) => l.accountName) },
+    },
+    select: { accountName: true, accountCode: true },
+  })
+  const codeByName = Object.fromEntries(accountCodes.map((a) => [a.accountName, a.accountCode]))
+
   const totalDebit = entry.lines.reduce((s, l) => s + l.debit, 0)
   const totalCredit = entry.lines.reduce((s, l) => s + l.credit, 0)
   const isBalanced = Math.abs(totalDebit - totalCredit) < 0.01
@@ -166,6 +175,7 @@ export default async function JournalEntryDetailPage({
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b bg-muted/30 text-xs text-muted-foreground">
+                  <th className="text-left py-2.5 px-4 font-semibold w-20">Acct #</th>
                   <th className="text-left py-2.5 px-4 font-semibold">Account Type</th>
                   <th className="text-left py-2.5 px-4 font-semibold">Account Name</th>
                   <th className="text-left py-2.5 px-4 font-semibold">Description</th>
@@ -176,6 +186,9 @@ export default async function JournalEntryDetailPage({
               <tbody className="divide-y">
                 {entry.lines.map((line) => (
                   <tr key={line.id} className="hover:bg-muted/20">
+                    <td className="py-3 px-4 font-mono text-xs text-muted-foreground">
+                      {codeByName[line.accountName] ?? "—"}
+                    </td>
                     <td className="py-3 px-4">
                       <span className="text-xs text-muted-foreground">{line.accountType}</span>
                     </td>
@@ -204,7 +217,7 @@ export default async function JournalEntryDetailPage({
               </tbody>
               <tfoot>
                 <tr className="border-t-2 bg-muted/30 font-semibold text-sm">
-                  <td className="py-3 px-4" colSpan={3}>Total</td>
+                  <td className="py-3 px-4" colSpan={4}>Total</td>
                   <td className="py-3 px-4 text-right font-mono text-green-700 dark:text-green-400">
                     ${totalDebit.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                   </td>
