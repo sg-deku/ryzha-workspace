@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { TransactionRerunButton } from "./rerun-button"
-import { CheckCircle2, AlertCircle, Clock, TrendingUp, ShieldCheck, BarChart3, Workflow, Circle, AlertTriangle } from "lucide-react"
+import { CheckCircle2, AlertCircle, Clock, TrendingUp, ShieldCheck, BarChart3, Workflow, Circle, AlertTriangle, GitMerge, ScanSearch, FileCheck, Landmark } from "lucide-react"
 
 interface LogEntry {
   agent: string
@@ -59,6 +59,48 @@ const AGENT_META: Record<string, {
     accent: "border-l-emerald-500",
     iconBg: "bg-emerald-50 dark:bg-emerald-950/40",
     iconText: "text-emerald-600 dark:text-emerald-400",
+  },
+  "Three-Way Match": {
+    label: "Three-Way Match",
+    icon: GitMerge,
+    accent: "border-l-cyan-500",
+    iconBg: "bg-cyan-50 dark:bg-cyan-950/40",
+    iconText: "text-cyan-600 dark:text-cyan-400",
+  },
+  "Duplicate Check": {
+    label: "Duplicate Detection",
+    icon: ScanSearch,
+    accent: "border-l-rose-500",
+    iconBg: "bg-rose-50 dark:bg-rose-950/40",
+    iconText: "text-rose-600 dark:text-rose-400",
+  },
+  "AP Policy": {
+    label: "AP Policy",
+    icon: FileCheck,
+    accent: "border-l-indigo-500",
+    iconBg: "bg-indigo-50 dark:bg-indigo-950/40",
+    iconText: "text-indigo-600 dark:text-indigo-400",
+  },
+  "Payment Scheduler": {
+    label: "Payment Scheduler",
+    icon: BarChart3,
+    accent: "border-l-blue-500",
+    iconBg: "bg-blue-50 dark:bg-blue-950/40",
+    iconText: "text-blue-600 dark:text-blue-400",
+  },
+  "Treasury": {
+    label: "Treasury",
+    icon: Landmark,
+    accent: "border-l-emerald-500",
+    iconBg: "bg-emerald-50 dark:bg-emerald-950/40",
+    iconText: "text-emerald-600 dark:text-emerald-400",
+  },
+  "P2P Auditor": {
+    label: "P2P Audit & Compliance",
+    icon: ShieldCheck,
+    accent: "border-l-amber-500",
+    iconBg: "bg-amber-50 dark:bg-amber-950/40",
+    iconText: "text-amber-600 dark:text-amber-400",
   },
 }
 
@@ -323,11 +365,7 @@ export default async function TransactionPage({ params }: { params: Promise<{ id
               })}
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">
-              {isOutbound
-                ? "P2P vendor payments are processed directly by the Payment Scheduler. No AI agent pipeline steps."
-                : "No processing steps available for this transaction."}
-            </p>
+            <p className="text-sm text-muted-foreground">No processing steps available for this transaction.</p>
           )}
         </CardContent>
       </Card>

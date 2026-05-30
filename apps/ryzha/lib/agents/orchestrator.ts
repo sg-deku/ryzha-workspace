@@ -11,9 +11,15 @@ import { runCashApplicationAgent } from "./o2c/cash-application"
 import { runCreditNoteAgent } from "./o2c/credit-note"
 import { runInvoiceGenerationAgent } from "./o2c/invoice-generation"
 import { runPaymentSchedulerAgent } from "./p2p/payment-scheduler"
+import { runThreeWayMatchAgent } from "./p2p/three-way-match"
+import { runDuplicatePaymentAgent } from "./p2p/duplicate-payment"
+import { runAPPolicyAgent } from "./p2p/ap-policy"
+import { runP2PTreasuryAgent } from "./p2p/p2p-treasury"
+import { runP2PAuditorAgent } from "./p2p/p2p-auditor"
 import { sendVoiceSummary, sendSMSNotification, createNotification } from "@/lib/notifications"
 import { publishEvent } from "@/lib/events"
 import { detectAnomalies } from "@/lib/ai/anomaly-detector"
+import { getNextEntityNumber } from "@/lib/sequences"
 
 export async function startAgentWorkflow(transactionId: string) {
   const transaction = await prisma.transaction.findUnique({ where: { id: transactionId } })
@@ -538,34 +544,185 @@ export async function startCreditNoteWorkflow(creditNoteId: string, organization
 }
 
 export async function startVendorPaymentWorkflow(vendorPaymentId: string, organizationId: string) {
+  const vendorPayment = await prisma.vendorPayment.findUnique({
+    where: { id: vendorPaymentId },
+    include: {
+      vendorInvoice: {
+        include: { vendor: { select: { name: true } } },
+      },
+    },
+  })
+  if (!vendorPayment) return
+
+  const invoice = vendorPayment.vendorInvoice
+  const vendorName = invoice.vendor.name
+
+  const txNumber = await getNextEntityNumber(organizationId, "TXN")
+  const transaction = await prisma.transaction.create({
+    data: {
+      transactionNumber: txNumber,
+      direction: "outbound",
+      transactionType: "VendorPayment",
+      amount: vendorPayment.amount,
+      currency: "usd",
+      description: `Payment to ${vendorName} — ${invoice.invoiceNumber}`,
+      vendorPaymentId,
+      vendorName,
+      paymentMethod: vendorPayment.method,
+      clearingStatus: "pending",
+      workflowStatus: "pending",
+      auditStatus: "pending",
+      agentLogs: [],
+      organizationId,
+    },
+  })
+
+  const transactionId = transaction.id
+  const logs: any[] = []
+
+  const log = async (agent: string, message: string) => {
+    const entry = { agent, message, timestamp: new Date().toISOString() }
+    logs.push(entry)
+    await prisma.transaction.update({
+      where: { id: transactionId },
+      data: { agentLogs: [...logs] },
+    })
+    await publishEvent(`org:${organizationId}:events`, { type: "agent_log", transactionId, ...entry })
+  }
+
   try {
-    const result = await runPaymentSchedulerAgent(vendorPaymentId, organizationId)
-    if (result.status === "ERROR") {
+    await prisma.transaction.update({ where: { id: transactionId }, data: { workflowStatus: "running" } })
+
+    await log("Orchestrator", `Payment Pipeline started | ${txNumber} | Vendor: ${vendorName} | Invoice: ${invoice.invoiceNumber} | Amount: $${vendorPayment.amount} | Method: ${vendorPayment.method}`)
+
+    // Step 1: Three-Way Match
+    await log("Orchestrator", `[1/6] Three-Way Match — verifying invoice status and PO alignment...`)
+    const matchResult = await runThreeWayMatchAgent(vendorPaymentId)
+    await log("Three-Way Match", matchResult.message)
+
+    if (matchResult.status === "FAIL") {
+      await log("Orchestrator", `Pipeline STOPPED | Three-way match failed. Payment cannot proceed without resolving invoice discrepancy.`)
+      await prisma.transaction.update({
+        where: { id: transactionId },
+        data: { workflowStatus: "error", auditStatus: "flagged", agentLogs: [...logs] },
+      })
       await createNotification({
         organizationId,
         type: "ERROR",
-        title: "Vendor Payment Failed",
-        message: result.message,
-        link: `/vendor-invoices`,
+        title: "Vendor Payment Blocked — Match Failed",
+        message: matchResult.message,
+        link: `/transactions/${transactionId}`,
       })
-    } else {
+      return
+    }
+
+    // Step 2: Duplicate Payment
+    await log("Orchestrator", `[2/6] Duplicate Payment Detection — checking for identical payments within ±7 days...`)
+    const dupResult = await runDuplicatePaymentAgent(vendorPaymentId, organizationId)
+    await log("Duplicate Check", dupResult.message)
+
+    if (dupResult.status === "DUPLICATE") {
+      await log("Orchestrator", `Pipeline STOPPED | Duplicate payment detected. Manual review required before proceeding.`)
+      await prisma.transaction.update({
+        where: { id: transactionId },
+        data: { workflowStatus: "error", auditStatus: "flagged", agentLogs: [...logs] },
+      })
       await createNotification({
         organizationId,
-        type: "SUCCESS",
-        title: "Vendor Payment Recorded",
-        message: result.message,
-        link: `/vendor-invoices`,
+        type: "ERROR",
+        title: "Duplicate Payment Detected",
+        message: dupResult.message,
+        link: `/transactions/${transactionId}`,
       })
+      return
     }
-    return result
+
+    // Step 3: AP Policy
+    await log("Orchestrator", `[3/6] AP Policy — checking payment terms, early discount eligibility, and expense classification...`)
+    const policyResult = await runAPPolicyAgent(vendorPaymentId, organizationId)
+    await log("AP Policy", policyResult.message)
+
+    // Step 4: Payment Scheduler (expense creation + invoice status)
+    await log("Orchestrator", `[4/6] Payment Scheduler — recording expense and updating invoice status...`)
+    const schedResult = await runPaymentSchedulerAgent(vendorPaymentId, organizationId, policyResult.suggestedCategory)
+    if (schedResult.status === "ERROR") {
+      await log("Payment Scheduler", `FAILED — ${schedResult.message}`)
+      throw new Error(schedResult.message)
+    }
+    await log("Payment Scheduler", schedResult.message)
+
+    // Step 5: Treasury
+    await log("Orchestrator", `[5/6] Treasury — computing cash impact and AP balance...`)
+    const treasuryResult = await runP2PTreasuryAgent(vendorPaymentId, organizationId)
+    await log("Treasury", treasuryResult.message)
+
+    // Step 6: P2P Auditor
+    await log("Orchestrator", `[6/6] P2P Auditor — SOX compliance review and final risk assessment...`)
+    const auditResult = await runP2PAuditorAgent(vendorPaymentId, organizationId, {
+      threeWayMatchStatus: matchResult.status,
+      duplicateStatus: dupResult.status,
+      apPolicyStatus: policyResult.status,
+      apPolicyNotes: policyResult.aiNotes,
+    })
+    await log("P2P Auditor", auditResult.message)
+
+    const finalAuditStatus = auditResult.auditStatus
+    const finalWorkflowStatus = finalAuditStatus === "flagged" ? "error" : "completed"
+
+    if (finalAuditStatus === "flagged") {
+      await log("Orchestrator", `Pipeline FLAGGED | Audit risk score: ${auditResult.riskScore}/100. Transaction held for review. Expense and JE have been created — only audit clearance is pending.`)
+      await prisma.transaction.update({
+        where: { id: transactionId },
+        data: { workflowStatus: "error", auditStatus: "flagged", agentLogs: [...logs] },
+      })
+      await createNotification({
+        organizationId,
+        type: "WARNING",
+        title: "Vendor Payment Flagged for Review",
+        message: `Payment to ${vendorName} flagged by P2P Auditor (risk: ${auditResult.riskScore}/100). ${auditResult.findings[0] ?? ""}`,
+        link: `/transactions/${transactionId}`,
+      })
+      return
+    }
+
+    await log("Orchestrator", `Pipeline COMPLETED | $${vendorPayment.amount} paid to ${vendorName}. Invoice ${invoice.invoiceNumber}: ${schedResult.invoiceStatus}. Audit: verified.`)
+    await prisma.transaction.update({
+      where: { id: transactionId },
+      data: {
+        workflowStatus: "completed",
+        auditStatus: "verified",
+        clearingStatus: "paid_out",
+        agentLogs: [...logs],
+      },
+    })
+
+    await publishEvent(`org:${organizationId}:events`, {
+      type: "p2p_payment_completed",
+      transactionId,
+      vendorPaymentId,
+      timestamp: new Date(),
+    })
+
+    await createNotification({
+      organizationId,
+      type: "SUCCESS",
+      title: "Vendor Payment Processed",
+      message: `$${vendorPayment.amount} to ${vendorName} — ${invoice.invoiceNumber}. ${schedResult.isPartial ? "Partially paid." : "Fully paid."} Audit: verified.`,
+      link: `/transactions/${transactionId}`,
+    })
   } catch (error: any) {
-    console.error("Vendor payment workflow error:", error)
+    console.error("[P2P Payment Pipeline] error:", error)
+    await log("Orchestrator", `Pipeline ERROR | ${error.message}`)
+    await prisma.transaction.update({
+      where: { id: transactionId },
+      data: { workflowStatus: "error", agentLogs: [...logs] },
+    }).catch(() => {})
     await createNotification({
       organizationId,
       type: "ERROR",
-      title: "Vendor Payment Error",
-      message: error.message,
-      link: `/vendor-invoices`,
+      title: "Vendor Payment Pipeline Failed",
+      message: `Error processing payment to ${vendorName}: ${error.message}`,
+      link: `/transactions/${transactionId}`,
     }).catch(() => {})
   }
 }

@@ -354,6 +354,22 @@ type ReleaseNote = {
 
 const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "v0.9.7",
+    date: "May 30, 2026",
+    title: "P2P Payment Pipeline — 6-Agent Agentic Flow for Vendor Payments",
+    summary: "Every vendor payment now runs through a full 6-agent pipeline: Three-Way Match → Duplicate Detection → AP Policy → Payment Scheduler → Treasury → P2P Auditor. Payments that fail match or duplicate checks are stopped before expense creation. Suspicious payments are flagged with a risk score. All steps are logged to the Transaction record and visible in the Processing Steps view.",
+    changes: [
+      { type: "feat", text: "Three-Way Match Agent — verifies invoice is in a payable state (RECEIVED/MATCHED/APPROVED/PARTIALLY_PAID) and checks PO alignment. FAIL stops the pipeline before any expense is created. WARN (no PO, or amount variance) is noted but does not block." },
+      { type: "feat", text: "Duplicate Payment Agent — SHA-256 hash of vendor+invoice+amount+method+date. Scans for identical payments within a ±7-day window. DUPLICATE stops the pipeline and flags the Transaction." },
+      { type: "feat", text: "AP Policy Agent — AI-powered expense category classification (10 categories). Checks payment terms compliance, days until due, early 2/10 Net-30 discount eligibility. WARN for overdue payments. Suggested category is passed directly to Payment Scheduler." },
+      { type: "feat", text: "Payment Scheduler Agent refactored — now accepts suggestedCategory from AP Policy instead of re-running AI classification. Stripped redundant JE creation (JE is created by the payments API route) and Transaction creation (now done by orchestrator). Focused on: Expense record creation and invoice status recalculation only." },
+      { type: "feat", text: "P2P Treasury Agent — computes cash impact (payment amount out), total outstanding AP balance across all open invoices, and 30-day expense total. Logged to Transaction for cash position visibility." },
+      { type: "feat", text: "P2P Auditor Agent — AI SOX compliance review. Rule-based risk scoring: new vendor (<30 days), high-value first payment (>$10k), no PO, prior agent failures. AI adjusts score (-20 to +40) and adds findings. Risk ≥60 → flagged. Flagged transactions are held for manual review while JE and expense records remain intact." },
+      { type: "improve", text: "startVendorPaymentWorkflow rewritten — creates Transaction (outbound/VendorPayment) at pipeline start with workflowStatus=pending, sets running, runs all 6 agents sequentially, marks completed/error/flagged with full agentLogs." },
+      { type: "improve", text: "Transaction detail page — P2P agent icons added: Three-Way Match (cyan), Duplicate Detection (rose), AP Policy (indigo), Payment Scheduler (blue), Treasury (emerald), P2P Auditor (amber). All agents render in Processing Steps with same Complete/Flagged/Failed/Pending badges as O2C." },
+    ]
+  },
+  {
     version: "v0.9.6",
     date: "May 30, 2026",
     title: "Unified Transaction Ledger — P2P Vendor Payments in /transactions",

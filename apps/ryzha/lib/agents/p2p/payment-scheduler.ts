@@ -1,8 +1,4 @@
 import { prisma } from "@/lib/prisma"
-import { callLLM } from "@/lib/ai/llm"
-import { parseAIJson } from "@/lib/ai/client"
-import { createSystemJournalEntry } from "@/lib/reports/general-ledger/je-factory"
-import { getNextEntityNumber } from "@/lib/sequences"
 
 async function recalculateVendorInvoiceStatus(vendorInvoiceId: string) {
   const invoice = await prisma.vendorInvoice.findUnique({
@@ -22,7 +18,19 @@ async function recalculateVendorInvoiceStatus(vendorInvoiceId: string) {
   return { totalPaid, status }
 }
 
-export async function runPaymentSchedulerAgent(vendorPaymentId: string, organizationId: string) {
+export interface PaymentSchedulerResult {
+  status: "COMPLETED" | "ERROR"
+  expenseId?: string
+  isPartial: boolean
+  invoiceStatus: string
+  message: string
+}
+
+export async function runPaymentSchedulerAgent(
+  vendorPaymentId: string,
+  organizationId: string,
+  suggestedCategory?: string
+): Promise<PaymentSchedulerResult> {
   const vendorPayment = await prisma.vendorPayment.findUnique({
     where: { id: vendorPaymentId },
     include: {
@@ -36,7 +44,7 @@ export async function runPaymentSchedulerAgent(vendorPaymentId: string, organiza
   })
 
   if (!vendorPayment) {
-    return { agent: "Payment Scheduler Agent", status: "ERROR", message: "Vendor payment not found." }
+    return { status: "ERROR", isPartial: false, invoiceStatus: "unknown", message: "Vendor payment not found." }
   }
 
   const invoice = vendorPayment.vendorInvoice
@@ -45,31 +53,7 @@ export async function runPaymentSchedulerAgent(vendorPaymentId: string, organiza
   const paymentFraction = Math.min(vendorPayment.amount / invoice.amount, 1)
   const isPartial = totalPaid < invoice.amount
 
-  let category = "Accounts Payable"
-  let earlyPaymentDiscount = false
-  let aiNotes = ""
-
-  try {
-    const daysUntilDue = Math.ceil((new Date(invoice.dueDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
-    const response = await callLLM(organizationId, [
-      {
-        role: "system",
-        content: `You are an AP specialist. Classify this vendor payment and determine the GL expense category.
-        Respond with JSON: { "category": string, "early_payment_discount": boolean, "notes": string }`,
-      },
-      {
-        role: "user",
-        content: `Vendor: ${vendor.name}, Invoice: ${invoice.invoiceNumber}, Amount: $${vendorPayment.amount}, Days until due: ${daysUntilDue}, Method: ${vendorPayment.method}`,
-      },
-    ], "agent_payment_scheduler", { temperature: 0 })
-
-    const parsed = parseAIJson(response.content as string)
-    category = parsed.category || category
-    earlyPaymentDiscount = parsed.early_payment_discount || false
-    aiNotes = parsed.notes || ""
-  } catch (e) {
-    console.error("[PaymentScheduler] AI classification failed, using defaults", e)
-  }
+  const category = suggestedCategory || "Accounts Payable"
 
   const expense = await prisma.expense.create({
     data: {
@@ -84,61 +68,15 @@ export async function runPaymentSchedulerAgent(vendorPaymentId: string, organiza
 
   await prisma.vendorPayment.update({ where: { id: vendorPaymentId }, data: { expenseId: expense.id } })
 
-  await createSystemJournalEntry({
-    organizationId,
-    sourceType: "VendorPayment",
-    sourceId: vendorPaymentId,
-    reference: `VP-${vendorPaymentId.slice(-6)}`,
-    description: `Vendor payment to ${vendor.name} — ${invoice.invoiceNumber}`,
-    entryDate: vendorPayment.paymentDate,
-    lines: [
-      {
-        accountName: "Accounts Payable",
-        accountType: "Liabilities",
-        debit: vendorPayment.amount,
-        credit: 0,
-        description: `AP cleared — ${invoice.invoiceNumber}`,
-      },
-      {
-        accountName: "Cash",
-        accountType: "Assets",
-        debit: 0,
-        credit: vendorPayment.amount,
-        description: `Cash paid to ${vendor.name} — ${invoice.invoiceNumber}`,
-      },
-    ],
-  })
-
-  await recalculateVendorInvoiceStatus(invoice.id)
-
-  const txNumber = await getNextEntityNumber(organizationId, "TXN")
-  await prisma.transaction.create({
-    data: {
-      transactionNumber: txNumber,
-      direction: "outbound",
-      transactionType: "VendorPayment",
-      amount: vendorPayment.amount,
-      currency: "usd",
-      description: `Payment to ${vendor.name} — ${invoice.invoiceNumber}`,
-      vendorPaymentId: vendorPaymentId,
-      vendorName: vendor.name,
-      paymentMethod: vendorPayment.method,
-      clearingStatus: "paid_out",
-      workflowStatus: "completed",
-      auditStatus: "verified",
-      agentLogs: [],
-      organizationId,
-    },
-  })
+  const invoiceResult = await recalculateVendorInvoiceStatus(invoice.id)
+  const invoiceStatus = invoiceResult?.status ?? invoice.status
 
   return {
-    agent: "Payment Scheduler Agent",
     status: "COMPLETED",
     expenseId: expense.id,
     isPartial,
-    earlyPaymentDiscount,
-    aiNotes,
-    message: `$${vendorPayment.amount} paid to ${vendor.name} (Invoice ${invoice.invoiceNumber}). ${isPartial ? `${(paymentFraction * 100).toFixed(0)}% paid.` : "Fully paid."} Expense and GL entries created. Category: ${category}.`,
+    invoiceStatus,
+    message: `$${vendorPayment.amount} paid to ${vendor.name} (Invoice ${invoice.invoiceNumber}). ${isPartial ? `${(paymentFraction * 100).toFixed(0)}% paid.` : "Fully paid. Invoice marked PAID."} Expense record created. Category: ${category}.`,
   }
 }
 
