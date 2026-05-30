@@ -448,13 +448,8 @@ export function GeneralLedgerClient() {
                       onClick={() => setDrilldownAccount(row.accountName)}
                     >
                       <span className="truncate text-left">{row.accountName}</span>
-                      <span className="flex gap-3 ml-2 shrink-0">
-                        <span className="font-mono text-xs text-green-700 dark:text-green-400 w-20 text-right">
-                          {row.debit > 0 ? formatCurrency(row.debit) : "—"}
-                        </span>
-                        <span className="font-mono text-xs text-blue-700 dark:text-blue-400 w-20 text-right">
-                          {row.credit > 0 ? formatCurrency(row.credit) : "—"}
-                        </span>
+                      <span className={`font-mono text-xs ml-2 ${row.amount < 0 ? "text-red-500" : "text-green-600"}`}>
+                        {row.amount < 0 ? "-" : ""}{formatCurrency(row.amount)}
                       </span>
                     </button>
                   ))}
