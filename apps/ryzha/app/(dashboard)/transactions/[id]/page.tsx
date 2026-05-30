@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { TransactionRerunButton } from "./rerun-button"
-import { CheckCircle2, AlertCircle, Clock, TrendingUp, ShieldCheck, BarChart3, Workflow, Circle } from "lucide-react"
+import { CheckCircle2, AlertCircle, Clock, TrendingUp, ShieldCheck, BarChart3, Workflow, Circle, AlertTriangle } from "lucide-react"
 
 interface LogEntry {
   agent: string
@@ -99,9 +99,17 @@ function formatTime(ts: string) {
 
 function groupHasError(group: AgentGroup) {
   return group.messages.some(m =>
-    m.message.toLowerCase().includes("fail") ||
     m.message.toLowerCase().includes("error") ||
     m.message.toLowerCase().includes("reject")
+  )
+}
+
+function groupIsFlagged(group: AgentGroup) {
+  return group.messages.some(m =>
+    m.message.toLowerCase().includes("flagged") ||
+    m.message.toLowerCase().includes("duplicate detected") ||
+    m.message.toLowerCase().includes("verification failed") ||
+    m.message.toLowerCase().includes("audit hold")
   )
 }
 
@@ -218,12 +226,13 @@ export default async function TransactionPage({ params }: { params: Promise<{ id
                 const meta = agentMeta(group.agent)
                 const Icon = meta.icon
                 const hasError = groupHasError(group)
-                const isComplete = !hasError && groupIsComplete(group)
+                const isFlagged = !hasError && groupIsFlagged(group)
+                const isComplete = !hasError && !isFlagged && groupIsComplete(group)
                 const isLast = gi === groups.length - 1
 
                 return (
                   <div key={gi}>
-                    <div className={`rounded-xl border border-l-4 ${meta.accent} bg-card overflow-hidden`}>
+                    <div className={`rounded-xl border border-l-4 ${isFlagged ? "border-l-amber-500" : meta.accent} bg-card overflow-hidden`}>
                       <div className="flex items-center justify-between px-4 py-3 border-b bg-muted/20">
                         <div className="flex items-center gap-2.5">
                           <div className={`w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0 ${meta.iconBg}`}>
@@ -235,9 +244,11 @@ export default async function TransactionPage({ params }: { params: Promise<{ id
                         <div>
                           {hasError
                             ? <Badge variant="destructive" className="gap-1 text-xs"><AlertCircle className="h-3 w-3" />Failed</Badge>
-                            : isComplete
-                              ? <Badge className="gap-1 text-xs bg-emerald-500 hover:bg-emerald-500"><CheckCircle2 className="h-3 w-3" />Complete</Badge>
-                              : <Badge variant="secondary" className="gap-1 text-xs"><Clock className="h-3 w-3" />Pending</Badge>
+                            : isFlagged
+                              ? <Badge className="gap-1 text-xs bg-amber-500 hover:bg-amber-500 text-white"><AlertTriangle className="h-3 w-3" />Flagged</Badge>
+                              : isComplete
+                                ? <Badge className="gap-1 text-xs bg-emerald-500 hover:bg-emerald-500"><CheckCircle2 className="h-3 w-3" />Complete</Badge>
+                                : <Badge variant="secondary" className="gap-1 text-xs"><Clock className="h-3 w-3" />Pending</Badge>
                           }
                         </div>
                       </div>
