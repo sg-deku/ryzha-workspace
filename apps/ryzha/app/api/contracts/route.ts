@@ -1,4 +1,3 @@
-export const dynamic = "force-dynamic"
 
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
@@ -23,11 +22,11 @@ export async function POST(req: Request) {
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
   const body = await req.json()
-  const { stripePaymentIntentId, customerEmail, amount } = body
+  const { customerEmail, amount, description, terms, startDate, endDate, customerId } = body
 
-  if (!stripePaymentIntentId || !customerEmail || !amount) {
+  if (!customerEmail) {
     return NextResponse.json(
-      { error: "stripePaymentIntentId, customerEmail, and amount are required" },
+      { error: "customerEmail is required" },
       { status: 400 }
     )
   }
@@ -37,22 +36,20 @@ export async function POST(req: Request) {
 
     const contract = await prisma.contract.create({
       data: {
-        stripePaymentIntentId,
         customerEmail,
-        amount: Number(amount),
+        amount: Number(amount) || 0,
         status: "signed",
         contractNumber,
+        description: description || null,
+        terms: terms || null,
+        startDate: startDate ? new Date(startDate) : null,
+        endDate: endDate ? new Date(endDate) : null,
+        customerId: customerId || null,
         organizationId: session.user.organizationId,
       },
     })
     return NextResponse.json(contract, { status: 201 })
   } catch (err: any) {
-    if (err.code === "P2002") {
-      return NextResponse.json(
-        { error: "A contract with this Payment Intent ID already exists." },
-        { status: 409 }
-      )
-    }
     return NextResponse.json({ error: err.message }, { status: 500 })
   }
 }
@@ -73,7 +70,7 @@ export async function PATCH(req: Request) {
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
   const body = await req.json()
-  const { id, stripePaymentIntentId, customerEmail, amount, status } = body
+  const { id, customerEmail, amount, status, description, terms, startDate, endDate, customerId } = body
 
   if (!id) {
     return NextResponse.json({ error: "id is required" }, { status: 400 })
@@ -83,20 +80,18 @@ export async function PATCH(req: Request) {
     const contract = await prisma.contract.update({
       where: { id, organizationId: session.user.organizationId },
       data: {
-        ...(stripePaymentIntentId && { stripePaymentIntentId }),
         ...(customerEmail && { customerEmail }),
-        ...(amount && { amount: Number(amount) }),
+        ...(amount !== undefined && { amount: Number(amount) }),
         ...(status && { status }),
+        ...(description !== undefined && { description }),
+        ...(terms !== undefined && { terms }),
+        ...(startDate !== undefined && { startDate: startDate ? new Date(startDate) : null }),
+        ...(endDate !== undefined && { endDate: endDate ? new Date(endDate) : null }),
+        ...(customerId !== undefined && { customerId: customerId || null }),
       },
     })
     return NextResponse.json(contract)
   } catch (err: any) {
-    if (err.code === "P2002") {
-      return NextResponse.json(
-        { error: "A contract with this Payment Intent ID already exists." },
-        { status: 409 }
-      )
-    }
     return NextResponse.json({ error: err.message }, { status: 500 })
   }
 }

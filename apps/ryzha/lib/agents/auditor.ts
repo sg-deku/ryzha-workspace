@@ -67,28 +67,41 @@ export async function runAuditorAgent(transactionId: string) {
   if (recentTxCount >= 5) anomalyDetected = true
   if (nearThreshold) anomalyDetected = true
 
-  // 2. MSA-aware contract lookup — exact PI match first, then customer MSA fallback
-  let contract = await prisma.contract.findFirst({
-    where: {
-      stripePaymentIntentId: tx.stripePaymentIntentId,
-      organizationId: tx.organizationId
-    }
-  })
-  let contractMatchType: "exact" | "msa" | "none" = contract ? "exact" : "none"
+  // 2. Invoice-first verification (the invoice IS the authorization for cash)
+  let contractMatchType: "invoice" | "contract" | "none" = "none"
+  let contract = null
+  let matchRefId = ""
 
-  if (!contract && tx.customerEmail) {
+  if (tx.invoiceId) {
+    const invoice = await prisma.invoice.findUnique({ where: { id: tx.invoiceId } })
+    if (invoice) {
+      contractMatchType = "invoice"
+      matchRefId = invoice.id
+    }
+  }
+
+  // 3. Active contract fallback (MSA/subscription) — date-aware
+  if (contractMatchType === "none" && tx.customerEmail) {
+    const today = new Date()
     contract = await prisma.contract.findFirst({
       where: {
         customerEmail: tx.customerEmail,
         organizationId: tx.organizationId,
-        status: "signed"
+        status: "signed",
+        AND: [
+          { OR: [{ startDate: null }, { startDate: { lte: today } }] },
+          { OR: [{ endDate: null }, { endDate: { gte: today } }] }
+        ]
       },
       orderBy: { signedAt: "desc" }
     })
-    if (contract) contractMatchType = "msa"
+    if (contract) {
+      contractMatchType = "contract"
+      matchRefId = contract.id
+    }
   }
 
-  // 3. AI forensic reasoning with SOX + ASC 606 context
+  // 4. AI forensic reasoning with SOX + ASC 606 context
   try {
     const response = await callLLM(tx.organizationId, [
       {
@@ -101,12 +114,12 @@ Investigate this transaction for anomalies using these criteria:
 - Transaction description inconsistent with expected revenue type for a SaaS/services company
 - ASC 606 checklist: (1) enforceable contract exists? (2) distinct performance obligation? (3) transaction price determinable? (4) collection probable?
 - SOX Section 404: segregation of duties, unusual timing, related-party indicators
-Organization context: anomaly threshold $${anomalyThreshold} | currency ${tx.currency?.toUpperCase() ?? "USD"} | contract match: ${contractMatchType}
+Organization context: anomaly threshold $${anomalyThreshold} | currency ${tx.currency?.toUpperCase() ?? "USD"} | verification match: ${contractMatchType}
 Respond ONLY with JSON: { "is_anomaly": boolean, "risk_score": number (0-100), "investigation_notes": string, "asc606_flags": string[] }`
       },
       {
         role: "user",
-        content: `Transaction: ${tx.description ?? "(no description)"} | Amount: $${tx.amount} | Customer: ${tx.customerEmail ?? "unknown"} | Recent 24h txns from same customer: ${recentTxCount} | Round dollar: ${isRoundDollar} | Near threshold: ${nearThreshold} | Duplicate PI found: false`
+        content: `Transaction: ${tx.description ?? "(no description)"} | Amount: $${tx.amount} | Customer: ${tx.customerEmail ?? "unknown"} | Recent 24h txns from same customer: ${recentTxCount} | Round dollar: ${isRoundDollar} | Near threshold: ${nearThreshold} | Duplicate PI found: false | Match type: ${contractMatchType}`
       }
     ], "agent_auditor", { temperature: 0 })
 
@@ -125,35 +138,34 @@ Respond ONLY with JSON: { "is_anomaly": boolean, "risk_score": number (0-100), "
     console.error("[auditor] AI call failed", error)
   }
 
-  // 4. Determine audit status
-  if (contract && contract.status === "signed") {
+  // 5. Determine audit status
+  if (contractMatchType === "invoice" || (contractMatchType === "contract" && contract?.status === "signed")) {
     auditStatus = "verified"
 
-    // Strong audit hash — full fingerprint, not just contractId + amount
+    const refId = contractMatchType === "invoice" ? (tx.invoiceId ?? matchRefId) : matchRefId
     auditHash = crypto.createHash("sha256")
       .update([
         tx.id,
         tx.stripePaymentIntentId,
         tx.amount.toString(),
         tx.customerEmail ?? "",
-        contract.id,
-        contract.status,
+        refId,
         contractMatchType,
+        contractMatchType === "contract" ? (contract?.status ?? "") : "paid",
         tx.organizationId,
         new Date().toISOString().slice(0, 13)
       ].join("|"))
       .digest("hex")
 
-    const matchNote = contractMatchType === "msa"
-      ? `Matched via MSA (customer email) — contract ${contract.id.slice(-6)}`
-      : `Exact PI match — contract ${contract.id.slice(-6)}`
+    const matchNote = contractMatchType === "invoice"
+      ? `Invoice match — invoice ${refId.slice(-6)}`
+      : `Active contract match (MSA) — contract ${refId.slice(-6)}`
 
     logMessage = `Auditor: Audit seal verified. ${matchNote}. Hash: ${auditHash.slice(0, 8)}... Risk score: ${riskScore}/100.`
 
     if (anomalyDetected) {
       logMessage += ` WARNING: ${aiReasoning || "Unusual transaction pattern detected. Manual review recommended."}`
     }
-
     if (recentTxCount >= 5) {
       logMessage += ` VELOCITY ALERT: ${recentTxCount} transactions from ${tx.customerEmail ?? "this customer"} in the past 24 hours.`
     }
@@ -162,15 +174,15 @@ Respond ONLY with JSON: { "is_anomaly": boolean, "risk_score": number (0-100), "
     }
   } else {
     auditStatus = autoReject ? "rejected" : (requireAuditSeal ? "flagged" : "unverified")
-    logMessage = `Auditor: Verification failed — no matching signed contract found for ${tx.description ?? tx.stripePaymentIntentId} (checked exact PI and MSA fallback for ${tx.customerEmail ?? "unknown customer"}).`
+    logMessage = `Auditor: Verification failed — no matching invoice or active signed contract found for ${tx.description ?? tx.stripePaymentIntentId} (customer: ${tx.customerEmail ?? "unknown"}). Cash posted to Undeposited Funds (liability) — not recognized as revenue until matched.`
     if (aiReasoning) logMessage += ` AI investigation: ${aiReasoning}`
-    if (requireAuditSeal) logMessage += ` Revenue held in suspense pending manual contract linkage.`
   }
 
   await appendAgentLog(transactionId, "Auditor", logMessage)
 
-  // 5. Post suspense JE for flagged/rejected — holds revenue off the P&L until cleared
-  if (auditStatus === "flagged" || auditStatus === "rejected") {
+  // 6. Post suspense JE only when invoice-matched and flagged (e.g. duplicate PI)
+  // No-invoice flagged payments already land in Undeposited Funds via the webhook JE
+  if ((auditStatus === "flagged" || auditStatus === "rejected") && tx.invoiceId) {
     await postSuspenseJE(tx, transactionId)
   }
 

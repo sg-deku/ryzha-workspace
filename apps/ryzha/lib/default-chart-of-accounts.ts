@@ -13,7 +13,9 @@ export const DEFAULT_CHART_OF_ACCOUNTS: DefaultAccount[] = [
 
   // ── Liabilities ───────────────────────────────────────────────────────────────
   { accountCode: "2000", accountName: "Accounts Payable",      accountType: "Liabilities", categoryMatch: "accounts_payable" },
+  { accountCode: "2100", accountName: "Undeposited Funds",     accountType: "Liabilities", categoryMatch: "undeposited_funds" },
   { accountCode: "2200", accountName: "Deferred Revenue",      accountType: "Liabilities", categoryMatch: "deferred_revenue" },
+  { accountCode: "2300", accountName: "Revenue Suspense",      accountType: "Liabilities", categoryMatch: "revenue_suspense" },
   { accountCode: "2400", accountName: "Sales Tax Payable",     accountType: "Liabilities", categoryMatch: "sales_tax" },
 
   // ── Equity ───────────────────────────────────────────────────────────────────

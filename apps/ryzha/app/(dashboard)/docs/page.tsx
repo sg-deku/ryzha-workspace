@@ -354,6 +354,22 @@ type ReleaseNote = {
 
 const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "v0.9.4",
+    date: "May 30, 2026",
+    title: "Contract Model Repurpose — MSA & Proper Cash Recognition",
+    summary: "Completely repurposed the Contract entity from a per-payment Stripe PI proxy into a proper legal agreement model (MSA / subscription contract). Auditor Agent now verifies via Invoice first, then Contract by customer email and date range. Unmatched Stripe payments now post to Undeposited Funds (liability), not Revenue, matching US GAAP standards.",
+    changes: [
+      { type: "improve", text: "Contract schema redesigned — removed stripePaymentIntentId @unique (was incorrect coupling of legal agreement to a single payment). Added customerId, terms, and proper startDate/endDate for date-range-aware MSA contracts. A single contract now covers all payments within its period for a given customer." },
+      { type: "feat", text: "Auditor Agent: Invoice-first verification — if the transaction is linked to an invoice, the invoice IS the authorization for cash (matching NetSuite/SAP standard). No contract lookup needed for invoice-matched payments." },
+      { type: "feat", text: "Auditor Agent: Date-aware contract fallback — MSA lookup now filters by startDate ≤ today ≤ endDate (null dates treated as open-ended). Ensures expired contracts don't authorize new payments." },
+      { type: "fix", text: "Stripe webhook no-invoice JE: unmatched payments now post CR Undeposited Funds (Liabilities 2100) instead of CR Subscription Revenue. Cash is a liability until matched — prevents premature revenue recognition for unknown Stripe payments." },
+      { type: "feat", text: "Added Undeposited Funds (2100) and Revenue Suspense (2300) to the default Chart of Accounts, seeded for all new organizations." },
+      { type: "fix", text: "Removed synthetic contract auto-creation from the O2C PAID workflow — the orchestrator was creating a dummy contract per payment intent to pass audit, which bypassed the actual audit purpose. O2C payments now verify via the linked invoice." },
+      { type: "improve", text: "Contracts UI overhauled — form now collects customer email, contract value, description, start/end dates, and terms. Table shows contract period, active/expired status computed from date range, and description as primary label." },
+      { type: "improve", text: "Auditor suspense JE now only fires for invoice-matched flagged payments (duplicate PI). No-invoice flagged payments already land in Undeposited Funds via webhook JE — posting a second suspense entry was double-counting." },
+    ]
+  },
+  {
     version: "v0.9.3",
     date: "May 29, 2026",
     title: "Auditor Agent — US Market Hardening",

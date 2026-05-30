@@ -254,6 +254,7 @@ model Customer {
   organization Organization @relation(fields: [organizationId], references: [id])
   salesOrders  SalesOrder[]
   invoices     Invoice[]
+  contracts    Contract[]
 }
 
 model SalesOrder {
@@ -779,18 +780,20 @@ model Transaction {
 }
 
 model Contract {
-  id                    String       @id @default(cuid())
-  contractNumber        String?
-  stripePaymentIntentId String       @unique
-  customerEmail         String
-  amount                Float
-  status                String       @default("signed") // signed, pending
-  description           String?
-  startDate             DateTime?
-  endDate               DateTime?
-  signedAt              DateTime     @default(now())
-  organizationId        String
-  organization          Organization @relation(fields: [organizationId], references: [id])
+  id             String    @id @default(cuid())
+  contractNumber String?
+  customerId     String?
+  customer       Customer? @relation(fields: [customerId], references: [id])
+  customerEmail  String
+  amount         Float
+  status         String    @default("signed") // signed, pending, expired
+  description    String?
+  terms          String?
+  startDate      DateTime?
+  endDate        DateTime?
+  signedAt       DateTime  @default(now())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
 }
 
 model DeferredRevenueSchedule {

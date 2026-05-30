@@ -252,11 +252,11 @@ export async function POST(req: Request) {
       })
     } else {
       jeLines.push({
-        accountName: "Subscription Revenue",
-        accountType: "Revenue",
+        accountName: "Undeposited Funds",
+        accountType: "Liabilities",
         debit: 0,
         credit: amountInDollars,
-        description: `Direct Stripe revenue – ${customer_email ?? id}`,
+        description: `Unmatched Stripe payment – ${customer_email ?? id} – pending invoice match`,
       })
     }
 

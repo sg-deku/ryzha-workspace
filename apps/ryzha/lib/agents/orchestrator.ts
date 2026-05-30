@@ -401,20 +401,9 @@ export async function startO2CWorkflow(salesOrderId: string, scenario?: string) 
         }
       }
 
-      await appendO2CLog("Orchestrator", `[1/2] Order is PAID — creating synthetic contract + transaction for agent pipeline...`)
+      await appendO2CLog("Orchestrator", `[1/2] Order is PAID — creating transaction for agent pipeline...`)
 
       const intentId = `o2c-${order.orderNumber}-${Date.now()}`
-
-      const contract = await prisma.contract.create({
-        data: {
-          stripePaymentIntentId: intentId,
-          customerEmail: order.customer.email || "customer@example.com",
-          amount: order.totalAmount,
-          status: "signed",
-          organizationId: orgId,
-        },
-      })
-      await appendO2CLog("Orchestrator", `Contract auto-created | Contract ID: ${contract.id} | Customer: ${order.customer.email} | Intent: ${intentId}`)
 
       const transaction = await prisma.transaction.create({
         data: {
