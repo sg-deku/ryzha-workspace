@@ -29,6 +29,11 @@ import {
   DollarSign,
   Receipt,
   ChevronRight,
+  ChevronDown,
+  Tag,
+  Shield,
+  Bug,
+  Sparkles,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -335,6 +340,55 @@ const SECTIONS = [
   { id: "journal-entries", label: "Journal Entries", icon: BookOpen },
   { id: "integrations", label: "Integrations", icon: Webhook },
   { id: "schema", label: "Data Model", icon: Database },
+  { id: "release-notes", label: "Release Notes", icon: Tag },
+]
+
+type ReleaseNoteChange = { type: "feat" | "fix" | "improve"; text: string }
+type ReleaseNote = {
+  version: string
+  date: string
+  title: string
+  summary: string
+  changes: ReleaseNoteChange[]
+}
+
+const RELEASE_NOTES: ReleaseNote[] = [
+  {
+    version: "v0.9.3",
+    date: "May 29, 2026",
+    title: "Auditor Agent — US Market Hardening",
+    summary: "Complete overhaul of the Auditor Agent for US GAAP compliance. Adds duplicate detection, MSA-style contract matching, SOX/ASC 606 AI reasoning, a cryptographically strong audit hash, suspense GL entries for flagged transactions, and a corrected orchestrator gate.",
+    changes: [
+      { type: "fix", text: "Duplicate Payment Intent detection — hard-stops re-processing of the same PI to prevent double-counting revenue in the GL." },
+      { type: "feat", text: "MSA contract fallback — if no exact PI-matched contract exists, the auditor falls back to the most recent signed contract for the same customer email, supporting Master Service Agreement workflows." },
+      { type: "feat", text: "Velocity + behavioral checks — flags transactions from customers with 5+ payments in 24 hours; flags amounts within 5% of the configured anomaly threshold (SOX threshold-gaming pattern)." },
+      { type: "improve", text: "Enriched AI prompt — forensic auditor prompt now includes SOX Section 404 criteria, ASC 606 checklist (contract, performance obligation, price determinability, collectability), round-dollar flagging, and organization-specific context." },
+      { type: "fix", text: "Strong audit hash — replaced the 2-field sha256(contractId+amount) with a full-fingerprint hash over 9 fields: transaction ID, PI ID, amount, customer email, contract ID, contract status, match type, org ID, and timestamp. Any field change breaks the hash." },
+      { type: "feat", text: "Suspense JE on flagged/rejected — posts an ADJUSTING journal entry (DR Accounts Receivable – Disputed / CR Revenue Suspense) when the auditor flags a transaction, keeping revenue off the P&L until manually cleared." },
+      { type: "fix", text: "Orchestrator now halts on 'flagged' status — previously only 'rejected' stopped the workflow; flagged transactions now also stop before FP&A to prevent recognizing unverified revenue." },
+    ]
+  },
+  {
+    version: "v0.9.2",
+    date: "May 29, 2026",
+    title: "Stripe Cross-Currency JE Fix",
+    summary: "Fixed a critical journal entry imbalance when the Stripe account settles in EUR but charges in USD. All balance transaction amounts are in the settlement currency (EUR), not the charge currency (USD) — the old code divided both by 100 and treated them identically, causing gaps of 14–700+ dollars.",
+    changes: [
+      { type: "fix", text: "Cross-currency JE now derives stripeNet using net/amount proportion applied to the USD payment intent amount. stripeFee is computed as the remainder — guarantees the JE balances to the cent with no external FX rate feed." },
+      { type: "fix", text: "Removed incorrect currency_conversion fee_details lookup — Stripe does not emit a currency_conversion line for settlement-currency conversion; the FX cost is implicit in the net amount." },
+      { type: "improve", text: "Domestic (same-currency) path unchanged — reconciliation diff warning retained for domestic edge cases." },
+    ]
+  },
+  {
+    version: "v0.9.1",
+    date: "May 29, 2026",
+    title: "Vendor Invoice & Routing Fixes",
+    summary: "Added the missing /vendor-invoices/new page (was returning 404) and resolved the DISPUTED status on vendor invoices caused by the 3-way line-item description matching logic.",
+    changes: [
+      { type: "fix", text: "Created /vendor-invoices/new page — the route was missing from the dashboard app, causing 404 for all new vendor invoice creation attempts." },
+      { type: "improve", text: "P2P matching agent explains disputed status clearly in workflow logs — line item description mismatch (e.g. 'Test' vs 'Cloud hosting') now surfaces the exact mismatch in the agent log." },
+    ]
+  },
 ]
 
 function FlowStep({ step, title, description, badge, badgeVariant = "default", isLast = false }: {
@@ -427,6 +481,73 @@ function SectionTitle({ icon: Icon, title, subtitle }: { icon: React.ComponentTy
         <p className="text-sm text-muted-foreground">{subtitle}</p>
       </div>
     </div>
+  )
+}
+
+const CHANGE_TYPE_CONFIG = {
+  feat: { label: "New", icon: Sparkles, cls: "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300 border-blue-200 dark:border-blue-800" },
+  fix: { label: "Fix", icon: Bug, cls: "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300 border-red-200 dark:border-red-800" },
+  improve: { label: "Improved", icon: Shield, cls: "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300 border-amber-200 dark:border-amber-800" },
+}
+
+function ReleaseNoteCard({ note }: { note: ReleaseNote }) {
+  const [expanded, setExpanded] = useState(false)
+  const featCount = note.changes.filter(c => c.type === "feat").length
+  const fixCount = note.changes.filter(c => c.type === "fix").length
+  const improveCount = note.changes.filter(c => c.type === "improve").length
+
+  return (
+    <Card className="overflow-hidden">
+      <div
+        className="flex items-start justify-between gap-4 p-5 cursor-pointer hover:bg-muted/30 transition-colors"
+        onClick={() => setExpanded(!expanded)}
+      >
+        <div className="flex items-start gap-4 flex-1 min-w-0">
+          <div className="flex flex-col items-center gap-1 flex-shrink-0 pt-0.5">
+            <span className="font-mono text-sm font-bold text-primary">{note.version}</span>
+            <span className="text-[10px] text-muted-foreground whitespace-nowrap">{note.date}</span>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold text-sm leading-snug">{note.title}</p>
+            <p className="text-xs text-muted-foreground mt-1 leading-relaxed line-clamp-2">{note.summary}</p>
+            <div className="flex gap-1.5 mt-2 flex-wrap">
+              {featCount > 0 && (
+                <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded border bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300 border-blue-200 dark:border-blue-800">
+                  <Sparkles className="h-2.5 w-2.5" />{featCount} new
+                </span>
+              )}
+              {fixCount > 0 && (
+                <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded border bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300 border-red-200 dark:border-red-800">
+                  <Bug className="h-2.5 w-2.5" />{fixCount} fix{fixCount > 1 ? "es" : ""}
+                </span>
+              )}
+              {improveCount > 0 && (
+                <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded border bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300 border-amber-200 dark:border-amber-800">
+                  <Shield className="h-2.5 w-2.5" />{improveCount} improved
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+        <ChevronDown className={cn("h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5 transition-transform", expanded && "rotate-180")} />
+      </div>
+      {expanded && (
+        <div className="border-t px-5 pb-5 pt-4 space-y-2">
+          {note.changes.map((change, i) => {
+            const cfg = CHANGE_TYPE_CONFIG[change.type]
+            const Icon = cfg.icon
+            return (
+              <div key={i} className="flex items-start gap-2.5">
+                <span className={cn("inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded border flex-shrink-0 mt-0.5", cfg.cls)}>
+                  <Icon className="h-2.5 w-2.5" />{cfg.label}
+                </span>
+                <p className="text-xs text-muted-foreground leading-relaxed">{change.text}</p>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </Card>
   )
 }
 
@@ -1832,6 +1953,17 @@ export default function DocsPage() {
                   </div>
                 </CardContent>
               </Card>
+            </div>
+          </section>
+        )}
+
+        {(activeSection === "release-notes" || activeSection === "all") && (
+          <section id="release-notes">
+            <SectionTitle icon={Tag} title="Release Notes" subtitle="Changelog — features, fixes, and improvements shipped to Ryzha" />
+            <div className="space-y-3">
+              {RELEASE_NOTES.map((note) => (
+                <ReleaseNoteCard key={note.version} note={note} />
+              ))}
             </div>
           </section>
         )}

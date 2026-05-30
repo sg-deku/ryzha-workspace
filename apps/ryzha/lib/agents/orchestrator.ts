@@ -98,14 +98,27 @@ export async function startAgentWorkflow(transactionId: string) {
       return
     }
 
-    if (!afterAuditor || afterAuditor.auditStatus === "rejected") {
+    if (!afterAuditor || afterAuditor.auditStatus === "rejected" || afterAuditor.auditStatus === "flagged") {
       const status = afterAuditor?.auditStatus ?? "unknown"
-      await logAndPublish("Auditor", `FAILED — audit status: ${status}. No signed contract found matching Payment Intent ${transaction.stripePaymentIntentId}. Create a contract record under Contracts and re-run.`)
-      await logAndPublish("Orchestrator", `Workflow ERROR | Auditor rejected transaction.`)
+      const isFlagged = status === "flagged"
+      await logAndPublish("Auditor", isFlagged
+        ? `FLAGGED — anomaly detected or no verified contract. Revenue posted to suspense (Revenue Suspense CR / AR – Disputed DR). Manual review required before revenue can be recognized.`
+        : `FAILED — audit status: ${status}. No signed contract found matching Payment Intent ${transaction.stripePaymentIntentId}. Create a contract record under Contracts and re-run.`
+      )
+      await logAndPublish("Orchestrator", `Workflow STOPPED | Auditor ${isFlagged ? "flagged" : "rejected"} transaction. FP&A pipeline not run — revenue is not recognized until audit is cleared.`)
+      await createNotification({
+        organizationId: orgId,
+        type: isFlagged ? "WARNING" : "ERROR",
+        title: isFlagged ? "Transaction Flagged for Audit Review" : "Audit Verification Failed",
+        message: isFlagged
+          ? `$${transaction.amount} from ${transaction.customerEmail ?? "unknown"} flagged by Auditor. Revenue held in suspense pending clearance.`
+          : `No signed contract for Payment Intent ${transaction.stripePaymentIntentId}. Create a contract and re-run.`,
+        link: `/transactions/${transactionId}`
+      })
       await prisma.transaction.update({ where: { id: transactionId }, data: { workflowStatus: "error", agentLogs: [...currentLogs, ...logs] } })
       return
     }
-    await logAndPublish("Auditor", `Verified/Flagged. Audit status: ${afterAuditor.auditStatus}. Audit hash: ${afterAuditor.auditHash ?? "n/a"}. Contract matched for ${transaction.customerEmail}.`)
+    await logAndPublish("Auditor", `Verified. Audit status: ${afterAuditor.auditStatus}. Audit hash: ${afterAuditor.auditHash ?? "n/a"}. Contract matched for ${transaction.customerEmail}.`)
 
     // Step 4: FP&A
     await logAndPublish("Orchestrator", `[4/4] Starting FP&A Agent — recalculating runway and financial model...`)
