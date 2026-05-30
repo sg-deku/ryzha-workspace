@@ -329,19 +329,42 @@ function DbNode({ entity, depth = 0 }: { entity: DbEntity; depth?: number }) {
   )
 }
 
-const SECTIONS = [
-  { id: "overview", label: "System Overview", icon: BookOpen },
-  { id: "stripe", label: "Stripe Payment Lifecycle", icon: CreditCard },
-  { id: "o2c", label: "Order-to-Cash (O2C)", icon: FileText },
-  { id: "p2p", label: "Procure-to-Pay (P2P)", icon: ShoppingCart },
-  { id: "r2r", label: "Record-to-Report (R2R)", icon: RefreshCw },
-  { id: "fpna", label: "FP&A Module", icon: TrendingUp },
-  { id: "agents", label: "AI Agents", icon: Brain },
-  { id: "journal-entries", label: "Journal Entries", icon: BookOpen },
-  { id: "integrations", label: "Integrations", icon: Webhook },
-  { id: "schema", label: "Data Model", icon: Database },
-  { id: "release-notes", label: "Release Notes", icon: Tag },
+const SECTION_GROUPS = [
+  {
+    label: "Getting Started",
+    items: [
+      { id: "overview", label: "System Overview", icon: BookOpen },
+      { id: "stripe", label: "Stripe Payment Lifecycle", icon: CreditCard },
+    ],
+  },
+  {
+    label: "Core Processes",
+    items: [
+      { id: "o2c", label: "Order-to-Cash", icon: FileText },
+      { id: "p2p", label: "Procure-to-Pay", icon: ShoppingCart },
+      { id: "r2r", label: "Record-to-Report", icon: RefreshCw },
+      { id: "fpna", label: "FP&A Module", icon: TrendingUp },
+    ],
+  },
+  {
+    label: "Reference",
+    items: [
+      { id: "agents", label: "AI Agents", icon: Brain },
+      { id: "journal-entries", label: "Journal Entries", icon: BookOpen },
+      { id: "api", label: "API Reference", icon: Zap },
+      { id: "integrations", label: "Integrations", icon: Webhook },
+      { id: "schema", label: "Data Model", icon: Database },
+    ],
+  },
+  {
+    label: "Changelog",
+    items: [
+      { id: "release-notes", label: "Release Notes", icon: Tag },
+    ],
+  },
 ]
+
+const SECTIONS = SECTION_GROUPS.flatMap(g => g.items)
 
 type ReleaseNoteChange = { type: "feat" | "fix" | "improve"; text: string }
 type ReleaseNote = {
@@ -568,16 +591,121 @@ function AgentCard({ name, trigger, actions, output, color }: {
   )
 }
 
-function SectionTitle({ icon: Icon, title, subtitle }: { icon: React.ComponentType<{ className?: string }>; title: string; subtitle: string }) {
+function SectionTitle({ icon: Icon, title, subtitle, badge }: { icon: React.ComponentType<{ className?: string }>; title: string; subtitle: string; badge?: string }) {
   return (
-    <div className="flex items-start gap-3 mb-6">
-      <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-        <Icon className="h-5 w-5 text-primary" />
+    <div className="mb-8 pb-6 border-b">
+      <div className="flex items-start gap-4">
+        <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+          <Icon className="h-5 w-5 text-primary" />
+        </div>
+        <div className="flex-1">
+          <div className="flex items-center gap-2 mb-1">
+            <h2 className="text-2xl font-bold tracking-tight">{title}</h2>
+            {badge && <span className="text-[10px] font-semibold bg-primary/10 text-primary px-2 py-0.5 rounded-full uppercase tracking-wide">{badge}</span>}
+          </div>
+          <p className="text-sm text-muted-foreground leading-relaxed">{subtitle}</p>
+        </div>
       </div>
-      <div>
-        <h2 className="text-xl font-bold">{title}</h2>
-        <p className="text-sm text-muted-foreground">{subtitle}</p>
-      </div>
+    </div>
+  )
+}
+
+type CalloutVariant = "info" | "warning" | "tip" | "important"
+const CALLOUT_CFG: Record<CalloutVariant, { cls: string; iconCls: string; labelCls: string; label: string; icon: React.ComponentType<{className?: string}> }> = {
+  info:      { cls: "bg-blue-50/70 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800",   iconCls: "text-blue-500",  labelCls: "text-blue-700 dark:text-blue-300",  label: "Note",      icon: BookOpen },
+  warning:   { cls: "bg-amber-50/70 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800", iconCls: "text-amber-500", labelCls: "text-amber-700 dark:text-amber-300", label: "Warning",   icon: AlertTriangle },
+  tip:       { cls: "bg-green-50/70 dark:bg-green-950/30 border-green-200 dark:border-green-800",  iconCls: "text-green-500", labelCls: "text-green-700 dark:text-green-300",  label: "Tip",       icon: CheckCircle2 },
+  important: { cls: "bg-red-50/70 dark:bg-red-950/30 border-red-200 dark:border-red-800",     iconCls: "text-red-500",   labelCls: "text-red-700 dark:text-red-300",     label: "Important", icon: AlertTriangle },
+}
+
+function DocCallout({ type = "info", children }: { type?: CalloutVariant; children: React.ReactNode }) {
+  const cfg = CALLOUT_CFG[type]
+  const Icon = cfg.icon
+  return (
+    <div className={cn("rounded-lg border px-4 py-3 flex gap-3", cfg.cls)}>
+      <Icon className={cn("h-4 w-4 mt-0.5 flex-shrink-0", cfg.iconCls)} />
+      <p className="text-sm leading-relaxed text-foreground/80">
+        <span className={cn("font-semibold mr-1.5", cfg.labelCls)}>{cfg.label}:</span>
+        {children}
+      </p>
+    </div>
+  )
+}
+
+type HttpMethod = "GET" | "POST" | "PUT" | "DELETE" | "PATCH"
+const METHOD_CLS: Record<HttpMethod, string> = {
+  GET:    "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300",
+  POST:   "bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300",
+  PUT:    "bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300",
+  DELETE: "bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300",
+  PATCH:  "bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300",
+}
+
+interface ApiParam { name: string; type: string; required?: boolean; desc: string }
+interface ApiEndpointProps {
+  method: HttpMethod
+  path: string
+  description: string
+  auth?: boolean
+  params?: ApiParam[]
+  body?: ApiParam[]
+  response?: string
+}
+
+function ApiEndpoint({ method, path, description, auth = true, params, body, response }: ApiEndpointProps) {
+  const [open, setOpen] = useState(false)
+  return (
+    <div className="rounded-lg border overflow-hidden">
+      <button
+        onClick={() => setOpen(p => !p)}
+        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted/40 transition-colors text-left"
+      >
+        <span className={cn("text-[11px] font-bold px-2 py-0.5 rounded font-mono flex-shrink-0 w-14 text-center", METHOD_CLS[method])}>{method}</span>
+        <code className="text-sm font-mono text-foreground flex-1">{path}</code>
+        {auth && <span className="text-[10px] text-muted-foreground border rounded px-1.5 py-0.5 flex-shrink-0 hidden sm:block">Requires auth</span>}
+        <ChevronDown className={cn("h-4 w-4 text-muted-foreground flex-shrink-0 transition-transform", open && "rotate-180")} />
+      </button>
+      {open && (
+        <div className="border-t bg-muted/10 px-4 py-4 space-y-4">
+          <p className="text-sm text-muted-foreground leading-relaxed">{description}</p>
+          {params && params.length > 0 && (
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">Query Parameters</p>
+              <div className="rounded-md border divide-y text-xs overflow-hidden">
+                {params.map(p => (
+                  <div key={p.name} className="grid grid-cols-[140px_80px_60px_1fr] gap-2 items-start px-3 py-2">
+                    <code className="font-mono font-medium text-primary">{p.name}</code>
+                    <span className="text-muted-foreground/60 font-mono">{p.type}</span>
+                    <span className={p.required ? "text-red-500 text-[10px] font-medium" : "text-muted-foreground/40 text-[10px]"}>{p.required ? "required" : "optional"}</span>
+                    <span className="text-muted-foreground">{p.desc}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {body && body.length > 0 && (
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">Request Body (JSON)</p>
+              <div className="rounded-md border divide-y text-xs overflow-hidden">
+                {body.map(p => (
+                  <div key={p.name} className="grid grid-cols-[140px_80px_60px_1fr] gap-2 items-start px-3 py-2">
+                    <code className="font-mono font-medium text-primary">{p.name}</code>
+                    <span className="text-muted-foreground/60 font-mono">{p.type}</span>
+                    <span className={p.required ? "text-red-500 text-[10px] font-medium" : "text-muted-foreground/40 text-[10px]"}>{p.required ? "required" : "optional"}</span>
+                    <span className="text-muted-foreground">{p.desc}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {response && (
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">Response</p>
+              <div className="rounded-md bg-muted/50 border px-3 py-2 font-mono text-xs text-muted-foreground whitespace-pre">{response}</div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }
@@ -653,35 +781,74 @@ export default function DocsPage() {
   const [activeSection, setActiveSection] = useState("overview")
 
   return (
-    <div className="flex gap-6 animate-fade-in">
-      <aside className="hidden lg:flex flex-col w-52 flex-shrink-0">
-        <div className="sticky top-6 space-y-1">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-3 pb-2">Contents</p>
-          {SECTIONS.map((s) => {
-            const Icon = s.icon
-            return (
-              <button
-                key={s.id}
-                onClick={() => setActiveSection(s.id)}
-                className={cn(
-                  "w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-sm text-left transition-colors",
-                  activeSection === s.id
-                    ? "bg-primary text-primary-foreground font-medium"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                )}
-              >
-                <Icon className="h-3.5 w-3.5 flex-shrink-0" />
-                <span className="truncate">{s.label}</span>
-              </button>
-            )
-          })}
+    <div className="flex gap-8 animate-fade-in">
+      <aside className="hidden lg:flex flex-col w-56 flex-shrink-0">
+        <div className="sticky top-6">
+          <div className="flex items-center gap-2 px-2 pb-4 mb-2 border-b">
+            <div className="h-6 w-6 rounded bg-primary/10 flex items-center justify-center">
+              <BookOpen className="h-3.5 w-3.5 text-primary" />
+            </div>
+            <span className="text-[13px] font-bold text-foreground tracking-tight">Documentation</span>
+          </div>
+          {SECTION_GROUPS.map((group) => (
+            <div key={group.label} className="mb-5">
+              <p className="text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-widest px-2 mb-1.5">{group.label}</p>
+              {group.items.map((s) => {
+                const Icon = s.icon
+                const isActive = activeSection === s.id
+                return (
+                  <button
+                    key={s.id}
+                    onClick={() => setActiveSection(s.id)}
+                    className={cn(
+                      "w-full flex items-center gap-2 px-2 py-1.5 text-[13px] text-left transition-colors rounded-md relative",
+                      isActive
+                        ? "text-primary font-semibold bg-primary/5"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                    )}
+                  >
+                    {isActive && <span className="absolute left-0 inset-y-1.5 w-[2px] bg-primary rounded-full" />}
+                    <Icon className={cn("h-3.5 w-3.5 flex-shrink-0 ml-1", isActive ? "text-primary" : "")} />
+                    <span className="truncate">{s.label}</span>
+                  </button>
+                )
+              })}
+            </div>
+          ))}
+          <div className="mt-2 pt-4 border-t">
+            <p className="text-[10px] text-muted-foreground/50 px-2">Ryzha ERP Platform</p>
+          </div>
         </div>
       </aside>
 
       <div className="flex-1 min-w-0 space-y-10 pb-16">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">System Documentation</h1>
-          <p className="text-muted-foreground mt-1">End-to-end guide to Ryzha — architecture, flows, agents, and accounting rules.</p>
+        <div className="border-b pb-6">
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-3">
+            <span>Ryzha</span>
+            <ChevronRight className="h-3 w-3" />
+            <span className="text-foreground font-medium">Documentation</span>
+          </div>
+          <h1 className="text-2xl font-bold tracking-tight">Documentation</h1>
+          <p className="text-muted-foreground mt-1.5 text-sm max-w-2xl leading-relaxed">Complete reference for Ryzha — architecture, accounting flows, AI agents, REST APIs, and data model. This page is updated continuously as new features ship.</p>
+          <div className="flex flex-wrap gap-3 mt-4">
+            {[
+              { label: "Quick Start", id: "overview" },
+              { label: "O2C Flow", id: "o2c" },
+              { label: "P2P Flow", id: "p2p" },
+              { label: "AI Agents", id: "agents" },
+              { label: "API Reference", id: "api" },
+              { label: "Release Notes", id: "release-notes" },
+            ].map(link => (
+              <button
+                key={link.id}
+                onClick={() => setActiveSection(link.id)}
+                className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+              >
+                {link.label}
+                <ChevronRight className="h-3 w-3" />
+              </button>
+            ))}
+          </div>
         </div>
 
         {(activeSection === "overview" || activeSection === "all") && (
@@ -1912,6 +2079,105 @@ export default function DocsPage() {
                   </div>
                 </CardContent>
               </Card>
+            </div>
+          </section>
+        )}
+
+        {(activeSection === "api" || activeSection === "all") && (
+          <section id="api">
+            <SectionTitle icon={Zap} title="API Reference" subtitle="REST API for all Ryzha modules. All endpoints require a valid session cookie (NextAuth). Base URL: /api" badge="REST" />
+
+            <div className="space-y-8">
+
+              <DocCallout type="info">
+                All API routes are authenticated via NextAuth session cookies. Include <code className="text-xs bg-blue-100 dark:bg-blue-900/40 rounded px-1 py-0.5">credentials: &apos;include&apos;</code> on client-side fetch calls. Server-to-server access requires a session token passed in the <code className="text-xs bg-blue-100 dark:bg-blue-900/40 rounded px-1 py-0.5">Authorization</code> header as <code className="text-xs bg-blue-100 dark:bg-blue-900/40 rounded px-1 py-0.5">Bearer {'<token>'}</code>.
+              </DocCallout>
+
+              <div>
+                <h3 className="text-base font-semibold mb-1">Order-to-Cash</h3>
+                <p className="text-sm text-muted-foreground mb-3">Customers, sales orders, invoices, payments, and credit notes.</p>
+                <div className="space-y-2">
+                  <ApiEndpoint method="GET" path="/api/customers" description="Returns all customers for the authenticated organization, ordered by name." params={[{ name: "status", type: "string", desc: "Filter by status: ACTIVE or FLAGGED" }]} response={`[{ id, name, email, creditLimit, paymentTerms, status, createdAt }]`} />
+                  <ApiEndpoint method="POST" path="/api/customers" description="Create a new customer." body={[{ name: "name", type: "string", required: true, desc: "Customer display name" }, { name: "email", type: "string", desc: "Billing email" }, { name: "creditLimit", type: "number", desc: "Credit limit in base currency (default: 5000)" }, { name: "paymentTerms", type: "string", desc: "e.g. NET30, NET60 (default: NET30)" }]} response={`{ id, name, email, creditLimit, paymentTerms, status: "ACTIVE" }`} />
+                  <ApiEndpoint method="GET" path="/api/sales-orders" description="List all sales orders. Ordered by creation date descending." params={[{ name: "customerId", type: "string", desc: "Filter by customer ID" }, { name: "status", type: "string", desc: "Filter by status: DRAFT, APPROVED, INVOICED, PAID" }]} response={`[{ id, orderNumber, totalAmount, status, customerId, lineItems[] }]`} />
+                  <ApiEndpoint method="POST" path="/api/sales-orders" description="Create a new sales order. Order number is auto-generated (SO-XXXXXX). Triggers the O2C agent pipeline asynchronously after creation." body={[{ name: "customerId", type: "string", required: true, desc: "ID of an existing customer" }, { name: "lineItems", type: "array", required: true, desc: "Array of { description, quantity, unitPrice, taxRate, discount, accountCode, productId }" }]} response={`{ id, orderNumber, status: "DRAFT", totalAmount, customerId }`} />
+                  <ApiEndpoint method="GET" path="/api/invoices" description="List all invoices. Returns nextNumber and defaultTaxRate at the top level for the new invoice form." params={[{ name: "status", type: "string", desc: "Filter by InvoiceStatus: DRAFT, SENT, PAID, OVERDUE, VOID" }, { name: "customerId", type: "string", desc: "Filter by customer" }]} response={`{ invoices[], nextNumber, defaultTaxRate }`} />
+                  <ApiEndpoint method="POST" path="/api/invoices" description="Create a new invoice. Invoice number is auto-generated. Validates that a customer exists for the provided email." body={[{ name: "clientEmail", type: "string", required: true, desc: "Must match an existing customer email" }, { name: "issueDate", type: "string", required: true, desc: "ISO date string" }, { name: "dueDate", type: "string", desc: "ISO date string. Defaults to issueDate + 30 days" }, { name: "lineItems", type: "array", required: true, desc: "Array of line item objects" }, { name: "subtotal", type: "number", required: true, desc: "Sum of line amounts before tax" }, { name: "totalTax", type: "number", required: true, desc: "Sum of all line taxes" }, { name: "total", type: "number", required: true, desc: "subtotal + totalTax" }]} response={`{ id, invoiceNumber, status: "DRAFT", total, clientEmail }`} />
+                  <ApiEndpoint method="POST" path="/api/invoices/[id]/generate-pdf" description="Generate a PDF for the invoice and store the URL on the invoice record. Returns a signed download URL." response={`{ url: "https://..." }`} />
+                  <ApiEndpoint method="GET" path="/api/payments" description="List all customer payments for the organization." response={`[{ id, amount, paymentDate, method, referenceNumber, invoiceId, transactionId }]`} />
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-base font-semibold mb-1">Procure-to-Pay</h3>
+                <p className="text-sm text-muted-foreground mb-3">Vendors, purchase orders, vendor invoices, and payments.</p>
+                <div className="space-y-2">
+                  <ApiEndpoint method="GET" path="/api/vendors" description="List all vendors for the organization." response={`[{ id, name, email, taxId, paymentTerms, status }]`} />
+                  <ApiEndpoint method="POST" path="/api/vendors" description="Create a new vendor." body={[{ name: "name", type: "string", required: true, desc: "Vendor display name" }, { name: "email", type: "string", desc: "Contact email" }, { name: "paymentTerms", type: "string", desc: "e.g. NET30 (default: NET30)" }, { name: "taxId", type: "string", desc: "Tax/VAT identification number" }]} response={`{ id, name, email, status: "ACTIVE" }`} />
+                  <ApiEndpoint method="GET" path="/api/purchases" description="List purchase orders. Pass vendorId to filter." params={[{ name: "vendorId", type: "string", desc: "Filter POs by vendor" }, { name: "status", type: "string", desc: "DRAFT, PENDING_APPROVAL, APPROVED, REJECTED, ROUTED" }]} response={`[{ id, poNumber, totalAmount, status, vendorId, lineItems[] }]`} />
+                  <ApiEndpoint method="POST" path="/api/purchases" description="Create a purchase order. PO number is auto-generated (PO-XXXXXX)." body={[{ name: "vendorId", type: "string", required: true, desc: "ID of an existing vendor" }, { name: "lineItems", type: "array", required: true, desc: "Array of { description, quantity, unitPrice, taxRate, discount, accountCode, productId }" }]} response={`{ id, poNumber, status: "DRAFT", totalAmount }`} />
+                  <ApiEndpoint method="GET" path="/api/vendor-invoices" description="List all vendor invoices." params={[{ name: "vendorId", type: "string", desc: "Filter by vendor" }, { name: "status", type: "string", desc: "PENDING, RECEIVED, MATCHED, DISPUTED, APPROVED" }]} response={`[{ id, invoiceNumber, totalAmount, status, vendorId, purchaseOrderId }]`} />
+                  <ApiEndpoint method="POST" path="/api/vendor-invoices" description="Create a vendor invoice. Invoice number is auto-generated. When purchaseOrderId is supplied, line items from the PO are available in the response for carry-forward." body={[{ name: "vendorId", type: "string", required: true, desc: "ID of an existing vendor" }, { name: "purchaseOrderId", type: "string", desc: "Links to a PO for three-way match" }, { name: "lineItems", type: "array", required: true, desc: "Array of { description, quantity, unitPrice, taxRate, accountCode, productId }" }]} response={`{ id, invoiceNumber, status: "PENDING", totalAmount }`} />
+                  <ApiEndpoint method="POST" path="/api/vendor-payments" description="Record a vendor payment. Triggers the 6-agent P2P pipeline: Three-Way Match, Duplicate Check, AP Policy, Payment Scheduler, Treasury, P2P Auditor. A Transaction row is created and the pipeline runs asynchronously." body={[{ name: "vendorInvoiceId", type: "string", required: true, desc: "ID of the vendor invoice being paid" }, { name: "amount", type: "number", required: true, desc: "Payment amount in base currency" }, { name: "paymentMethod", type: "string", required: true, desc: "bank_transfer, check, ach, wire" }, { name: "reference", type: "string", desc: "Bank reference or check number" }, { name: "notes", type: "string", desc: "Internal payment notes" }]} response={`{ id, amount, paymentMethod, transactionId, vendorInvoice: { status } }`} />
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-base font-semibold mb-1">Master Data — Products</h3>
+                <p className="text-sm text-muted-foreground mb-3">Shared product and service catalog. Items are scoped to sales, purchasing, or both.</p>
+                <div className="space-y-2">
+                  <ApiEndpoint method="GET" path="/api/products" description="List products in the catalog. Supports filtering by type and scope." params={[{ name: "scope", type: "string", desc: "sales — returns usedInSales=true items excluding tax. purchasing — returns usedInPurchasing=true items excluding tax." }, { name: "type", type: "string", desc: "service, product, or tax" }, { name: "active", type: "boolean", desc: "Default true. Pass false to include archived items." }]} response={`[{ id, code, name, type, unitPrice, taxRate, accountCode, usedInSales, usedInPurchasing }]`} />
+                  <ApiEndpoint method="POST" path="/api/products" description="Create a product or service." body={[{ name: "code", type: "string", required: true, desc: "Unique code per org (e.g. SVC-0001). Use /api/products/next-code to auto-generate." }, { name: "name", type: "string", required: true, desc: "Display name" }, { name: "type", type: "string", required: true, desc: "service, product, or tax" }, { name: "unitPrice", type: "number", desc: "Default line item price" }, { name: "taxRate", type: "number", desc: "Default tax rate percentage (e.g. 8.5)" }, { name: "accountCode", type: "string", desc: "Default GL account code" }, { name: "usedInSales", type: "boolean", desc: "Appears in Sales Orders and Invoices" }, { name: "usedInPurchasing", type: "boolean", desc: "Appears in Purchase Orders and Vendor Invoices" }]} response={`{ id, code, name, type, usedInSales, usedInPurchasing }`} />
+                  <ApiEndpoint method="GET" path="/api/products/next-code" description="Returns the next available auto-generated product code based on type and scope. Used by the product creation form to pre-fill the code field." params={[{ name: "type", type: "string", desc: "service, product, or tax. Determines code prefix." }, { name: "usedInSales", type: "boolean", desc: "Affects prefix: SVC (sales service), ITEM (sales product)" }, { name: "usedInPurchasing", type: "boolean", desc: "Affects prefix: EXP (purchasing service), COGS (purchasing product)" }]} response={`{ code: "SVC-0003", prefix: "SVC" }`} />
+                  <ApiEndpoint method="PUT" path="/api/products/[id]" description="Update a product. Code cannot be changed after creation — all other fields are editable." body={[{ name: "name", type: "string", desc: "Updated display name" }, { name: "isActive", type: "boolean", desc: "Set to false to archive the product" }, { name: "usedInSales", type: "boolean", desc: "Toggle sales scope" }, { name: "usedInPurchasing", type: "boolean", desc: "Toggle purchasing scope" }]} response={`{ id, code, name, isActive, usedInSales, usedInPurchasing }`} />
+                  <ApiEndpoint method="DELETE" path="/api/products/[id]" description="Delete a product. If the product has been used on any document (invoice, SO, PO, vendor invoice), it is archived instead of deleted and the response includes archived: true." response={`{ deleted: true } or { archived: true, message: "..." }`} />
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-base font-semibold mb-1">Bank Reconciliation</h3>
+                <p className="text-sm text-muted-foreground mb-3">Import bank statements and run AI-powered matching against open payments.</p>
+                <div className="space-y-2">
+                  <ApiEndpoint method="POST" path="/api/bank-reconciliation/import" description="Import a CSV bank statement. Auto-detects column headers across common bank export formats. Deduplicates by date + amount + description. Supports multipart/form-data (file field named 'file') or JSON body with a rows array." body={[{ name: "file", type: "File", required: true, desc: "CSV file (multipart/form-data). Column headers are auto-detected: date, description, amount, reference, balance, counterparty." }, { name: "closingBalance", type: "number", desc: "Optional closing balance for verification. Stored on the Organization record." }]} response={`{ imported: 42, skipped: 3, total: 45 }`} />
+                  <ApiEndpoint method="POST" path="/api/bank-reconciliation/match" description="Run the AI Reconciliation Agent against all unmatched bank transactions. Scores each transaction against open vendor payments (debits) and customer payments (credits) using amount tolerance, date proximity, and description keyword overlap. Returns match candidates." response={`{ matched: 12, autoConfirmed: 8, reviewQueue: 4, skipped: 30 }`} />
+                  <ApiEndpoint method="POST" path="/api/bank-reconciliation/confirm" description="Manually confirm a match from the review queue." body={[{ name: "bankTransactionId", type: "string", required: true, desc: "ID of the BankTransaction to reconcile" }, { name: "matchType", type: "string", required: true, desc: "vendor_payment or invoice_payment" }, { name: "matchedId", type: "string", required: true, desc: "ID of the VendorPayment or Payment being matched" }]} response={`{ id, matchStatus: "matched", reconciledAt }`} />
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-base font-semibold mb-1">Transactions & Reporting</h3>
+                <p className="text-sm text-muted-foreground mb-3">Unified ledger of all inbound and outbound transactions, GL reports, and journal entries.</p>
+                <div className="space-y-2">
+                  <ApiEndpoint method="GET" path="/api/transactions" description="List all transactions (inbound Stripe payments + outbound vendor payments) for the organization. Ordered by creation date descending." params={[{ name: "direction", type: "string", desc: "inbound or outbound" }, { name: "status", type: "string", desc: "workflowStatus: pending, running, completed, error, flagged" }, { name: "limit", type: "number", desc: "Page size (default: 50)" }]} response={`[{ id, amount, direction, transactionType, workflowStatus, auditStatus, counterparty, createdAt }]`} />
+                  <ApiEndpoint method="GET" path="/api/transactions/[id]" description="Get a single transaction with full agent log, journal entry lines, and pipeline step details." response={`{ id, amount, agentLogs, journalEntry: { lines[] }, workflowStatus, auditStatus }`} />
+                  <ApiEndpoint method="POST" path="/api/transactions/[id]/rerun" description="Re-run the full agent pipeline for a transaction. Safe to run on completed transactions — idempotency guards prevent duplicate journal entries." response={`{ workflowStatus: "running" }`} />
+                  <ApiEndpoint method="GET" path="/api/reports/general-ledger" description="Returns the General Ledger grouped by account, with per-account debit/credit totals and running balance. Used by the GL report and account detail pages." params={[{ name: "startDate", type: "string", desc: "ISO date — filter GL entries from this date" }, { name: "endDate", type: "string", desc: "ISO date — filter GL entries up to this date" }, { name: "accountCode", type: "string", desc: "Filter to a single account" }]} response={`[{ accountCode, accountName, accountType, totalDebit, totalCredit, balance, entries[] }]`} />
+                  <ApiEndpoint method="GET" path="/api/journal-entries" description="List all journal entries with their lines. Both manual (DRAFT/POSTED) and system entries are included." params={[{ name: "status", type: "string", desc: "DRAFT or POSTED" }, { name: "type", type: "string", desc: "REGULAR, ADJUSTING, CLOSING, REVERSING" }]} response={`[{ id, jeNumber, date, type, status, isSystem, lines[] }]`} />
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-base font-semibold mb-1">Stripe Webhook</h3>
+                <p className="text-sm text-muted-foreground mb-3">The Stripe webhook endpoint processes payment events and triggers the full O2C agent pipeline.</p>
+                <div className="space-y-2">
+                  <ApiEndpoint method="POST" path="/api/webhooks/stripe" description="Stripe webhook receiver. Validates the Stripe-Signature header using the webhook secret from FinancialSettings.stripeWebhookSecret. Handles payment_intent.succeeded (triggers O2C pipeline), charge.refunded (creates credit note + GL reversal), and payout.paid (clears Stripe Clearing account)." auth={false} body={[{ name: "Stripe-Signature", type: "header", required: true, desc: "Webhook signature for verification. Must match stripeWebhookSecret in FinancialSettings." }]} response={`{ received: true }`} />
+                </div>
+                <div className="mt-3">
+                  <DocCallout type="warning">
+                    The Stripe webhook only processes <strong>customer payment intents</strong>. Vendor payments are recorded manually via the P2P flow and do not go through the Stripe webhook route.
+                  </DocCallout>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-base font-semibold mb-1">Admin</h3>
+                <p className="text-sm text-muted-foreground mb-3">Administrative operations. Restricted to organization administrators.</p>
+                <div className="space-y-2">
+                  <ApiEndpoint method="POST" path="/api/admin/backfill-journal-entries" description="Retroactively create system journal entries for all existing transactions, invoices, vendor invoices, expenses, and credit notes that do not yet have a JE. The operation is idempotent — records with existing JEs are skipped." response={`{ processed: 47, skipped: 12, errors: 0 }`} />
+                  <ApiEndpoint method="GET" path="/api/admin/seed-demo" description="Seeds the organization with demo data for O2C and P2P: sample customers, vendors, products, invoices, purchase orders, and transactions. Only available in non-production environments." response={`{ seeded: true }`} />
+                </div>
+              </div>
+
             </div>
           </section>
         )}
