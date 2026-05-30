@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import Link from "next/link"
 import { ArrowRight, AlertTriangle, XCircle, CheckCircle2, Clock } from "lucide-react"
 import { PageShell } from "@/components/ui/page-shell"
+import { TransactionListRerunButton } from "./rerun-button"
 
 export const dynamic = "force-dynamic"
 
@@ -207,6 +208,7 @@ export default async function TransactionsPage() {
                     <th className="pb-3 pr-4 font-medium text-right">Recognized</th>
                     <th className="pb-3 pr-4 font-medium text-right">Deferred</th>
                     <th className="pb-3 pr-4 font-medium">Pipeline</th>
+                    <th className="pb-3 pr-2" />
                     <th className="pb-3" />
                   </tr>
                 </thead>
@@ -245,6 +247,9 @@ export default async function TransactionsPage() {
                             {ps.icon}
                             {ps.label}
                           </span>
+                        </td>
+                        <td className="py-3 pr-1">
+                          <TransactionListRerunButton transactionId={tx.id} />
                         </td>
                         <td className="py-3">
                           <Link href={`/transactions/${tx.id}`} className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors">
