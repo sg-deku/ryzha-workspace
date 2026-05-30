@@ -61,11 +61,15 @@ export async function POST(req: Request) {
         organizationId: session.user.organizationId,
         lineItems: {
           create: lineItems.map((li: any) => ({
+            productId: li.productId ?? null,
             description: li.description,
             quantity: li.quantity,
             unitPrice: li.unitPrice,
+            discount: li.discount ?? 0,
             taxRate: li.taxRate,
-            amount: li.amount
+            amount: li.amount,
+            accountCode: li.accountCode ?? null,
+            notes: li.notes ?? null,
           }))
         }
       },

@@ -80,6 +80,9 @@ model Organization {
   // Numbering
   entitySequences    EntitySequence[]
   numberingSettings  NumberingSettings?
+
+  // Product Catalog
+  products Product[]
 }
 
 model P2PSettings {
@@ -133,12 +136,18 @@ model PurchaseOrder {
 
 model PurchaseOrderLine {
   id              String        @id @default(cuid())
+  productId       String?
   description     String
   quantity        Float
   unitPrice       Float
+  discount        Float         @default(0)
+  taxRate         Float         @default(0)
   amount          Float
+  accountCode     String?
+  notes           String?
   purchaseOrderId String
   purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id])
+  product         Product?      @relation("POLineProduct", fields: [productId], references: [id])
 }
 
 model VendorInvoice {
@@ -221,12 +230,43 @@ model BankTransaction {
 
 model VendorInvoiceLine {
   id              String        @id @default(cuid())
+  productId       String?
   description     String
   quantity        Float
   unitPrice       Float
+  discount        Float         @default(0)
+  taxRate         Float         @default(0)
   amount          Float
+  accountCode     String?
+  notes           String?
   vendorInvoiceId String
   vendorInvoice   VendorInvoice @relation(fields: [vendorInvoiceId], references: [id])
+  product         Product?      @relation("VendorInvoiceLineProduct", fields: [productId], references: [id])
+}
+
+model Product {
+  id           String   @id @default(cuid())
+  code         String
+  name         String
+  description  String?
+  unitPrice    Float    @default(0)
+  costPrice    Float?
+  taxRate      Float    @default(0)
+  accountCode  String?
+  type         String   @default("service")
+  isActive     Boolean  @default(true)
+  organizationId String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  organization         Organization         @relation(fields: [organizationId], references: [id])
+  invoiceLines         InvoiceLineItem[]    @relation("InvoiceLineProduct")
+  salesOrderLines      SalesOrderLine[]     @relation("SOLineProduct")
+  purchaseOrderLines   PurchaseOrderLine[]  @relation("POLineProduct")
+  vendorInvoiceLines   VendorInvoiceLine[]  @relation("VendorInvoiceLineProduct")
+
+  @@unique([organizationId, code])
+  @@index([organizationId])
 }
 
 model O2CSettings {
@@ -282,12 +322,18 @@ model SalesOrder {
 
 model SalesOrderLine {
   id           String     @id @default(cuid())
+  productId    String?
   description  String
   quantity     Float
   unitPrice    Float
+  discount     Float      @default(0)
+  taxRate      Float      @default(0)
   amount       Float
+  accountCode  String?
+  notes        String?
   salesOrderId String
   salesOrder   SalesOrder @relation(fields: [salesOrderId], references: [id])
+  product      Product?   @relation("SOLineProduct", fields: [productId], references: [id])
 }
 
 model FinancialSettings {
@@ -368,14 +414,19 @@ model Invoice {
 }
 
 model InvoiceLineItem {
-  id          String  @id @default(cuid())
+  id          String   @id @default(cuid())
+  productId   String?
   description String
   quantity    Float
   unitPrice   Float
-  taxRate     Float   @default(0)
+  discount    Float    @default(0)
+  taxRate     Float    @default(0)
   amount      Float
+  accountCode String?
+  notes       String?
   invoiceId   String
-  invoice     Invoice @relation(fields: [invoiceId], references: [id])
+  invoice     Invoice  @relation(fields: [invoiceId], references: [id])
+  product     Product? @relation("InvoiceLineProduct", fields: [productId], references: [id])
 }
 
 enum InvoiceStatus {

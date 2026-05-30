@@ -32,6 +32,7 @@ import {
   Book,
   Scale,
   Hash,
+  Package,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -167,6 +168,12 @@ export function Sidebar() {
             href="/contracts"
             icon={FilePenLine}
             label="Contracts"
+            collapsed={collapsed}
+          />
+          <SidebarItem
+            href="/products"
+            icon={Package}
+            label="Product Catalog"
             collapsed={collapsed}
           />
 

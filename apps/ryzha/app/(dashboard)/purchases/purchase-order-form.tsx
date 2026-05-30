@@ -6,50 +6,42 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Plus, Trash2, ArrowLeft } from "lucide-react"
+import { ArrowLeft } from "lucide-react"
 import Link from "next/link"
 import { toast } from "sonner"
 import { AISuggestBar } from "@/components/ai/ai-suggest-bar"
+import { LineItemsTable, type LineItem } from "@/components/line-items/line-items-table"
 
 export default function PurchaseOrderForm({ initialData }: { initialData?: any }) {
   const router = useRouter()
   const isEditing = !!initialData?.id
   const [vendorId, setVendorId] = useState(initialData?.vendorId || "")
   const [vendors, setVendors] = useState<any[]>([])
-  const [poNumber] = useState(initialData?.poNumber || "")
   const [isLoading, setIsLoading] = useState(false)
-  const [lineItems, setLineItems] = useState(
+  const [lineItems, setLineItems] = useState<LineItem[]>(
     initialData?.lineItems?.length > 0
-      ? initialData.lineItems
-      : [{ description: "", quantity: 1, unitPrice: 0 }]
+      ? initialData.lineItems.map((item: any) => ({
+          id: item.id,
+          productId: item.productId ?? null,
+          description: item.description,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          discount: item.discount ?? 0,
+          taxRate: item.taxRate ?? 0,
+          amount: item.amount,
+          accountCode: item.accountCode ?? null,
+          notes: item.notes ?? null,
+        }))
+      : [{ description: "", quantity: 1, unitPrice: 0, discount: 0, taxRate: 0, amount: 0 }]
   )
 
   useEffect(() => {
     fetch("/api/vendors")
       .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data)) setVendors(data)
-      })
+      .then(data => { if (Array.isArray(data)) setVendors(data) })
       .catch(err => console.error(err))
   }, [])
-
-  const addLineItem = () => {
-    setLineItems([...lineItems, { description: "", quantity: 1, unitPrice: 0 }])
-  }
-
-  const removeLineItem = (index: number) => {
-    setLineItems(lineItems.filter((_: any, i: number) => i !== index))
-  }
-
-  const updateLineItem = (index: number, field: string, value: any) => {
-    const newItems = [...lineItems]
-    newItems[index] = { ...newItems[index], [field]: value }
-    setLineItems(newItems)
-  }
-
-  const total = lineItems.reduce((sum: number, item: any) => sum + (Number(item.quantity) * Number(item.unitPrice)), 0)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -57,23 +49,25 @@ export default function PurchaseOrderForm({ initialData }: { initialData?: any }
     try {
       const url = isEditing ? `/api/purchases/${initialData.id}` : "/api/purchases"
       const method = isEditing ? "PUT" : "POST"
-
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          vendorId, 
-          ...(isEditing && { poNumber }),
-          lineItems: lineItems.map((item: any) => ({
-            ...item,
+        body: JSON.stringify({
+          vendorId,
+          lineItems: lineItems.map(item => ({
+            productId: item.productId ?? null,
+            description: item.description,
             quantity: Number(item.quantity),
-            unitPrice: Number(item.unitPrice)
-          }))
-        })
+            unitPrice: Number(item.unitPrice),
+            discount: Number(item.discount ?? 0),
+            taxRate: Number(item.taxRate ?? 0),
+            amount: Number(item.amount),
+            accountCode: item.accountCode ?? null,
+            notes: item.notes ?? null,
+          })),
+        }),
       })
-
       if (!res.ok) throw new Error(isEditing ? "Failed to update purchase order" : "Failed to create purchase order")
-
       toast.success(isEditing ? "Purchase Order updated successfully" : "Purchase Order created successfully")
       router.push("/purchases")
       router.refresh()
@@ -88,9 +82,7 @@ export default function PurchaseOrderForm({ initialData }: { initialData?: any }
     <div className="flex-1 space-y-4 p-8 pt-6">
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" asChild>
-          <Link href="/purchases">
-            <ArrowLeft className="h-4 w-4" />
-          </Link>
+          <Link href="/purchases"><ArrowLeft className="h-4 w-4" /></Link>
         </Button>
         <h2 className="text-3xl font-bold tracking-tight">{isEditing ? "Edit Purchase Order" : "New Purchase Order"}</h2>
       </div>
@@ -101,9 +93,14 @@ export default function PurchaseOrderForm({ initialData }: { initialData?: any }
           onSuggestion={(data) => {
             if (data.items?.length) {
               setLineItems(data.items.map((item: any) => ({
+                productId: item.productId ?? null,
                 description: item.description || "",
                 quantity: item.quantity || 1,
                 unitPrice: item.unitPrice || 0,
+                discount: item.discount || 0,
+                taxRate: item.taxRate || 0,
+                amount: (item.quantity || 1) * (item.unitPrice || 0),
+                accountCode: item.accountCode ?? null,
               })))
             }
           }}
@@ -112,17 +109,13 @@ export default function PurchaseOrderForm({ initialData }: { initialData?: any }
 
       <form onSubmit={handleSubmit} className="space-y-8">
         <Card>
-          <CardHeader>
-            <CardTitle>Order Details</CardTitle>
-          </CardHeader>
+          <CardHeader><CardTitle>Order Details</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="vendor">Vendor</Label>
+                <Label>Vendor</Label>
                 <Select value={vendorId} onValueChange={setVendorId} required>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a vendor" />
-                  </SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder="Select a vendor" /></SelectTrigger>
                   <SelectContent>
                     {vendors.map((v) => (
                       <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>
@@ -131,78 +124,23 @@ export default function PurchaseOrderForm({ initialData }: { initialData?: any }
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="poNumber">PO Number</Label>
-                <Input value={poNumber || "Auto-generated on save"} readOnly className="bg-muted text-muted-foreground cursor-not-allowed" />
+                <Label>PO Number</Label>
+                <Input value={initialData?.poNumber || "Auto-generated on save"} readOnly className="bg-muted text-muted-foreground cursor-not-allowed" />
               </div>
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Line Items</CardTitle>
-            <Button type="button" variant="outline" size="sm" onClick={addLineItem}>
-              <Plus className="mr-2 h-4 w-4" /> Add Item
-            </Button>
-          </CardHeader>
+          <CardHeader><CardTitle>Line Items</CardTitle></CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Description</TableHead>
-                  <TableHead className="w-[100px]">Quantity</TableHead>
-                  <TableHead className="w-[150px]">Unit Price</TableHead>
-                  <TableHead className="w-[150px]">Amount</TableHead>
-                  <TableHead className="w-[50px]"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {lineItems.map((item: any, index: number) => (
-                  <TableRow key={index}>
-                    <TableCell>
-                      <Input 
-                        value={item.description} 
-                        onChange={(e) => updateLineItem(index, "description", e.target.value)}
-                        placeholder="Item description"
-                        required
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Input 
-                        type="number"
-                        min="1"
-                        value={item.quantity} 
-                        onChange={(e) => updateLineItem(index, "quantity", e.target.value)}
-                        required
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Input 
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={item.unitPrice} 
-                        onChange={(e) => updateLineItem(index, "unitPrice", e.target.value)}
-                        required
-                      />
-                    </TableCell>
-                    <TableCell className="font-medium">
-                      ${(item.quantity * item.unitPrice).toFixed(2)}
-                    </TableCell>
-                    <TableCell>
-                      <Button variant="ghost" size="icon" type="button" onClick={() => removeLineItem(index)} disabled={lineItems.length === 1}>
-                        <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-            <div className="flex justify-end pt-4">
-              <div className="text-xl font-bold">
-                Total: ${total.toFixed(2)}
-              </div>
-            </div>
+            <LineItemsTable
+              lineItems={lineItems}
+              onChange={setLineItems}
+              showTax
+              showDiscount
+              showAccountCode
+            />
           </CardContent>
         </Card>
 

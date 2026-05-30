@@ -354,6 +354,23 @@ type ReleaseNote = {
 
 const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "v0.9.9",
+    date: "May 30, 2026",
+    title: "Product & Service Catalog — Line Item Standardisation",
+    summary: "Introduces a shared Product & Service Catalog that auto-fills line items across all four document types (Sales Orders, Invoices, Purchase Orders, Vendor Invoices). All line item models are now standardised with productId, discount, taxRate, accountCode, and notes. The Three-Way Match agent now performs line-level comparison in addition to header totals.",
+    changes: [
+      { type: "feat", text: "Product model — code (immutable, unique per org), name, description, unitPrice, costPrice, taxRate, accountCode, type (service/product), isActive. Schema migrated on both local and Vercel/Prisma Accelerate." },
+      { type: "feat", text: "GET/POST /api/products — list with active and type filters; POST validates unique code per org. GET/PUT/DELETE /api/products/[id] — code is immutable after creation; DELETE archives instead of hard-deletes if the product has been used on any document line." },
+      { type: "feat", text: "/products page — KPI cards (Active, Services, Products), catalog table with GL account code, archived section. /products/new and /products/[id]/edit forms with GL account code selector." },
+      { type: "feat", text: "Shared LineItemsTable component (components/line-items/line-items-table.tsx) — product picker dropdown auto-fills description, unit price, tax rate, and GL code. Supports showTax, showDiscount, showAccountCode props. Footer shows subtotal, tax, and grand total." },
+      { type: "feat", text: "All four document forms updated to use LineItemsTable: Sales Order, Purchase Order, Vendor Invoice, and Invoice (replacing InvoiceBuilder with product catalog support while preserving AI suggest functionality)." },
+      { type: "feat", text: "Vendor Invoice form: selecting a linked PO now carries forward all PO line items (with productId, discount, taxRate, accountCode) as a starting point — editable before saving." },
+      { type: "feat", text: "Three-Way Match agent updated to line-level matching — compares each invoice line against the linked PO by productId (exact) or description similarity (≥50% keyword overlap). Reports per-line variances in the pipeline log." },
+      { type: "feat", text: "Product Catalog added to sidebar nav under Order-to-Cash section." },
+      { type: "fix", text: "All line item create APIs (invoices, sales-orders, vendor-invoices) now persist productId, discount, taxRate, accountCode, and notes fields." },
+    ],
+  },
+  {
     version: "v0.9.8",
     date: "May 30, 2026",
     title: "Bank Statement Reconciliation — AI-Powered Import & Matching",

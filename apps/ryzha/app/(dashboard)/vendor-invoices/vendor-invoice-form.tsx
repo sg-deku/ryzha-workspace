@@ -7,26 +7,54 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { ArrowLeft, Upload, FileText, Plus, Trash2 } from "lucide-react"
+import { ArrowLeft, FileText } from "lucide-react"
 import Link from "next/link"
 import { toast } from "sonner"
+import { LineItemsTable, type LineItem } from "@/components/line-items/line-items-table"
 
-export default function VendorInvoiceForm({ initialData }: { initialData?: any }) {
+export default function VendorInvoiceForm({ initialData, linkedPO }: { initialData?: any; linkedPO?: any }) {
   const router = useRouter()
   const isEditing = !!initialData?.id
   const [file, setFile] = useState<File | null>(null)
   const [vendors, setVendors] = useState<any[]>([])
   const [vendorId, setVendorId] = useState(initialData?.vendorId || "")
   const [invoiceNumber] = useState(initialData?.invoiceNumber || "")
-  const [purchaseOrderId, setPurchaseOrderId] = useState(initialData?.purchaseOrderId || "")
+  const [purchaseOrderId, setPurchaseOrderId] = useState(initialData?.purchaseOrderId || linkedPO?.id || "")
   const [purchaseOrders, setPurchaseOrders] = useState<{ id: string; poNumber: string; status: string; totalAmount: number }[]>([])
   const [isLoading, setIsLoading] = useState(false)
-  const [lineItems, setLineItems] = useState(
-    initialData?.lineItems?.length > 0 
-      ? initialData.lineItems 
-      : [{ description: "", quantity: 1, unitPrice: 0 }]
-  )
+
+  const initLines = (): LineItem[] => {
+    if (initialData?.lineItems?.length > 0) {
+      return initialData.lineItems.map((item: any) => ({
+        id: item.id,
+        productId: item.productId ?? null,
+        description: item.description,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        discount: item.discount ?? 0,
+        taxRate: item.taxRate ?? 0,
+        amount: item.amount,
+        accountCode: item.accountCode ?? null,
+        notes: item.notes ?? null,
+      }))
+    }
+    if (linkedPO?.lineItems?.length > 0) {
+      return linkedPO.lineItems.map((item: any) => ({
+        productId: item.productId ?? null,
+        description: item.description,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        discount: item.discount ?? 0,
+        taxRate: item.taxRate ?? 0,
+        amount: item.amount,
+        accountCode: item.accountCode ?? null,
+        notes: item.notes ?? null,
+      }))
+    }
+    return [{ description: "", quantity: 1, unitPrice: 0, discount: 0, taxRate: 0, amount: 0 }]
+  }
+
+  const [lineItems, setLineItems] = useState<LineItem[]>(initLines)
 
   useEffect(() => {
     fetch("/api/vendors")
@@ -43,26 +71,34 @@ export default function VendorInvoiceForm({ initialData }: { initialData?: any }
       .catch(() => setPurchaseOrders([]))
   }
 
-  const addLineItem = () => {
-    setLineItems([...lineItems, { description: "", quantity: 1, unitPrice: 0 }])
-  }
+  useEffect(() => {
+    if (vendorId) fetchPurchaseOrders(vendorId)
+  }, [vendorId])
 
-  const removeLineItem = (index: number) => {
-    setLineItems(lineItems.filter((_: any, i: number) => i !== index))
+  const handlePOSelect = (poId: string) => {
+    const resolved = poId === "_none" ? "" : poId
+    setPurchaseOrderId(resolved)
+    if (resolved) {
+      const po = purchaseOrders.find(p => p.id === resolved)
+      if (po && (po as any).lineItems?.length > 0) {
+        setLineItems((po as any).lineItems.map((item: any) => ({
+          productId: item.productId ?? null,
+          description: item.description,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          discount: item.discount ?? 0,
+          taxRate: item.taxRate ?? 0,
+          amount: item.amount,
+          accountCode: item.accountCode ?? null,
+          notes: item.notes ?? null,
+        })))
+      }
+    }
   }
-
-  const updateLineItem = (index: number, field: string, value: any) => {
-    const newItems = [...lineItems]
-    newItems[index] = { ...newItems[index], [field]: value }
-    setLineItems(newItems)
-  }
-
-  const total = lineItems.reduce((sum: number, item: any) => sum + (Number(item.quantity) * Number(item.unitPrice)), 0)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
-    
     try {
       const url = isEditing ? `/api/vendor-invoices/${initialData.id}` : "/api/vendor-invoices"
       const method = isEditing ? "PUT" : "POST"
@@ -70,16 +106,22 @@ export default function VendorInvoiceForm({ initialData }: { initialData?: any }
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          vendorId, 
+        body: JSON.stringify({
+          vendorId,
           ...(isEditing && { invoiceNumber }),
-          purchaseOrderId: purchaseOrderId || null, 
-          lineItems: lineItems.map((item: any) => ({
-            ...item,
+          purchaseOrderId: purchaseOrderId || null,
+          lineItems: lineItems.map(item => ({
+            productId: item.productId ?? null,
+            description: item.description,
             quantity: Number(item.quantity),
-            unitPrice: Number(item.unitPrice)
-          }))
-        })
+            unitPrice: Number(item.unitPrice),
+            discount: Number(item.discount ?? 0),
+            taxRate: Number(item.taxRate ?? 0),
+            amount: Number(item.amount),
+            accountCode: item.accountCode ?? null,
+            notes: item.notes ?? null,
+          })),
+        }),
       })
 
       if (!res.ok) throw new Error(isEditing ? "Failed to update vendor invoice" : "Failed to create vendor invoice")
@@ -120,12 +162,12 @@ export default function VendorInvoiceForm({ initialData }: { initialData?: any }
                     <span className="bg-primary text-primary-foreground px-4 py-2 rounded-md hover:bg-primary/90 transition-colors">
                       Select File
                     </span>
-                    <Input 
-                      id="file" 
-                      type="file" 
-                      className="hidden" 
-                      accept=".pdf,.png,.jpg,.jpeg" 
-                      onChange={(e) => setFile(e.target.files?.[0] || null)} 
+                    <Input
+                      id="file"
+                      type="file"
+                      className="hidden"
+                      accept=".pdf,.png,.jpg,.jpeg"
+                      onChange={(e) => setFile(e.target.files?.[0] || null)}
                     />
                   </Label>
                   <p className="text-sm text-muted-foreground mt-4">
@@ -162,7 +204,7 @@ export default function VendorInvoiceForm({ initialData }: { initialData?: any }
               </div>
               <div className="space-y-2">
                 <Label htmlFor="purchaseOrderId">Linked Purchase Order (Optional)</Label>
-                <Select value={purchaseOrderId || "_none"} onValueChange={(v) => setPurchaseOrderId(v === "_none" ? "" : v)}>
+                <Select value={purchaseOrderId || "_none"} onValueChange={handlePOSelect}>
                   <SelectTrigger>
                     <SelectValue placeholder={vendorId ? (purchaseOrders.length === 0 ? "No POs found for this vendor" : "Select a PO") : "Select a vendor first"} />
                   </SelectTrigger>
@@ -175,76 +217,26 @@ export default function VendorInvoiceForm({ initialData }: { initialData?: any }
                     ))}
                   </SelectContent>
                 </Select>
+                {purchaseOrderId && (
+                  <p className="text-xs text-muted-foreground">Line items carried forward from PO. You may edit them before saving.</p>
+                )}
               </div>
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
+          <CardHeader>
             <CardTitle>Line Items</CardTitle>
-            <Button type="button" variant="outline" size="sm" onClick={addLineItem}>
-              <Plus className="mr-2 h-4 w-4" /> Add Item
-            </Button>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Description</TableHead>
-                  <TableHead className="w-[100px]">Quantity</TableHead>
-                  <TableHead className="w-[150px]">Unit Price</TableHead>
-                  <TableHead className="w-[150px]">Amount</TableHead>
-                  <TableHead className="w-[50px]"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {lineItems.map((item: any, index: number) => (
-                  <TableRow key={index}>
-                    <TableCell>
-                      <Input 
-                        value={item.description} 
-                        onChange={(e) => updateLineItem(index, "description", e.target.value)}
-                        placeholder="Item description"
-                        required
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Input 
-                        type="number"
-                        min="1"
-                        value={item.quantity} 
-                        onChange={(e) => updateLineItem(index, "quantity", e.target.value)}
-                        required
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Input 
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={item.unitPrice} 
-                        onChange={(e) => updateLineItem(index, "unitPrice", e.target.value)}
-                        required
-                      />
-                    </TableCell>
-                    <TableCell className="font-medium">
-                      ${(item.quantity * item.unitPrice).toFixed(2)}
-                    </TableCell>
-                    <TableCell>
-                      <Button variant="ghost" size="icon" type="button" onClick={() => removeLineItem(index)} disabled={lineItems.length === 1}>
-                        <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-            <div className="flex justify-end pt-4">
-              <div className="text-xl font-bold">
-                Total: ${total.toFixed(2)}
-              </div>
-            </div>
+            <LineItemsTable
+              lineItems={lineItems}
+              onChange={setLineItems}
+              showTax
+              showDiscount
+              showAccountCode
+            />
           </CardContent>
         </Card>
 
