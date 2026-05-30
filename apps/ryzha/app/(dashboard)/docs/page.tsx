@@ -1445,7 +1445,7 @@ export default function DocsPage() {
                     <div className="h-4 w-4 rounded-full bg-red-500 flex-shrink-0" />
                     <div>
                       <CardTitle className="text-base">Auditor Agent</CardTitle>
-                      <CardDescription>Forensic AI auditor — verifies every transaction against signed contracts, detects anomalies, and generates tamper-evident SHA-256 audit hashes</CardDescription>
+                      <CardDescription>Forensic AI auditor — duplicate detection, MSA contract fallback, SOX/ASC 606 AI reasoning, 9-field SHA-256 audit hash, suspense GL on flagged, orchestrator gate on flagged/rejected</CardDescription>
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-2 pt-1">
@@ -1456,45 +1456,45 @@ export default function DocsPage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                     {[
                       {
-                        name: "Audit Settings Load",
+                        name: "Behavioral Pre-Checks",
                         step: "Step 1",
-                        actions: ["Reads requireAuditSeal (default: true)", "Reads autoRejectUnverified flag from FinancialSettings", "Reads anomalyThreshold (default: $50,000)", "Determines auto-reject vs flag-for-review policy"],
-                        output: "Audit policy config loaded per organization",
+                        actions: ["Parallel queries: duplicate PI count + customer 24h velocity count", "Reads requireAuditSeal, autoRejectUnverified, anomalyThreshold from FinancialSettings", "Hard-stops immediately if duplicate Payment Intent found — prevents double-counting revenue", "Sets anomalyDetected = true if: amount > threshold, ≥5 txns/24h from same customer, or amount within 5% of threshold (SOX threshold-gaming)"],
+                        output: "Behavioral signals computed; duplicate stops workflow immediately with suspense JE",
                         dot: "bg-red-500",
                       },
                       {
-                        name: "Contract Matching",
+                        name: "MSA-Aware Contract Matching",
                         step: "Step 2",
-                        actions: ["Queries Contract table by stripePaymentIntentId", "Verifies contract belongs to same organization", "Checks contract.status === 'signed'", "Absence of contract triggers flagged/rejected path"],
-                        output: "Matching signed contract found — or audit path = flagged",
-                        dot: "bg-red-500",
-                      },
-                      {
-                        name: "Threshold Anomaly Check",
-                        step: "Step 3",
-                        actions: ["Compares transaction.amount against anomalyThreshold", "Amounts > $50,000 (configurable) trigger anomalyDetected = true", "Deterministic first pass before AI investigation", "Logged as WARNING in audit trail"],
-                        output: "anomalyDetected flag set if amount exceeds threshold",
+                        actions: ["Step 1: exact match by stripePaymentIntentId (per-payment contract)", "Step 2 (MSA fallback): if no exact match, queries by customerEmail + status='signed', takes most-recent contract", "contractMatchType = 'exact' | 'msa' | 'none' — recorded in audit log and hash", "MSA fallback supports Master Service Agreement workflows where one contract covers many payments"],
+                        output: "Contract found (exact or MSA) or contractMatchType = 'none' → flagged path",
                         dot: "bg-red-500",
                       },
                       {
                         name: "AI Forensic Investigation",
+                        step: "Step 3",
+                        actions: ["Calls AI model as forensic auditor (temperature 0)", "SOX Section 404 criteria: round dollar amounts, threshold proximity, velocity, unusual description", "ASC 606 checklist: contract enforceability, distinct performance obligation, price determinability, collectability", "Input includes: recentTxCount, isRoundDollar, nearThreshold, contractMatchType for grounded reasoning", "Returns: { is_anomaly, risk_score (0–100), investigation_notes, asc606_flags[] }"],
+                        output: "AI risk_score + investigation_notes + asc606_flags appended to audit log",
+                        dot: "bg-red-500",
+                      },
+                      {
+                        name: "Full-Fingerprint Audit Hash",
                         step: "Step 4",
-                        actions: ["Calls AI model as forensic auditor (temperature 0)", "Evaluates: amount vs description, contract availability, fraud patterns", "Returns: { is_anomaly, investigation_notes, risk_score }", "AI can override threshold result — either direction"],
-                        output: "AI-determined is_anomaly + investigation notes + risk score",
+                        actions: ["Only generated when signed contract is found (exact or MSA)", "SHA-256 over 9 fields: txId | piId | amount | email | contractId | contractStatus | matchType | orgId | timestamp (hour precision)", "Any single field change breaks the hash — fully tamper-evident", "First 8 chars displayed in log; full hash stored on transaction.auditHash"],
+                        output: "auditHash = tamper-evident 9-field fingerprint on transaction",
                         dot: "bg-red-500",
                       },
                       {
-                        name: "SHA-256 Audit Hash",
+                        name: "Suspense JE (flagged/rejected)",
                         step: "Step 5",
-                        actions: ["Only generated when signed contract is found", "Hash = SHA-256(contractId + transactionAmount)", "First 8 chars shown in log as tamper-evident seal", "Hash stored on transaction.auditHash field"],
-                        output: "auditHash on transaction — verifiable cryptographic seal",
+                        actions: ["Posts ADJUSTING journal entry when auditStatus = flagged or rejected", "DR Accounts Receivable – Disputed / CR Revenue Suspense (both at transaction amount)", "Holds revenue off the P&L until the audit is manually cleared — US GAAP compliant", "JE sourceType = 'AuditorFlagged' — idempotent, will not double-post"],
+                        output: "GL entry: AR–Disputed DR / Revenue Suspense CR — revenue withheld from P&L",
                         dot: "bg-red-500",
                       },
                       {
-                        name: "Status &amp; Audit Report",
+                        name: "Status, Orchestrator Gate & Audit Trail",
                         step: "Step 6",
-                        actions: ["auditStatus = 'verified' (signed contract + hash match)", "auditStatus = 'flagged' (requireAuditSeal + no contract)", "auditStatus = 'rejected' (autoRejectUnverified = true)", "auditStatus = 'unverified' (no seal required)", "Appends full investigation log to transaction agentLogs"],
-                        output: "transaction.auditStatus + detailed audit trail entry",
+                        actions: ["auditStatus = 'verified' (signed contract + hash + risk score logged)", "auditStatus = 'flagged' (requireAuditSeal + no contract or anomaly detected)", "auditStatus = 'rejected' (autoRejectUnverified = true)", "auditStatus = 'unverified' (requireAuditSeal = false)", "Orchestrator halts on BOTH 'flagged' and 'rejected' — FP&A pipeline does not run until cleared", "WARNING notification for flagged; ERROR notification for rejected"],
+                        output: "transaction.auditStatus + full audit trail + orchestrator halt if flagged/rejected",
                         dot: "bg-red-500",
                       },
                     ].map((cap) => (
@@ -1521,10 +1521,10 @@ export default function DocsPage() {
                       <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Audit Decision Matrix</p>
                       <div className="space-y-2">
                         {[
-                          { status: "verified", color: "text-green-600 dark:text-green-400", bg: "bg-green-50/50 dark:bg-green-950/20", cond: "Signed contract found + SHA-256 hash generated" },
-                          { status: "flagged", color: "text-yellow-600 dark:text-yellow-400", bg: "bg-yellow-50/50 dark:bg-yellow-950/20", cond: "requireAuditSeal = true AND no contract found" },
-                          { status: "rejected", color: "text-red-600 dark:text-red-400", bg: "bg-red-50/50 dark:bg-red-950/20", cond: "autoRejectUnverified = true AND no contract found" },
-                          { status: "unverified", color: "text-slate-500", bg: "bg-slate-50/50 dark:bg-slate-900/20", cond: "requireAuditSeal = false — no seal required by policy" },
+                          { status: "verified", color: "text-green-600 dark:text-green-400", bg: "bg-green-50/50 dark:bg-green-950/20", cond: "Signed contract found (exact PI or MSA fallback) + 9-field SHA-256 hash generated" },
+                          { status: "flagged", color: "text-yellow-600 dark:text-yellow-400", bg: "bg-yellow-50/50 dark:bg-yellow-950/20", cond: "requireAuditSeal = true AND no contract found (both paths checked) — revenue held in suspense; orchestrator halts" },
+                          { status: "rejected", color: "text-red-600 dark:text-red-400", bg: "bg-red-50/50 dark:bg-red-950/20", cond: "autoRejectUnverified = true AND no contract found — revenue held in suspense; orchestrator halts" },
+                          { status: "unverified", color: "text-slate-500", bg: "bg-slate-50/50 dark:bg-slate-900/20", cond: "requireAuditSeal = false — no seal required by policy; orchestrator continues to FP&A" },
                         ].map((row) => (
                           <div key={row.status} className={`rounded border px-3 py-2 flex items-center gap-3 ${row.bg}`}>
                             <span className={`text-xs font-bold font-mono w-20 flex-shrink-0 ${row.color}`}>{row.status}</span>
@@ -1533,8 +1533,8 @@ export default function DocsPage() {
                         ))}
                       </div>
                       <div className="rounded border bg-background p-2 text-xs font-mono space-y-0.5">
-                        <p className="text-[10px] text-muted-foreground font-semibold mb-1">SHA-256 Hash Formula</p>
-                        <div className="text-green-600 dark:text-green-400">hash = SHA-256( contractId + transactionAmount )</div>
+                        <p className="text-[10px] text-muted-foreground font-semibold mb-1">SHA-256 Hash Formula (9-field fingerprint)</p>
+                        <div className="text-green-600 dark:text-green-400">hash = SHA-256( txId | piId | amount | email | contractId | contractStatus | matchType | orgId | timestamp )</div>
                         <div className="text-muted-foreground pl-2">stored on: transaction.auditHash</div>
                         <div className="text-muted-foreground pl-2">displayed: first 8 chars in audit log</div>
                       </div>
@@ -1546,10 +1546,14 @@ export default function DocsPage() {
                           { label: "anomalyThreshold", value: "Float — default $50,000 (configurable per org in FinancialSettings)" },
                           { label: "requireAuditSeal", value: "Boolean — default true — forces contract match before verified status" },
                           { label: "autoRejectUnverified", value: "Boolean — default false — auto-rejects unmatched transactions" },
+                          { label: "Velocity threshold", value: "≥5 transactions from same customerEmail within 24 hours → anomalyDetected = true" },
+                          { label: "Threshold proximity", value: "amount within 5% of anomalyThreshold → SOX threshold-gaming flag" },
+                          { label: "Duplicate detection", value: "Same stripePaymentIntentId on any other transaction → hard-stop + suspense JE" },
+                          { label: "Contract match order", value: "1. Exact PI match → 2. MSA fallback (customerEmail + signed) → 3. flagged" },
                           { label: "AI Model", value: "Configurable (default: Groq) — temperature: 0, forensic auditor persona, deterministic" },
-                          { label: "AI Output Schema", value: "{ is_anomaly: boolean, investigation_notes: string, risk_score: number }" },
-                          { label: "Contract match key", value: "Contract.stripePaymentIntentId = Transaction.stripePaymentIntentId" },
-                          { label: "Fallback behavior", value: "AI failure → threshold-only anomaly detection still applies" },
+                          { label: "AI Output Schema", value: "{ is_anomaly: boolean, risk_score: number (0–100), investigation_notes: string, asc606_flags: string[] }" },
+                          { label: "Suspense GL accounts", value: "DR Accounts Receivable – Disputed / CR Revenue Suspense (ADJUSTING JE, idempotent)" },
+                          { label: "Fallback behavior", value: "AI failure → deterministic behavioral signals (threshold, velocity, near-threshold) still applied" },
                         ].map((item) => (
                           <div key={item.label} className="flex flex-col gap-0.5">
                             <span className="text-xs font-medium font-mono text-red-700 dark:text-red-400">{item.label}</span>
