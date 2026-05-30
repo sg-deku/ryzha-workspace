@@ -345,7 +345,7 @@ const SECTIONS = [
 
 type ReleaseNoteChange = { type: "feat" | "fix" | "improve"; text: string }
 type ReleaseNote = {
-  version: string
+  tag: string
   date: string
   title: string
   summary: string
@@ -354,129 +354,122 @@ type ReleaseNote = {
 
 const RELEASE_NOTES: ReleaseNote[] = [
   {
-    version: "v0.9.9",
+    tag: "Product Catalog",
     date: "May 30, 2026",
-    title: "Product & Service Catalog — Line Item Standardisation",
-    summary: "Introduces a shared Product & Service Catalog that auto-fills line items across all four document types (Sales Orders, Invoices, Purchase Orders, Vendor Invoices). All line item models are now standardised with productId, discount, taxRate, accountCode, and notes. The Three-Way Match agent now performs line-level comparison in addition to header totals.",
+    title: "Product and Service Catalog with Standardised Line Items",
+    summary: "You can now define a reusable catalog of products and services that auto-fill line items when selected on any document. Sales Orders, Invoices, Purchase Orders, and Vendor Invoices all share the same line item fields — product, discount, tax rate, GL account, and notes. The Three-Way Match agent now checks individual lines, not just the header total.",
     changes: [
-      { type: "feat", text: "Product model — code (immutable, unique per org), name, description, unitPrice, costPrice, taxRate, accountCode, type (service/product), isActive. Schema migrated on both local and Vercel/Prisma Accelerate." },
-      { type: "feat", text: "GET/POST /api/products — list with active and type filters; POST validates unique code per org. GET/PUT/DELETE /api/products/[id] — code is immutable after creation; DELETE archives instead of hard-deletes if the product has been used on any document line." },
-      { type: "feat", text: "/products page — KPI cards (Active, Services, Products), catalog table with GL account code, archived section. /products/new and /products/[id]/edit forms with GL account code selector." },
-      { type: "feat", text: "Shared LineItemsTable component (components/line-items/line-items-table.tsx) — product picker dropdown auto-fills description, unit price, tax rate, and GL code. Supports showTax, showDiscount, showAccountCode props. Footer shows subtotal, tax, and grand total." },
-      { type: "feat", text: "All four document forms updated to use LineItemsTable: Sales Order, Purchase Order, Vendor Invoice, and Invoice (replacing InvoiceBuilder with product catalog support while preserving AI suggest functionality)." },
-      { type: "feat", text: "Vendor Invoice form: selecting a linked PO now carries forward all PO line items (with productId, discount, taxRate, accountCode) as a starting point — editable before saving." },
-      { type: "feat", text: "Three-Way Match agent updated to line-level matching — compares each invoice line against the linked PO by productId (exact) or description similarity (≥50% keyword overlap). Reports per-line variances in the pipeline log." },
-      { type: "feat", text: "Product Catalog added to sidebar nav under Order-to-Cash section." },
-      { type: "fix", text: "All line item create APIs (invoices, sales-orders, vendor-invoices) now persist productId, discount, taxRate, accountCode, and notes fields." },
+      { type: "feat", text: "New Product model with an immutable code per org, name, description, unit price, cost price, tax rate, GL account code, and active/archived status." },
+      { type: "feat", text: "Full product API: list with active/type filters, create (validates unique code per org), update (code cannot change after creation), and delete (archives instead of deleting if the product appears on any document)." },
+      { type: "feat", text: "/products page with KPI cards, a catalog table showing GL account codes, and an archived section. New and edit forms include a GL account code selector." },
+      { type: "feat", text: "Shared LineItemsTable component used across all four document forms. Selecting a product auto-fills description, unit price, tax rate, and GL code. Footer shows subtotal, tax, and grand total." },
+      { type: "feat", text: "Selecting a linked PO on a Vendor Invoice now carries all the PO line items forward as a starting point, editable before saving." },
+      { type: "feat", text: "Three-Way Match agent now does line-level comparison — each invoice line is matched to the PO by product ID or description similarity. Variances are reported per line in the pipeline log." },
+      { type: "feat", text: "Product Catalog added to the sidebar under Order-to-Cash." },
+      { type: "fix", text: "Invoice, Sales Order, and Vendor Invoice APIs now save productId, discount, tax rate, GL account code, and notes on each line item." },
     ],
   },
   {
-    version: "v0.9.8",
+    tag: "Bank Reconciliation",
     date: "May 30, 2026",
-    title: "Bank Statement Reconciliation — AI-Powered Import & Matching",
-    summary: "Full bank statement reconciliation flow: import any CSV bank statement, run AI matching against open vendor payments (P2P) and customer invoice payments (O2C), auto-confirm high-confidence matches, and review medium-confidence suggestions in one click. The /bank-reconciliation page is now fully operational.",
+    title: "Bank Statement Import with AI Matching",
+    summary: "The Bank Reconciliation page is now fully functional. Import a CSV bank statement, run AI matching against open payments and vendor payments, auto-confirm high-confidence matches, and work through the review queue for anything that needs a second look.",
     changes: [
-      { type: "feat", text: "CSV Bank Statement Import — POST /api/bank-reconciliation/import. Auto-detects column headers across common bank CSV formats (Date, Description, Amount, Reference, Balance, Counterparty). Deduplicates by date+amount+description to prevent re-importing the same row. Accepts optional closing balance to store against the organization for reconciliation verification." },
-      { type: "feat", text: "AI Reconciliation Agent (lib/agents/bank/ai-reconciliation.ts) — rule-based scoring on amount (±2% tolerance), date proximity (±14 days), and description keyword overlap for both P2P debits (bank debit ↔ VendorPayment) and O2C credits (bank credit ↔ Payment). Score ≥92 → auto_confirm. Score 60–92 → review. AI LLM adjustment layer applied for medium-confidence matches." },
-      { type: "feat", text: "POST /api/bank-reconciliation/match — runs the AI agent across all unmatched bank transactions for the organization. Auto-confirms high-confidence matches directly (sets matchStatus=auto_matched). Returns the full match list for UI review." },
-      { type: "feat", text: "POST /api/bank-reconciliation/confirm — manual confirmation endpoint. Accepts bankTransactionId + matchType + matchedId. Sets matchStatus=matched and reconciledAt timestamp. Validates both sides belong to the same organization." },
-      { type: "feat", text: "reconciledAt field added to BankTransaction schema — records when a transaction was matched. Pushed to both local and Vercel/Prisma Accelerate databases." },
-      { type: "improve", text: "Bank Reconciliation page overhauled — 4 KPI cards (Unmatched, Auto Matched, Manually Matched, % Reconciled). Import panel with CSV upload and optional closing balance. AI Matching panel with Run AI Matching button, result summary (total / auto-confirmed / awaiting review). Review queue showing pending matches with confidence badge, match type (P2P/O2C), amount variance, and Confirm/Dismiss buttons. Transaction table now includes Reconciled date column." },
+      { type: "feat", text: "CSV import endpoint that auto-detects column headers across common bank formats (date, description, amount, reference, balance, counterparty). Duplicate rows from previous imports are skipped automatically. Accepts an optional closing balance for verification." },
+      { type: "feat", text: "AI Reconciliation Agent scores each unmatched bank transaction against open vendor payments and customer invoice payments using amount tolerance (±2%), date proximity (±14 days), and description keyword overlap. High-confidence matches are auto-confirmed; medium-confidence ones go to the review queue for a human decision." },
+      { type: "feat", text: "Confirm endpoint for manual review — accepts a bank transaction ID, match type, and matched payment ID, records reconciledAt, and marks the transaction as matched." },
+      { type: "feat", text: "reconciledAt field added to BankTransaction schema." },
+      { type: "improve", text: "Bank Reconciliation page redesigned with four KPI cards (unmatched, auto-matched, manually matched, percent reconciled), an import panel, an AI matching panel with a result summary, and a review queue with confidence badges, match types, and amount variances." },
     ]
   },
   {
-    version: "v0.9.7",
+    tag: "P2P Pipeline",
     date: "May 30, 2026",
-    title: "P2P Payment Pipeline — 6-Agent Agentic Flow for Vendor Payments",
-    summary: "Every vendor payment now runs through a full 6-agent pipeline: Three-Way Match → Duplicate Detection → AP Policy → Payment Scheduler → Treasury → P2P Auditor. Payments that fail match or duplicate checks are stopped before expense creation. Suspicious payments are flagged with a risk score. All steps are logged to the Transaction record and visible in the Processing Steps view.",
+    title: "6-Agent Pipeline for Vendor Payments",
+    summary: "Every vendor payment now runs through a six-agent pipeline before completing. Payments that fail the invoice match or duplicate check are stopped before any expense is created. Suspicious payments are flagged with a risk score and held for review.",
     changes: [
-      { type: "feat", text: "Three-Way Match Agent — verifies invoice is in a payable state (RECEIVED/MATCHED/APPROVED/PARTIALLY_PAID) and checks PO alignment. FAIL stops the pipeline before any expense is created. WARN (no PO, or amount variance) is noted but does not block." },
-      { type: "feat", text: "Duplicate Payment Agent — SHA-256 hash of vendor+invoice+amount+method+date. Scans for identical payments within a ±7-day window. DUPLICATE stops the pipeline and flags the Transaction." },
-      { type: "feat", text: "AP Policy Agent — AI-powered expense category classification (10 categories). Checks payment terms compliance, days until due, early 2/10 Net-30 discount eligibility. WARN for overdue payments. Suggested category is passed directly to Payment Scheduler." },
-      { type: "feat", text: "Payment Scheduler Agent refactored — now accepts suggestedCategory from AP Policy instead of re-running AI classification. Stripped redundant JE creation (JE is created by the payments API route) and Transaction creation (now done by orchestrator). Focused on: Expense record creation and invoice status recalculation only." },
-      { type: "feat", text: "P2P Treasury Agent — computes cash impact (payment amount out), total outstanding AP balance across all open invoices, and 30-day expense total. Logged to Transaction for cash position visibility." },
-      { type: "feat", text: "P2P Auditor Agent — AI SOX compliance review. Rule-based risk scoring: new vendor (<30 days), high-value first payment (>$10k), no PO, prior agent failures. AI adjusts score (-20 to +40) and adds findings. Risk ≥60 → flagged. Flagged transactions are held for manual review while JE and expense records remain intact." },
-      { type: "improve", text: "startVendorPaymentWorkflow rewritten — creates Transaction (outbound/VendorPayment) at pipeline start with workflowStatus=pending, sets running, runs all 6 agents sequentially, marks completed/error/flagged with full agentLogs." },
-      { type: "improve", text: "Transaction detail page — P2P agent icons added: Three-Way Match (cyan), Duplicate Detection (rose), AP Policy (indigo), Payment Scheduler (blue), Treasury (emerald), P2P Auditor (amber). All agents render in Processing Steps with same Complete/Flagged/Failed/Pending badges as O2C." },
+      { type: "feat", text: "Three-Way Match Agent verifies the invoice is in a payable state and checks PO alignment. A failed match stops the pipeline before any expense is created. A warning (no PO or amount variance) is noted but does not block." },
+      { type: "feat", text: "Duplicate Payment Agent hashes vendor, invoice, amount, method, and date and checks for identical payments within a 7-day window. A duplicate stops the pipeline." },
+      { type: "feat", text: "AP Policy Agent classifies the expense category using AI and checks payment terms compliance, days until due, and early discount eligibility. The suggested category is passed to the Payment Scheduler." },
+      { type: "feat", text: "Payment Scheduler Agent creates the Expense record and recalculates the invoice status. It no longer duplicates JE or Transaction creation, which is handled elsewhere." },
+      { type: "feat", text: "P2P Treasury Agent computes the cash impact, total outstanding AP balance, and 30-day expense total and logs it to the Transaction." },
+      { type: "feat", text: "P2P Auditor Agent runs a SOX compliance review using rule-based risk scoring (new vendor, high-value first payment, missing PO, prior failures) adjusted by an AI layer. Risk at or above 60 flags the transaction for manual review while the JE and expense remain intact." },
+      { type: "improve", text: "Vendor payment pipeline creates the Transaction at start, marks it running, runs all six agents in sequence, and closes it as completed, error, or flagged with a full agent log." },
+      { type: "improve", text: "Transaction detail page shows P2P agent steps with the same Complete, Flagged, Failed, and Pending badges used for O2C." },
     ]
   },
   {
-    version: "v0.9.6",
+    tag: "Unified Ledger",
     date: "May 30, 2026",
-    title: "Unified Transaction Ledger — P2P Vendor Payments in /transactions",
-    summary: "The Transaction model is now a unified inbound/outbound ledger. Every vendor payment recorded via P2P now creates a Transaction row (direction=outbound, type=VendorPayment), making it visible alongside O2C Stripe payments in /transactions. No more invisible P2P spend.",
+    title: "Vendor Payments Visible in the Transactions List",
+    summary: "The Transaction model now covers both incoming and outgoing money. Every vendor payment creates a Transaction row so AP spend is visible alongside Stripe receipts in the same list.",
     changes: [
-      { type: "feat", text: "Transaction schema extended — stripePaymentIntentId made optional (was required, blocking P2P). New fields: direction ('inbound'|'outbound'), transactionType ('StripePayment'|'VendorPayment'), vendorPaymentId (FK to VendorPayment), vendorName (denormalized). agentLogs made nullable for non-pipeline transactions. Schema pushed to both local and Vercel databases." },
-      { type: "feat", text: "Payment Scheduler Agent creates a Transaction row — after posting the JE and updating invoice status, the agent now creates a Transaction (direction=outbound, workflowStatus=completed, auditStatus=verified) linked to the VendorPayment. All P2P spend is now captured in the unified ledger from the moment a vendor payment is recorded." },
-      { type: "improve", text: "/transactions list — new KPIs: Inbound (O2C) count+total and Outbound (P2P) count+total replace the single 'Cleared' KPI. New Dir column with green ArrowDownLeft (inbound) and orange ArrowUpRight (outbound) icons. Party column shows customer email for O2C, vendor name for P2P. Outbound amounts shown in orange with minus sign. Re-run button hidden for P2P rows (no pipeline to re-run)." },
-      { type: "improve", text: "Transaction detail page — Inbound/Outbound badge shown in header. P2P transactions show vendor name, payment method, and vendor invoice number instead of Stripe fields. Financial Analysis panel replaced with Payment Details for P2P. Processing Steps section shows a P2P-specific message instead of empty." },
+      { type: "feat", text: "Transaction schema extended with direction (inbound or outbound), transactionType (StripePayment or VendorPayment), a foreign key to VendorPayment, and a denormalized vendor name. stripePaymentIntentId made optional so P2P transactions can exist without one." },
+      { type: "feat", text: "Vendor payments now create a Transaction row when recorded, making all AP spend visible in the unified ledger immediately." },
+      { type: "improve", text: "Transactions list shows separate KPI cards for inbound and outbound totals, a direction icon per row, and the counterparty (customer email for O2C, vendor name for P2P). Outbound amounts are shown in orange with a minus sign." },
+      { type: "improve", text: "Transaction detail page shows an inbound or outbound badge, and P2P transactions display vendor name, payment method, and vendor invoice number instead of Stripe fields." },
     ]
   },
   {
-    version: "v0.9.5",
+    tag: "Chart of Accounts",
     date: "May 30, 2026",
-    title: "Chart of Accounts Hardening — System Accounts, Immutable Codes & Range Enforcement",
-    summary: "Implemented NetSuite-style COA governance. System accounts (seeded defaults) are now fully locked — no edits, no deletes. Account code and type are immutable after creation for all accounts. Account codes are range-validated at creation (1xxx=Assets, 2xxx=Liabilities, 3xxx=Equity, 4xxx=Revenue, 5xxx=Expenses). COA UI shows lock badges and hides edit/delete for system accounts.",
+    title: "Locked System Accounts, Immutable Codes, and Range Rules",
+    summary: "The Chart of Accounts now enforces structure the way a proper ERP does. System accounts seeded by Ryzha cannot be edited or deleted. Account codes are locked after creation and validated against the standard numbering ranges at the time they are created.",
     changes: [
-      { type: "feat", text: "isSystem flag on ChartOfAccounts — all 18 default seeded accounts (Assets, Liabilities, Equity, Revenue, Expenses) are marked isSystem=true at seed time. These accounts back the JE factory and cannot be changed." },
-      { type: "fix", text: "System account protection in API — PUT and DELETE on system accounts return HTTP 403. The API message clearly states these are managed by Ryzha and required for financial operations." },
-      { type: "feat", text: "Account code range enforcement on create — POST /api/chart-of-accounts validates that codes beginning with 1 are Assets, 2 are Liabilities, 3 are Equity, 4 are Revenue, and 5 are Expenses. Mismatch returns a descriptive 400 error." },
-      { type: "fix", text: "Account code and type immutable after creation — PUT strips accountCode and accountType from the update payload entirely. Only accountName, categoryMatch, and parentId can be changed on user-created accounts." },
-      { type: "improve", text: "COA list UI — system accounts render with a dimmed background and a 'System' lock badge next to the account name. The edit pencil and delete button are replaced with a lock icon for system rows." },
-      { type: "improve", text: "Edit page guard — navigating directly to /chart-of-accounts/{id}/edit for a system account redirects to /chart-of-accounts. In the edit form, Account Code and Account Type render as read-only muted fields with a 'locked after creation' note." },
-      { type: "feat", text: "isSystem field added to Prisma schema and pushed to both local and Vercel/Prisma Accelerate databases. Existing accounts default to isSystem=false (user-created); re-seeding marks the standard accounts correctly." },
+      { type: "feat", text: "isSystem flag on all 18 default accounts. System accounts cannot be edited or deleted via the API or the UI." },
+      { type: "feat", text: "Account code range validation on create: codes starting with 1 must be Assets, 2 Liabilities, 3 Equity, 4 Revenue, and 5 Expenses." },
+      { type: "fix", text: "Account code and type are immutable after creation. Only the name, category match, and parent can be changed on user-created accounts." },
+      { type: "improve", text: "System accounts in the COA list show a lock badge and no edit or delete controls. Navigating directly to the edit page for a system account redirects back to the COA list." },
     ]
   },
   {
-    version: "v0.9.4",
+    tag: "Contracts",
     date: "May 30, 2026",
-    title: "Contract Model Repurpose — MSA & Proper Cash Recognition",
-    summary: "Completely repurposed the Contract entity from a per-payment Stripe PI proxy into a proper legal agreement model (MSA / subscription contract). Auditor Agent now verifies via Invoice first, then Contract by customer email and date range. Unmatched Stripe payments now post to Undeposited Funds (liability), not Revenue, matching US GAAP standards.",
+    title: "Contracts Repurposed as Master Service Agreements",
+    summary: "The Contract entity was previously a thin wrapper around a single Stripe payment intent, which made it useless for real audit purposes. It now models a proper legal agreement with a customer, a date range, and terms. The auditor verifies by invoice first and falls back to an active contract if no invoice is linked.",
     changes: [
-      { type: "improve", text: "Contract schema redesigned — removed stripePaymentIntentId @unique (was incorrect coupling of legal agreement to a single payment). Added customerId, terms, and proper startDate/endDate for date-range-aware MSA contracts. A single contract now covers all payments within its period for a given customer." },
-      { type: "feat", text: "Auditor Agent: Invoice-first verification — if the transaction is linked to an invoice, the invoice IS the authorization for cash (matching NetSuite/SAP standard). No contract lookup needed for invoice-matched payments." },
-      { type: "feat", text: "Auditor Agent: Date-aware contract fallback — MSA lookup now filters by startDate ≤ today ≤ endDate (null dates treated as open-ended). Ensures expired contracts don't authorize new payments." },
-      { type: "fix", text: "Stripe webhook no-invoice JE: unmatched payments now post CR Undeposited Funds (Liabilities 2100) instead of CR Subscription Revenue. Cash is a liability until matched — prevents premature revenue recognition for unknown Stripe payments." },
-      { type: "feat", text: "Added Undeposited Funds (2100) and Revenue Suspense (2300) to the default Chart of Accounts, seeded for all new organizations." },
-      { type: "fix", text: "Removed synthetic contract auto-creation from the O2C PAID workflow — the orchestrator was creating a dummy contract per payment intent to pass audit, which bypassed the actual audit purpose. O2C payments now verify via the linked invoice." },
-      { type: "improve", text: "Contracts UI overhauled — form now collects customer email, contract value, description, start/end dates, and terms. Table shows contract period, active/expired status computed from date range, and description as primary label." },
-      { type: "improve", text: "Auditor suspense JE now only fires for invoice-matched flagged payments (duplicate PI). No-invoice flagged payments already land in Undeposited Funds via webhook JE — posting a second suspense entry was double-counting." },
+      { type: "improve", text: "Contract schema redesigned with a customer, start and end dates, terms text, and a contract value. A single contract now covers all payments within its period for a given customer." },
+      { type: "feat", text: "Auditor Agent: if a transaction is linked to an invoice, the invoice is the authorization for cash. No contract lookup needed for invoice-matched payments, which matches the NetSuite and SAP standard." },
+      { type: "feat", text: "Auditor Agent contract fallback is now date-aware: the MSA lookup filters by startDate and endDate so expired contracts do not authorize new payments." },
+      { type: "fix", text: "Unmatched Stripe payments now post to Undeposited Funds (a liability) instead of Subscription Revenue. Cash is held as a liability until matched to an invoice, preventing premature revenue recognition." },
+      { type: "feat", text: "Undeposited Funds and Revenue Suspense added to the default Chart of Accounts." },
+      { type: "fix", text: "Removed the automatic dummy contract creation that the O2C orchestrator was generating per payment to pass the audit check." },
     ]
   },
   {
-    version: "v0.9.3",
+    tag: "Auditor Agent",
     date: "May 29, 2026",
-    title: "Auditor Agent — US Market Hardening",
-    summary: "Complete overhaul of the Auditor Agent for US GAAP compliance. Adds duplicate detection, MSA-style contract matching, SOX/ASC 606 AI reasoning, a cryptographically strong audit hash, suspense GL entries for flagged transactions, and a corrected orchestrator gate.",
+    title: "Hardened Auditor Agent for US GAAP and SOX",
+    summary: "The Auditor Agent was rebuilt for US market compliance. It now detects duplicate payment intents, matches against date-aware MSA contracts, runs a SOX and ASC 606 AI review, uses a strong audit hash, and creates suspense journal entries for flagged payments.",
     changes: [
-      { type: "fix", text: "Duplicate Payment Intent detection — hard-stops re-processing of the same PI to prevent double-counting revenue in the GL." },
-      { type: "feat", text: "MSA contract fallback — if no exact PI-matched contract exists, the auditor falls back to the most recent signed contract for the same customer email, supporting Master Service Agreement workflows." },
-      { type: "feat", text: "Velocity + behavioral checks — flags transactions from customers with 5+ payments in 24 hours; flags amounts within 5% of the configured anomaly threshold (SOX threshold-gaming pattern)." },
-      { type: "improve", text: "Enriched AI prompt — forensic auditor prompt now includes SOX Section 404 criteria, ASC 606 checklist (contract, performance obligation, price determinability, collectability), round-dollar flagging, and organization-specific context." },
-      { type: "fix", text: "Strong audit hash — replaced the 2-field sha256(contractId+amount) with a full-fingerprint hash over 9 fields: transaction ID, PI ID, amount, customer email, contract ID, contract status, match type, org ID, and timestamp. Any field change breaks the hash." },
-      { type: "feat", text: "Suspense JE on flagged/rejected — posts an ADJUSTING journal entry (DR Accounts Receivable – Disputed / CR Revenue Suspense) when the auditor flags a transaction, keeping revenue off the P&L until manually cleared." },
-      { type: "fix", text: "Orchestrator now halts on 'flagged' status — previously only 'rejected' stopped the workflow; flagged transactions now also stop before FP&A to prevent recognizing unverified revenue." },
+      { type: "fix", text: "Duplicate Payment Intent detection prevents the same payment from being counted twice in the GL." },
+      { type: "feat", text: "MSA contract fallback looks for the most recent signed contract for the same customer email when no exact PI-matched contract exists." },
+      { type: "feat", text: "Velocity checks flag customers with five or more payments in 24 hours and amounts within 5% of the configured anomaly threshold." },
+      { type: "improve", text: "AI audit prompt updated with SOX Section 404 criteria and the ASC 606 five-step checklist including round-dollar and threshold-gaming pattern detection." },
+      { type: "fix", text: "Audit hash now covers nine fields: transaction ID, payment intent ID, amount, customer email, contract ID, contract status, match type, org ID, and timestamp." },
+      { type: "feat", text: "Flagged payments now generate a suspense journal entry (DR Accounts Receivable Disputed, CR Revenue Suspense) to keep unverified revenue off the P&L until cleared." },
+      { type: "fix", text: "The orchestrator now halts on flagged status, not just rejected, to prevent unverified revenue from flowing through to FP&A." },
     ]
   },
   {
-    version: "v0.9.2",
+    tag: "Stripe JE Fix",
     date: "May 29, 2026",
-    title: "Stripe Cross-Currency JE Fix",
-    summary: "Fixed a critical journal entry imbalance when the Stripe account settles in EUR but charges in USD. All balance transaction amounts are in the settlement currency (EUR), not the charge currency (USD) — the old code divided both by 100 and treated them identically, causing gaps of 14–700+ dollars.",
+    title: "Correct Journal Entries for Cross-Currency Stripe Settlements",
+    summary: "Journal entries were coming out unbalanced by hundreds of dollars when the Stripe account settles in EUR but charges in USD. The balance transaction amounts are in the settlement currency, not the charge currency, and the old code was treating them the same.",
     changes: [
-      { type: "fix", text: "Cross-currency JE now derives stripeNet using net/amount proportion applied to the USD payment intent amount. stripeFee is computed as the remainder — guarantees the JE balances to the cent with no external FX rate feed." },
-      { type: "fix", text: "Removed incorrect currency_conversion fee_details lookup — Stripe does not emit a currency_conversion line for settlement-currency conversion; the FX cost is implicit in the net amount." },
-      { type: "improve", text: "Domestic (same-currency) path unchanged — reconciliation diff warning retained for domestic edge cases." },
+      { type: "fix", text: "Cross-currency journal entries now derive the net amount using the net-to-gross proportion from the balance transaction applied to the USD payment intent amount. The fee is computed as the remainder, guaranteeing the entry balances to the cent without an external FX rate feed." },
+      { type: "fix", text: "Removed an incorrect lookup for a currency_conversion line in fee_details. Stripe does not emit this line for settlement-currency conversion; the FX cost is already implicit in the net amount." },
+      { type: "improve", text: "Domestic same-currency path is unchanged. The reconciliation diff warning is kept for edge cases where the balance transaction amount differs from the payment intent amount." },
     ]
   },
   {
-    version: "v0.9.1",
+    tag: "Vendor Invoice",
     date: "May 29, 2026",
-    title: "Vendor Invoice & Routing Fixes",
-    summary: "Added the missing /vendor-invoices/new page (was returning 404) and resolved the DISPUTED status on vendor invoices caused by the 3-way line-item description matching logic.",
+    title: "Vendor Invoice Page and Routing Fixes",
+    summary: "The vendor invoice creation page was returning a 404. It is now working, and the disputed status caused by description mismatches in the three-way match is now explained clearly in the workflow log.",
     changes: [
-      { type: "fix", text: "Created /vendor-invoices/new page — the route was missing from the dashboard app, causing 404 for all new vendor invoice creation attempts." },
-      { type: "improve", text: "P2P matching agent explains disputed status clearly in workflow logs — line item description mismatch (e.g. 'Test' vs 'Cloud hosting') now surfaces the exact mismatch in the agent log." },
+      { type: "fix", text: "Created the missing /vendor-invoices/new route. All vendor invoice creation attempts were returning 404." },
+      { type: "improve", text: "The P2P matching agent now surfaces the exact line item description mismatch in the workflow log instead of just marking the invoice as disputed." },
     ]
   },
 ]
@@ -594,7 +587,7 @@ function ReleaseNoteCard({ note }: { note: ReleaseNote }) {
       >
         <div className="flex items-start gap-4 flex-1 min-w-0">
           <div className="flex flex-col items-center gap-1 flex-shrink-0 pt-0.5">
-            <span className="font-mono text-sm font-bold text-primary">{note.version}</span>
+            <span className="text-xs font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-full whitespace-nowrap">{note.tag}</span>
             <span className="text-[10px] text-muted-foreground whitespace-nowrap">{note.date}</span>
           </div>
           <div className="flex-1 min-w-0">
@@ -2113,7 +2106,7 @@ export default function DocsPage() {
             <SectionTitle icon={Tag} title="Release Notes" subtitle="Changelog — features, fixes, and improvements shipped to Ryzha" />
             <div className="space-y-3">
               {RELEASE_NOTES.map((note) => (
-                <ReleaseNoteCard key={note.version} note={note} />
+                <ReleaseNoteCard key={note.tag} note={note} />
               ))}
             </div>
           </section>

@@ -109,20 +109,6 @@ export async function POST(req: Request) {
           const totalFee = balanceTx.fee / 100
           stripeNet = balanceTx.net / 100
 
-          console.log(`[stripe webhook] balanceTx debug for ${id}:`, {
-            balanceTxId: balanceTx.id,
-            balanceTxType: balanceTx.type,
-            balanceTxStatus: balanceTx.status,
-            balanceTxCurrency: balanceTx.currency,
-            chargeCurrency,
-            paymentIntentCurrency: currency,
-            balanceTxAmount: balanceTx.amount,
-            balanceTxFee: balanceTx.fee,
-            balanceTxNet: balanceTx.net,
-            paymentIntentAmount: amount,
-            feeDetails: balanceTx.fee_details?.map(f => ({ type: f.type, amount: f.amount, currency: f.currency })) ?? [],
-          })
-
           const isForeignCurrency = chargeCurrency.toLowerCase() !== (balanceTx.currency ?? "usd").toLowerCase()
 
           if (isForeignCurrency) {
