@@ -12,20 +12,25 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   const { id } = await params
 
   try {
-    const body = await req.json()
-    const { accountCode, accountName, accountType, categoryMatch, parentId } = body
-
     const existing = await prisma.chartOfAccounts.findFirst({
       where: { id, organizationId: session.user.organizationId },
     })
     if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 })
 
+    if (existing.isSystem) {
+      return NextResponse.json(
+        { error: "System accounts are locked and cannot be modified. They are managed by Ryzha." },
+        { status: 403 }
+      )
+    }
+
+    const body = await req.json()
+    const { accountName, categoryMatch, parentId } = body
+
     const account = await prisma.chartOfAccounts.update({
       where: { id },
       data: {
-        accountCode: accountCode ?? existing.accountCode,
         accountName: accountName ?? existing.accountName,
-        accountType: accountType ?? existing.accountType,
         categoryMatch: categoryMatch ?? existing.categoryMatch,
         parentId: parentId === "" ? null : (parentId ?? existing.parentId),
       },
@@ -51,6 +56,13 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
     include: { children: { select: { id: true } } },
   })
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 })
+
+  if (existing.isSystem) {
+    return NextResponse.json(
+      { error: "System accounts cannot be deleted. They are required for financial operations." },
+      { status: 403 }
+    )
+  }
 
   if (existing.children.length > 0) {
     return NextResponse.json(

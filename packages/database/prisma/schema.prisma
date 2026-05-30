@@ -870,6 +870,7 @@ model ChartOfAccounts {
   accountType    String
   categoryMatch  String?
   parentId       String?
+  isSystem       Boolean  @default(false)
   organizationId String
   createdAt      DateTime @default(now())
 

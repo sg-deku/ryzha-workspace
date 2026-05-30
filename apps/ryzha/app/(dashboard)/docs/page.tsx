@@ -354,6 +354,21 @@ type ReleaseNote = {
 
 const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "v0.9.5",
+    date: "May 30, 2026",
+    title: "Chart of Accounts Hardening — System Accounts, Immutable Codes & Range Enforcement",
+    summary: "Implemented NetSuite-style COA governance. System accounts (seeded defaults) are now fully locked — no edits, no deletes. Account code and type are immutable after creation for all accounts. Account codes are range-validated at creation (1xxx=Assets, 2xxx=Liabilities, 3xxx=Equity, 4xxx=Revenue, 5xxx=Expenses). COA UI shows lock badges and hides edit/delete for system accounts.",
+    changes: [
+      { type: "feat", text: "isSystem flag on ChartOfAccounts — all 18 default seeded accounts (Assets, Liabilities, Equity, Revenue, Expenses) are marked isSystem=true at seed time. These accounts back the JE factory and cannot be changed." },
+      { type: "fix", text: "System account protection in API — PUT and DELETE on system accounts return HTTP 403. The API message clearly states these are managed by Ryzha and required for financial operations." },
+      { type: "feat", text: "Account code range enforcement on create — POST /api/chart-of-accounts validates that codes beginning with 1 are Assets, 2 are Liabilities, 3 are Equity, 4 are Revenue, and 5 are Expenses. Mismatch returns a descriptive 400 error." },
+      { type: "fix", text: "Account code and type immutable after creation — PUT strips accountCode and accountType from the update payload entirely. Only accountName, categoryMatch, and parentId can be changed on user-created accounts." },
+      { type: "improve", text: "COA list UI — system accounts render with a dimmed background and a 'System' lock badge next to the account name. The edit pencil and delete button are replaced with a lock icon for system rows." },
+      { type: "improve", text: "Edit page guard — navigating directly to /chart-of-accounts/{id}/edit for a system account redirects to /chart-of-accounts. In the edit form, Account Code and Account Type render as read-only muted fields with a 'locked after creation' note." },
+      { type: "feat", text: "isSystem field added to Prisma schema and pushed to both local and Vercel/Prisma Accelerate databases. Existing accounts default to isSystem=false (user-created); re-seeding marks the standard accounts correctly." },
+    ]
+  },
+  {
     version: "v0.9.4",
     date: "May 30, 2026",
     title: "Contract Model Repurpose — MSA & Proper Cash Recognition",

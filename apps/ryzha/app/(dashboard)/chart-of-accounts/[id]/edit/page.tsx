@@ -30,6 +30,7 @@ export default async function EditChartOfAccountPage({
   ])
 
   if (!account) notFound()
+  if (account.isSystem) redirect("/chart-of-accounts")
 
   return (
     <div className="flex-1 space-y-6 p-8 pt-6">

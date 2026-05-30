@@ -5,6 +5,24 @@ import { NextResponse } from "next/server"
 
 export const dynamic = "force-dynamic"
 
+const CODE_RANGE_TYPE: Record<string, string> = {
+  "1": "Assets",
+  "2": "Liabilities",
+  "3": "Equity",
+  "4": "Revenue",
+  "5": "Expenses",
+}
+
+function validateCodeRange(accountCode: string | null | undefined, accountType: string): string | null {
+  if (!accountCode) return null
+  const prefix = accountCode.trim().charAt(0)
+  const expected = CODE_RANGE_TYPE[prefix]
+  if (expected && expected !== accountType) {
+    return `Account code ${accountCode} (${prefix}xxx range) must be assigned to a ${expected} account, not ${accountType}.`
+  }
+  return null
+}
+
 export async function GET() {
   const session = await getServerSession(authOptions)
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -30,6 +48,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "accountName and accountType are required" }, { status: 400 })
     }
 
+    const rangeError = validateCodeRange(accountCode, accountType)
+    if (rangeError) {
+      return NextResponse.json({ error: rangeError }, { status: 400 })
+    }
+
     const account = await prisma.chartOfAccounts.create({
       data: {
         accountCode: accountCode || null,
@@ -37,6 +60,7 @@ export async function POST(req: Request) {
         accountType,
         categoryMatch: categoryMatch || null,
         parentId: parentId || null,
+        isSystem: false,
         organizationId: session.user.organizationId,
       },
     })

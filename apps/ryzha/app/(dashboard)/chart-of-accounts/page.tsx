@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Plus, Pencil, Sparkles } from "lucide-react"
+import { Plus, Pencil, Sparkles, Lock } from "lucide-react"
 import { CoaDeleteButton } from "./coa-delete-button"
 import { CoaSeedButton } from "./coa-seed-button"
 
@@ -56,6 +56,10 @@ export default async function ChartOfAccountsPage() {
           <h2 className="text-3xl font-bold tracking-tight">Chart of Accounts</h2>
           <p className="text-sm text-muted-foreground mt-1">
             {accounts.length} account{accounts.length !== 1 ? "s" : ""} across {allTypes.length} type{allTypes.length !== 1 ? "s" : ""}
+            {" · "}
+            <span className="inline-flex items-center gap-1">
+              <Lock className="h-3 w-3" /> System accounts are locked
+            </span>
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -114,7 +118,7 @@ export default async function ChartOfAccountsPage() {
               </TableHeader>
               <TableBody>
                 {grouped[type].map((account) => (
-                  <TableRow key={account.id}>
+                  <TableRow key={account.id} className={account.isSystem ? "bg-muted/20" : undefined}>
                     <TableCell className="font-mono text-sm text-muted-foreground">
                       {account.accountCode ?? "—"}
                     </TableCell>
@@ -123,6 +127,11 @@ export default async function ChartOfAccountsPage() {
                         <span className="text-muted-foreground mr-1">↳</span>
                       )}
                       {account.accountName}
+                      {account.isSystem && (
+                        <span className="ml-2 inline-flex items-center gap-0.5 text-[10px] font-medium text-muted-foreground border border-border rounded px-1 py-0.5">
+                          <Lock className="h-2.5 w-2.5" /> System
+                        </span>
+                      )}
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
                       {account.categoryMatch ?? "—"}
@@ -138,18 +147,24 @@ export default async function ChartOfAccountsPage() {
                       )}
                     </TableCell>
                     <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        <Button variant="ghost" size="icon" asChild className="h-8 w-8">
-                          <Link href={`/chart-of-accounts/${account.id}/edit`}>
-                            <Pencil className="h-3.5 w-3.5" />
-                          </Link>
-                        </Button>
-                        <CoaDeleteButton
-                          id={account.id}
-                          name={account.accountName}
-                          hasChildren={account.children.length > 0}
-                        />
-                      </div>
+                      {account.isSystem ? (
+                        <span className="inline-flex items-center justify-end w-full pr-1">
+                          <Lock className="h-3.5 w-3.5 text-muted-foreground/50" />
+                        </span>
+                      ) : (
+                        <div className="flex items-center justify-end gap-1">
+                          <Button variant="ghost" size="icon" asChild className="h-8 w-8">
+                            <Link href={`/chart-of-accounts/${account.id}/edit`}>
+                              <Pencil className="h-3.5 w-3.5" />
+                            </Link>
+                          </Button>
+                          <CoaDeleteButton
+                            id={account.id}
+                            name={account.accountName}
+                            hasChildren={account.children.length > 0}
+                          />
+                        </div>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}
