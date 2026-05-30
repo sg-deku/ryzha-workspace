@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { NextResponse } from "next/server"
 import { syncGLForOrganization, deleteGLEntriesForJournalEntry } from "@/lib/reports/general-ledger/sync"
 import { after } from "next/server"
+import { getNextEntityNumber } from "@/lib/sequences"
 
 export const dynamic = "force-dynamic"
 
@@ -63,11 +64,12 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     }
 
     const reversalDate = body.reversalDate ? new Date(body.reversalDate) : new Date()
+    const reversalJeNumber = await getNextEntityNumber(session.user.organizationId, "JE")
 
     const reversal = await prisma.journalEntry.create({
       data: {
         entryDate: reversalDate,
-        reference: `REV-${entry.reference || entry.id.slice(-6)}`,
+        reference: reversalJeNumber,
         description: `Reversal of: ${entry.description}`,
         status: "POSTED",
         type: "REVERSING",

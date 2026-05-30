@@ -84,7 +84,7 @@ export default async function JournalEntryDetailPage({
         </Button>
         <div className="flex-1">
           <h2 className="text-2xl font-bold tracking-tight">
-            {entry.reference || `JE-${entry.id.slice(-8)}`}
+            {entry.reference || `JE-${entry.id.slice(-8).toUpperCase()}`}
           </h2>
           <p className="text-sm text-muted-foreground">{entry.description}</p>
         </div>

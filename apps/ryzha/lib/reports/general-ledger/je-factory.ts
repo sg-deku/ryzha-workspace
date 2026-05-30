@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma"
 import { getAccountTypeForName } from "./account-mapping"
+import { getNextEntityNumber } from "@/lib/sequences"
 
 export interface JELine {
   accountName: string
@@ -41,6 +42,8 @@ export async function createSystemJournalEntry(params: CreateSystemJEParams) {
   })
   if (existing) return existing
 
+  const jeNumber = await getNextEntityNumber(organizationId, "JE")
+
   const resolvedLines = lines.map((l) => ({
     accountName: l.accountName,
     accountType: l.accountType ?? getAccountTypeForName(l.accountName),
@@ -54,7 +57,7 @@ export async function createSystemJournalEntry(params: CreateSystemJEParams) {
       organizationId,
       sourceType,
       sourceId,
-      reference,
+      reference: jeNumber,
       description,
       entryDate,
       status: "POSTED",

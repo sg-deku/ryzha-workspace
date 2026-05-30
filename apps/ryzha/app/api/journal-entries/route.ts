@@ -39,7 +39,7 @@ export async function POST(req: Request) {
     const entryType = type || "REGULAR"
     const entryStatus = reqStatus === "DRAFT" ? "DRAFT" : "POSTED"
 
-    const resolvedReference = reference || await getNextEntityNumber(session.user.organizationId, "JE")
+    const resolvedReference = await getNextEntityNumber(session.user.organizationId, "JE")
 
     const totalDebit = lines.reduce((s: number, l: any) => s + (Number(l.debit) || 0), 0)
     const totalCredit = lines.reduce((s: number, l: any) => s + (Number(l.credit) || 0), 0)
