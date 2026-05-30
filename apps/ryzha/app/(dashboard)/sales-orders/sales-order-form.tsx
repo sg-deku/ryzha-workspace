@@ -18,7 +18,7 @@ export default function SalesOrderForm({ initialData }: { initialData?: any }) {
   const isEditing = !!initialData?.id
   const [customerId, setCustomerId] = useState(initialData?.customerId || "")
   const [customers, setCustomers] = useState<any[]>([])
-  const [orderNumber, setOrderNumber] = useState(initialData?.orderNumber || `SO-${Date.now().toString().slice(-6)}`)
+  const [orderNumber, setOrderNumber] = useState(initialData?.orderNumber || "")
   const [isLoading, setIsLoading] = useState(false)
   const [lineItems, setLineItems] = useState(
     initialData?.lineItems?.length > 0 
@@ -64,7 +64,7 @@ export default function SalesOrderForm({ initialData }: { initialData?: any }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
           customerId, 
-          orderNumber, 
+          ...(isEditing && { orderNumber }),
           lineItems: lineItems.map((item: any) => ({
             ...item,
             quantity: Number(item.quantity),
@@ -133,7 +133,7 @@ export default function SalesOrderForm({ initialData }: { initialData?: any }) {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="soNumber">SO Number</Label>
-                <Input value={orderNumber} onChange={e => setOrderNumber(e.target.value)} required />
+                <Input value={orderNumber || "Auto-generated on save"} readOnly className="bg-muted text-muted-foreground cursor-not-allowed" />
               </div>
             </div>
           </CardContent>

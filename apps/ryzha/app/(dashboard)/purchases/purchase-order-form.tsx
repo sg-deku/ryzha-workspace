@@ -18,7 +18,7 @@ export default function PurchaseOrderForm({ initialData }: { initialData?: any }
   const isEditing = !!initialData?.id
   const [vendorId, setVendorId] = useState(initialData?.vendorId || "")
   const [vendors, setVendors] = useState<any[]>([])
-  const [poNumber, setPoNumber] = useState(initialData?.poNumber || `PO-${Date.now().toString().slice(-6)}`)
+  const [poNumber] = useState(initialData?.poNumber || "")
   const [isLoading, setIsLoading] = useState(false)
   const [lineItems, setLineItems] = useState(
     initialData?.lineItems?.length > 0
@@ -63,7 +63,7 @@ export default function PurchaseOrderForm({ initialData }: { initialData?: any }
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
           vendorId, 
-          poNumber, 
+          ...(isEditing && { poNumber }),
           lineItems: lineItems.map((item: any) => ({
             ...item,
             quantity: Number(item.quantity),
@@ -132,7 +132,7 @@ export default function PurchaseOrderForm({ initialData }: { initialData?: any }
               </div>
               <div className="space-y-2">
                 <Label htmlFor="poNumber">PO Number</Label>
-                <Input value={poNumber} onChange={e => setPoNumber(e.target.value)} required />
+                <Input value={poNumber || "Auto-generated on save"} readOnly className="bg-muted text-muted-foreground cursor-not-allowed" />
               </div>
             </div>
           </CardContent>

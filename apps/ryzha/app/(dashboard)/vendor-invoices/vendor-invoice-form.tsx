@@ -18,7 +18,7 @@ export default function VendorInvoiceForm({ initialData }: { initialData?: any }
   const [file, setFile] = useState<File | null>(null)
   const [vendors, setVendors] = useState<any[]>([])
   const [vendorId, setVendorId] = useState(initialData?.vendorId || "")
-  const [invoiceNumber, setInvoiceNumber] = useState(initialData?.invoiceNumber || `INV-${Date.now().toString().slice(-6)}`)
+  const [invoiceNumber] = useState(initialData?.invoiceNumber || "")
   const [purchaseOrderId, setPurchaseOrderId] = useState(initialData?.purchaseOrderId || "")
   const [purchaseOrders, setPurchaseOrders] = useState<{ id: string; poNumber: string; status: string; totalAmount: number }[]>([])
   const [isLoading, setIsLoading] = useState(false)
@@ -72,7 +72,7 @@ export default function VendorInvoiceForm({ initialData }: { initialData?: any }
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
           vendorId, 
-          invoiceNumber, 
+          ...(isEditing && { invoiceNumber }),
           purchaseOrderId: purchaseOrderId || null, 
           lineItems: lineItems.map((item: any) => ({
             ...item,
@@ -158,7 +158,7 @@ export default function VendorInvoiceForm({ initialData }: { initialData?: any }
               </div>
               <div className="space-y-2">
                 <Label htmlFor="invoiceNumber">Invoice Number</Label>
-                <Input value={invoiceNumber} onChange={e => setInvoiceNumber(e.target.value)} required />
+                <Input value={invoiceNumber || "Auto-generated on save"} readOnly className="bg-muted text-muted-foreground cursor-not-allowed" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="purchaseOrderId">Linked Purchase Order (Optional)</Label>

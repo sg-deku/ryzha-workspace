@@ -161,6 +161,10 @@ export function InvoiceForm({ initialData }: { initialData?: any }) {
   }
 
   const handleSave = async () => {
+    if (!isEditing && !selectedCustomerId) {
+      toast.error("Please select an existing customer before saving.")
+      return
+    }
     setIsSaving(true)
     try {
       const url = isEditing ? `/api/invoices/${initialData.id}` : "/api/invoices"
@@ -197,6 +201,10 @@ export function InvoiceForm({ initialData }: { initialData?: any }) {
   }
 
   const handleSaveAndGenerate = async () => {
+    if (!isEditing && !selectedCustomerId) {
+      toast.error("Please select an existing customer before saving.")
+      return
+    }
     setIsGenerating(true)
     try {
       const url = isEditing ? `/api/invoices/${initialData.id}` : "/api/invoices"
@@ -296,8 +304,9 @@ export function InvoiceForm({ initialData }: { initialData?: any }) {
               <Label htmlFor="invoiceNumber">Invoice Number</Label>
               <Input 
                 id="invoiceNumber"
-                value={invoiceNumber} 
-                onChange={e => setInvoiceNumber(e.target.value)} 
+                value={invoiceNumber || "Auto-generated on save"} 
+                readOnly
+                className="bg-muted text-muted-foreground cursor-not-allowed"
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -326,33 +335,19 @@ export function InvoiceForm({ initialData }: { initialData?: any }) {
         <Card>
           <CardContent className="pt-6 space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="clientName">Client Name</Label>
-              <Select value={selectedCustomerId || clientName} onValueChange={(val) => {
-                if (customers.find(c => c.id === val)) {
-                  setSelectedCustomerId(val)
-                } else {
-                  setClientName(val)
-                  setSelectedCustomerId("")
-                }
-              }}>
+              <Label htmlFor="clientName">Customer <span className="text-destructive">*</span></Label>
+              <Select value={selectedCustomerId} onValueChange={setSelectedCustomerId} required>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select or enter customer" />
+                  <SelectValue placeholder="Select an existing customer" />
                 </SelectTrigger>
                 <SelectContent>
                   {customers.map((c: any) => (
-                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                    <SelectItem key={c.id} value={c.id}>{c.name} {c.email ? `(${c.email})` : ""}</SelectItem>
                   ))}
-                  {/* Allow entering a custom name if not in list by just letting them type - wait, Select doesn't support free text easily without Combobox. We can use a combination or just fallback to Input if they don't select. But they want it to be a dropdown list for customer. So we'll just show the select. */}
                 </SelectContent>
               </Select>
-              {!customers.find(c => c.id === selectedCustomerId) && (
-                <Input 
-                  className="mt-2"
-                  id="clientName"
-                  value={clientName} 
-                  onChange={e => setClientName(e.target.value)} 
-                  placeholder="Or type custom Acme Corp"
-                />
+              {customers.length === 0 && (
+                <p className="text-xs text-destructive">No customers found. Create a customer first before creating an invoice.</p>
               )}
             </div>
             <div className="space-y-2">

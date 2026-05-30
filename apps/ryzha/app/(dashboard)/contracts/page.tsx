@@ -9,12 +9,14 @@ import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Loader2, Plus, Trash2, FileSignature, Edit, CalendarDays } from "lucide-react"
 import { toast } from "sonner"
 
 interface Contract {
   id: string
   contractNumber: string | null
+  customerId: string | null
   customerEmail: string
   amount: number
   status: string
@@ -25,7 +27,14 @@ interface Contract {
   signedAt: string
 }
 
+interface Customer {
+  id: string
+  name: string
+  email: string | null
+}
+
 const emptyForm = {
+  customerId: "",
   customerEmail: "",
   amount: "",
   description: "",
@@ -36,6 +45,7 @@ const emptyForm = {
 
 export default function ContractsPage() {
   const [contracts, setContracts] = useState<Contract[]>([])
+  const [customers, setCustomers] = useState<Customer[]>([])
   const [loading, setLoading] = useState(true)
   const [open, setOpen] = useState(false)
   const [submitting, setSubmitting] = useState(false)
@@ -56,10 +66,18 @@ export default function ContractsPage() {
 
   useEffect(() => {
     fetchContracts()
+    fetch("/api/customers")
+      .then(r => r.json())
+      .then(d => { if (Array.isArray(d)) setCustomers(d) })
+      .catch(() => {})
   }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!form.customerId) {
+      toast.error("Please select an existing customer.")
+      return
+    }
     setSubmitting(true)
     try {
       const method = editingId ? "PATCH" : "POST"
@@ -68,6 +86,7 @@ export default function ContractsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...(editingId && { id: editingId }),
+          customerId: form.customerId,
           customerEmail: form.customerEmail,
           amount: form.amount ? parseFloat(form.amount) : 0,
           description: form.description || null,
@@ -93,6 +112,7 @@ export default function ContractsPage() {
   const handleEdit = (c: Contract) => {
     setEditingId(c.id)
     setForm({
+      customerId: c.customerId ?? "",
       customerEmail: c.customerEmail,
       amount: c.amount.toString(),
       description: c.description ?? "",
@@ -157,17 +177,29 @@ export default function ContractsPage() {
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4 pt-2">
               <div className="space-y-2">
-                <Label htmlFor="customerEmail">Customer Email <span className="text-destructive">*</span></Label>
-                <Input
-                  id="customerEmail"
-                  type="email"
-                  placeholder="billing@acme.com"
-                  value={form.customerEmail}
-                  onChange={(e) => setForm((f) => ({ ...f, customerEmail: e.target.value }))}
+                <Label>Customer <span className="text-destructive">*</span></Label>
+                <Select
+                  value={form.customerId}
+                  onValueChange={(val) => {
+                    const c = customers.find(c => c.id === val)
+                    setForm(f => ({ ...f, customerId: val, customerEmail: c?.email ?? "" }))
+                  }}
                   required
-                />
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select an existing customer" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {customers.map(c => (
+                      <SelectItem key={c.id} value={c.id}>{c.name} {c.email ? `(${c.email})` : ""}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {customers.length === 0 && (
+                  <p className="text-xs text-destructive">No customers found. Create a customer first.</p>
+                )}
                 <p className="text-xs text-muted-foreground">
-                  The Auditor Agent matches incoming payments to this email. Used as the MSA fallback when no invoice exists.
+                  The Auditor Agent matches incoming payments to the customer email. Used as the MSA fallback when no invoice exists.
                 </p>
               </div>
               <div className="space-y-2">
