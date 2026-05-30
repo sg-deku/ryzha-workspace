@@ -160,7 +160,9 @@ function groupIsComplete(group: AgentGroup) {
   return last.includes("completed") || last.includes("verified") || last.includes("updated") ||
     last.includes("matched") || last.includes("recorded") || last.includes("applied") ||
     last.includes("done") || last.includes("recalculated") || last.includes("created") ||
-    last.includes("connected")
+    last.includes("connected") || last.includes("passed") || last.includes("unique") ||
+    last.includes("no duplicate") || last.includes("policy:") || last.includes("treasury") ||
+    last.includes("cleared") || last.includes("paid.")
 }
 
 export const dynamic = "force-dynamic"
