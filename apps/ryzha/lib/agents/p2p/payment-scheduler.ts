@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma"
 import { callLLM } from "@/lib/ai/llm"
 import { parseAIJson } from "@/lib/ai/client"
 import { createSystemJournalEntry } from "@/lib/reports/general-ledger/je-factory"
+import { getNextEntityNumber } from "@/lib/sequences"
 
 async function recalculateVendorInvoiceStatus(vendorInvoiceId: string) {
   const invoice = await prisma.vendorInvoice.findUnique({
@@ -109,6 +110,26 @@ export async function runPaymentSchedulerAgent(vendorPaymentId: string, organiza
   })
 
   await recalculateVendorInvoiceStatus(invoice.id)
+
+  const txNumber = await getNextEntityNumber(organizationId, "TXN")
+  await prisma.transaction.create({
+    data: {
+      transactionNumber: txNumber,
+      direction: "outbound",
+      transactionType: "VendorPayment",
+      amount: vendorPayment.amount,
+      currency: "usd",
+      description: `Payment to ${vendor.name} — ${invoice.invoiceNumber}`,
+      vendorPaymentId: vendorPaymentId,
+      vendorName: vendor.name,
+      paymentMethod: vendorPayment.method,
+      clearingStatus: "paid_out",
+      workflowStatus: "completed",
+      auditStatus: "verified",
+      agentLogs: [],
+      organizationId,
+    },
+  })
 
   return {
     agent: "Payment Scheduler Agent",

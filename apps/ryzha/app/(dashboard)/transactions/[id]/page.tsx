@@ -129,7 +129,8 @@ export default async function TransactionPage({ params }: { params: Promise<{ id
   if (!session) return notFound()
 
   const transaction = await prisma.transaction.findUnique({
-    where: { id, organizationId: session.user.organizationId }
+    where: { id, organizationId: session.user.organizationId },
+    include: { vendorPayment: { include: { vendorInvoice: { select: { invoiceNumber: true } } } } },
   })
 
   if (!transaction) return notFound()
@@ -139,22 +140,31 @@ export default async function TransactionPage({ params }: { params: Promise<{ id
     rawLogs = transaction.agentLogs as unknown as LogEntry[]
   } else if (typeof transaction.agentLogs === "string") {
     try { rawLogs = JSON.parse(transaction.agentLogs) } catch {}
+  } else if (transaction.agentLogs === null || transaction.agentLogs === undefined) {
+    rawLogs = []
   }
 
   const groups = groupLogs(rawLogs)
+
+  const isOutbound = (transaction as any).direction === "outbound"
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Transaction Details</h1>
-          <p className="text-muted-foreground">{transaction.id}</p>
+          <div className="flex items-center gap-2 mb-1">
+            <h1 className="text-3xl font-bold tracking-tight">Transaction Details</h1>
+            <Badge variant="outline" className={isOutbound ? "text-orange-600 border-orange-300" : "text-green-600 border-green-300"}>
+              {isOutbound ? "Outbound · P2P" : "Inbound · O2C"}
+            </Badge>
+          </div>
+          <p className="text-muted-foreground">{(transaction as any).transactionNumber || transaction.id}</p>
         </div>
         <div className="flex items-center gap-3">
           <Badge variant={transaction.workflowStatus === "completed" ? "default" : transaction.workflowStatus === "error" ? "destructive" : "secondary"}>
             {transaction.workflowStatus}
           </Badge>
-          <TransactionRerunButton transactionId={transaction.id} />
+          {!isOutbound && <TransactionRerunButton transactionId={transaction.id} />}
         </div>
       </div>
 
@@ -170,16 +180,39 @@ export default async function TransactionPage({ params }: { params: Promise<{ id
             </div>
             <div>
               <div className="text-sm font-medium text-muted-foreground">Amount</div>
-              <div className="font-bold text-2xl">${transaction.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })} {transaction.currency.toUpperCase()}</div>
+              <div className={`font-bold text-2xl ${isOutbound ? "text-orange-600 dark:text-orange-400" : ""}`}>
+                {isOutbound ? "-" : ""}${transaction.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })} {transaction.currency.toUpperCase()}
+              </div>
             </div>
-            <div>
-              <div className="text-sm font-medium text-muted-foreground">Customer Email</div>
-              <div>{transaction.customerEmail || "N/A"}</div>
-            </div>
-            <div>
-              <div className="text-sm font-medium text-muted-foreground">Stripe Payment Intent ID</div>
-              <div className="font-mono text-sm">{transaction.stripePaymentIntentId}</div>
-            </div>
+            {isOutbound ? (
+              <>
+                <div>
+                  <div className="text-sm font-medium text-muted-foreground">Vendor</div>
+                  <div>{(transaction as any).vendorName || "N/A"}</div>
+                </div>
+                <div>
+                  <div className="text-sm font-medium text-muted-foreground">Payment Method</div>
+                  <div className="capitalize">{transaction.paymentMethod || "N/A"}</div>
+                </div>
+                {(transaction as any).vendorPayment?.vendorInvoice?.invoiceNumber && (
+                  <div>
+                    <div className="text-sm font-medium text-muted-foreground">Vendor Invoice</div>
+                    <div className="font-mono text-sm">{(transaction as any).vendorPayment.vendorInvoice.invoiceNumber}</div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <>
+                <div>
+                  <div className="text-sm font-medium text-muted-foreground">Customer Email</div>
+                  <div>{transaction.customerEmail || "N/A"}</div>
+                </div>
+                <div>
+                  <div className="text-sm font-medium text-muted-foreground">Stripe Payment Intent ID</div>
+                  <div className="font-mono text-sm">{transaction.stripePaymentIntentId || "N/A"}</div>
+                </div>
+              </>
+            )}
             <div>
               <div className="text-sm font-medium text-muted-foreground">Created At</div>
               <div>{new Date(transaction.createdAt).toLocaleString()}</div>
@@ -189,27 +222,44 @@ export default async function TransactionPage({ params }: { params: Promise<{ id
 
         <Card>
           <CardHeader>
-            <CardTitle>Financial Analysis</CardTitle>
+            <CardTitle>{isOutbound ? "Payment Details" : "Financial Analysis"}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div>
-              <div className="text-sm font-medium text-muted-foreground">Revenue Recognition Type</div>
-              <div className="capitalize">{transaction.revenueRecognitionType}</div>
-            </div>
-            <div>
-              <div className="text-sm font-medium text-muted-foreground">Recognized / Deferred Revenue</div>
-              <div>${transaction.recognizedRevenue || 0} / ${transaction.deferredRevenue || 0}</div>
-            </div>
-            <div>
-              <div className="text-sm font-medium text-muted-foreground">Audit Status</div>
-              <div>
-                <Badge variant={transaction.auditStatus === "verified" ? "default" : "destructive"}>{transaction.auditStatus}</Badge>
-              </div>
-            </div>
-            <div>
-              <div className="text-sm font-medium text-muted-foreground">Audit Hash</div>
-              <div className="font-mono text-xs">{transaction.auditHash || "N/A"}</div>
-            </div>
+            {isOutbound ? (
+              <>
+                <div>
+                  <div className="text-sm font-medium text-muted-foreground">Clearing Status</div>
+                  <div className="capitalize">{transaction.clearingStatus}</div>
+                </div>
+                <div>
+                  <div className="text-sm font-medium text-muted-foreground">Audit Status</div>
+                  <div>
+                    <Badge variant={transaction.auditStatus === "verified" ? "default" : "secondary"}>{transaction.auditStatus}</Badge>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                <div>
+                  <div className="text-sm font-medium text-muted-foreground">Revenue Recognition Type</div>
+                  <div className="capitalize">{transaction.revenueRecognitionType}</div>
+                </div>
+                <div>
+                  <div className="text-sm font-medium text-muted-foreground">Recognized / Deferred Revenue</div>
+                  <div>${transaction.recognizedRevenue || 0} / ${transaction.deferredRevenue || 0}</div>
+                </div>
+                <div>
+                  <div className="text-sm font-medium text-muted-foreground">Audit Status</div>
+                  <div>
+                    <Badge variant={transaction.auditStatus === "verified" ? "default" : "destructive"}>{transaction.auditStatus}</Badge>
+                  </div>
+                </div>
+                <div>
+                  <div className="text-sm font-medium text-muted-foreground">Audit Hash</div>
+                  <div className="font-mono text-xs">{transaction.auditHash || "N/A"}</div>
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -273,7 +323,11 @@ export default async function TransactionPage({ params }: { params: Promise<{ id
               })}
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">No processing steps available for this transaction.</p>
+            <p className="text-sm text-muted-foreground">
+              {isOutbound
+                ? "P2P vendor payments are processed directly by the Payment Scheduler. No AI agent pipeline steps."
+                : "No processing steps available for this transaction."}
+            </p>
           )}
         </CardContent>
       </Card>

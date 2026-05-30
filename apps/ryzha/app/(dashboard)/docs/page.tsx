@@ -354,6 +354,18 @@ type ReleaseNote = {
 
 const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: "v0.9.6",
+    date: "May 30, 2026",
+    title: "Unified Transaction Ledger — P2P Vendor Payments in /transactions",
+    summary: "The Transaction model is now a unified inbound/outbound ledger. Every vendor payment recorded via P2P now creates a Transaction row (direction=outbound, type=VendorPayment), making it visible alongside O2C Stripe payments in /transactions. No more invisible P2P spend.",
+    changes: [
+      { type: "feat", text: "Transaction schema extended — stripePaymentIntentId made optional (was required, blocking P2P). New fields: direction ('inbound'|'outbound'), transactionType ('StripePayment'|'VendorPayment'), vendorPaymentId (FK to VendorPayment), vendorName (denormalized). agentLogs made nullable for non-pipeline transactions. Schema pushed to both local and Vercel databases." },
+      { type: "feat", text: "Payment Scheduler Agent creates a Transaction row — after posting the JE and updating invoice status, the agent now creates a Transaction (direction=outbound, workflowStatus=completed, auditStatus=verified) linked to the VendorPayment. All P2P spend is now captured in the unified ledger from the moment a vendor payment is recorded." },
+      { type: "improve", text: "/transactions list — new KPIs: Inbound (O2C) count+total and Outbound (P2P) count+total replace the single 'Cleared' KPI. New Dir column with green ArrowDownLeft (inbound) and orange ArrowUpRight (outbound) icons. Party column shows customer email for O2C, vendor name for P2P. Outbound amounts shown in orange with minus sign. Re-run button hidden for P2P rows (no pipeline to re-run)." },
+      { type: "improve", text: "Transaction detail page — Inbound/Outbound badge shown in header. P2P transactions show vendor name, payment method, and vendor invoice number instead of Stripe fields. Financial Analysis panel replaced with Payment Details for P2P. Processing Steps section shows a P2P-specific message instead of empty." },
+    ]
+  },
+  {
     version: "v0.9.5",
     date: "May 30, 2026",
     title: "Chart of Accounts Hardening — System Accounts, Immutable Codes & Range Enforcement",

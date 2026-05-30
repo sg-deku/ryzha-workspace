@@ -3,7 +3,7 @@ import { redirect } from "next/navigation"
 import { prisma } from "@/lib/prisma"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import Link from "next/link"
-import { ArrowRight, AlertTriangle, XCircle, CheckCircle2, Clock } from "lucide-react"
+import { ArrowRight, AlertTriangle, XCircle, CheckCircle2, Clock, ArrowDownLeft, ArrowUpRight } from "lucide-react"
 import { PageShell } from "@/components/ui/page-shell"
 import { TransactionListRerunButton } from "./rerun-button"
 
@@ -82,15 +82,20 @@ export default async function TransactionsPage() {
 
   const orgId = session.user.organizationId
 
-  const [transactions, completedTotals, flaggedAgg, errorCount, inProgressCount] = await Promise.all([
+  const [transactions, inboundTotals, outboundTotals, flaggedAgg, errorCount, inProgressCount] = await Promise.all([
     prisma.transaction.findMany({
       where: { organizationId: orgId },
       orderBy: { createdAt: "desc" },
       take: 100,
     }),
     prisma.transaction.aggregate({
-      where: { organizationId: orgId, workflowStatus: "completed" },
+      where: { organizationId: orgId, direction: "inbound", workflowStatus: "completed" },
       _sum: { amount: true, recognizedRevenue: true, deferredRevenue: true },
+      _count: { id: true },
+    }),
+    prisma.transaction.aggregate({
+      where: { organizationId: orgId, direction: "outbound", workflowStatus: "completed" },
+      _sum: { amount: true },
       _count: { id: true },
     }),
     prisma.transaction.aggregate({
@@ -106,8 +111,8 @@ export default async function TransactionsPage() {
     }),
   ])
 
-  const totalRecognized = completedTotals._sum.recognizedRevenue ?? 0
-  const totalDeferred = completedTotals._sum.deferredRevenue ?? 0
+  const totalRecognized = inboundTotals._sum.recognizedRevenue ?? 0
+  const totalDeferred = inboundTotals._sum.deferredRevenue ?? 0
   const flaggedCount = flaggedAgg._count.id
   const flaggedAmount = flaggedAgg._sum.amount ?? 0
 
@@ -121,12 +126,12 @@ export default async function TransactionsPage() {
       subtitle="All transactions processed through the AI agent pipeline."
       kpis={[
         {
-          label: "Cleared",
-          value: completedTotals._count.id,
+          label: "Inbound (O2C)",
+          value: `${inboundTotals._count.id} · $${(inboundTotals._sum.amount ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
         },
         {
-          label: "Total Revenue",
-          value: `$${(completedTotals._sum.amount ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+          label: "Outbound (P2P)",
+          value: `${outboundTotals._count.id} · $${(outboundTotals._sum.amount ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
         },
         {
           label: "Flagged",
@@ -185,7 +190,7 @@ export default async function TransactionsPage() {
         <CardHeader>
           <CardTitle>All Transactions</CardTitle>
           <CardDescription>
-            Recognized: ${totalRecognized.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            Revenue Recognized: ${totalRecognized.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             &nbsp;·&nbsp;
             Deferred: ${totalDeferred.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </CardDescription>
@@ -202,7 +207,8 @@ export default async function TransactionsPage() {
                   <tr className="border-b text-left text-muted-foreground">
                     <th className="pb-3 pr-4 font-medium">ID</th>
                     <th className="pb-3 pr-4 font-medium">Date</th>
-                    <th className="pb-3 pr-4 font-medium">Customer</th>
+                    <th className="pb-3 pr-2 font-medium">Dir</th>
+                    <th className="pb-3 pr-4 font-medium">Party</th>
                     <th className="pb-3 pr-4 font-medium">Description</th>
                     <th className="pb-3 pr-4 font-medium text-right">Amount</th>
                     <th className="pb-3 pr-4 font-medium text-right">Recognized</th>
@@ -215,6 +221,8 @@ export default async function TransactionsPage() {
                 <tbody className="divide-y">
                   {transactions.map(tx => {
                     const ps = getPipelineStatus(tx)
+                    const isOutbound = (tx as any).direction === "outbound"
+                    const party = isOutbound ? ((tx as any).vendorName ?? "—") : (tx.customerEmail ?? "—")
                     return (
                       <tr key={tx.id} className={`transition-colors ${ps.rowClass}`}>
                         <td className="py-3 pr-4 font-mono text-xs text-muted-foreground whitespace-nowrap">
@@ -223,14 +231,25 @@ export default async function TransactionsPage() {
                         <td className="py-3 pr-4 text-muted-foreground whitespace-nowrap">
                           {new Date(tx.createdAt).toLocaleDateString()}
                         </td>
+                        <td className="py-3 pr-2">
+                          {isOutbound ? (
+                            <span title="Outbound (P2P)" className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-orange-100 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400">
+                              <ArrowUpRight className="h-3.5 w-3.5" />
+                            </span>
+                          ) : (
+                            <span title="Inbound (O2C)" className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-green-100 dark:bg-green-950/40 text-green-600 dark:text-green-400">
+                              <ArrowDownLeft className="h-3.5 w-3.5" />
+                            </span>
+                          )}
+                        </td>
                         <td className="py-3 pr-4 max-w-[160px] truncate">
-                          {tx.customerEmail ?? "—"}
+                          {party}
                         </td>
                         <td className="py-3 pr-4 max-w-[200px] truncate text-muted-foreground">
                           {tx.description ?? "—"}
                         </td>
-                        <td className="py-3 pr-4 text-right font-mono font-medium">
-                          ${tx.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        <td className={`py-3 pr-4 text-right font-mono font-medium ${isOutbound ? "text-orange-600 dark:text-orange-400" : ""}`}>
+                          {isOutbound ? "-" : ""}${tx.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                         </td>
                         <td className="py-3 pr-4 text-right font-mono text-green-600 dark:text-green-400">
                           {tx.recognizedRevenue != null
@@ -249,7 +268,7 @@ export default async function TransactionsPage() {
                           </span>
                         </td>
                         <td className="py-3 pr-1">
-                          <TransactionListRerunButton transactionId={tx.id} />
+                          {!isOutbound && <TransactionListRerunButton transactionId={tx.id} />}
                         </td>
                         <td className="py-3">
                           <Link href={`/transactions/${tx.id}`} className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors">

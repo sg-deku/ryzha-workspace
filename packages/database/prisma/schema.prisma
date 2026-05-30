@@ -185,6 +185,7 @@ model VendorPayment {
   organization         Organization     @relation(fields: [organizationId], references: [id])
   expense              Expense?         @relation("VendorPaymentExpense", fields: [expenseId], references: [id])
   bankTransactions     BankTransaction[] @relation("BankTransactionVendorPayment")
+  transaction          Transaction?     @relation("TransactionVendorPayment")
 
   @@index([vendorInvoiceId])
   @@index([organizationId, paymentDate])
@@ -728,7 +729,9 @@ model UsageMetrics {
 model Transaction {
   id                    String  @id @default(cuid())
   transactionNumber     String?
-  stripePaymentIntentId String  @unique
+  direction             String  @default("inbound") // inbound | outbound
+  transactionType       String  @default("StripePayment") // StripePayment | VendorPayment
+  stripePaymentIntentId String? @unique
   amount                Float
   currency              String  @default("usd")
   description           String?
@@ -745,9 +748,14 @@ model Transaction {
   paymentMethod   String? // stripe | bank_transfer | ach | etc.
   paymentFraction Float?    @default(1) // for partial payments
 
-  // Invoice linkage
+  // Invoice linkage (O2C)
   invoiceId String?
   invoice   Invoice? @relation(fields: [invoiceId], references: [id])
+
+  // P2P linkage
+  vendorPaymentId String?       @unique
+  vendorPayment   VendorPayment? @relation("TransactionVendorPayment", fields: [vendorPaymentId], references: [id])
+  vendorName      String? // denormalized for display
 
   // R2R & O&M fields
   revenueRecognitionType String @default("immediate") // immediate, deferred
@@ -765,7 +773,7 @@ model Transaction {
 
   // Workflow state
   agentStatus    Json? // stores logs per agent: { r2r: "done", om: "pending", ... }
-  agentLogs      Json // array of { agent, message, timestamp }
+  agentLogs      Json? // array of { agent, message, timestamp }
   workflowStatus String @default("pending") // pending, running, completed, error
 
   organizationId String
