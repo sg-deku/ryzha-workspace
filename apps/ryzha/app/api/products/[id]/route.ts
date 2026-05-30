@@ -28,7 +28,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   if (!product) return NextResponse.json({ error: "Not found" }, { status: 404 })
 
   const body = await req.json()
-  const { name, description, unitPrice, costPrice, taxRate, accountCode, type, isActive } = body
+  const { name, description, unitPrice, costPrice, taxRate, accountCode, type, isActive, usedInSales, usedInPurchasing } = body
 
   const updated = await prisma.product.update({
     where: { id },
@@ -41,6 +41,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       accountCode: accountCode !== undefined ? accountCode : product.accountCode,
       type: type ?? product.type,
       isActive: isActive !== undefined ? isActive : product.isActive,
+      usedInSales: usedInSales !== undefined ? usedInSales : product.usedInSales,
+      usedInPurchasing: usedInPurchasing !== undefined ? usedInPurchasing : product.usedInPurchasing,
     },
   })
 

@@ -140,6 +140,7 @@ export default function PurchaseOrderForm({ initialData }: { initialData?: any }
               showTax
               showDiscount
               showAccountCode
+              scope="purchasing"
             />
           </CardContent>
         </Card>

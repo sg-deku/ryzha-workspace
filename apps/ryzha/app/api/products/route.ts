@@ -12,12 +12,15 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   const type = searchParams.get("type")
   const activeOnly = searchParams.get("active") !== "false"
+  const scope = searchParams.get("scope")
 
   const products = await prisma.product.findMany({
     where: {
       organizationId: session.user.organizationId,
       ...(activeOnly ? { isActive: true } : {}),
       ...(type ? { type } : {}),
+      ...(scope === "sales" ? { usedInSales: true, type: { not: "tax" } } : {}),
+      ...(scope === "purchasing" ? { usedInPurchasing: true, type: { not: "tax" } } : {}),
     },
     orderBy: { code: "asc" },
   })
@@ -30,7 +33,7 @@ export async function POST(req: NextRequest) {
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
   const body = await req.json()
-  const { code, name, description, unitPrice, costPrice, taxRate, accountCode, type } = body
+  const { code, name, description, unitPrice, costPrice, taxRate, accountCode, type, usedInSales, usedInPurchasing } = body
 
   if (!code || !name) {
     return NextResponse.json({ error: "code and name are required" }, { status: 400 })
@@ -53,6 +56,8 @@ export async function POST(req: NextRequest) {
       taxRate: parseFloat(taxRate) || 0,
       accountCode: accountCode || null,
       type: type || "service",
+      usedInSales: usedInSales !== false,
+      usedInPurchasing: usedInPurchasing !== false,
       organizationId: session.user.organizationId,
     },
   })

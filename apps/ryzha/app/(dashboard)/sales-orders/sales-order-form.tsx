@@ -141,6 +141,7 @@ export default function SalesOrderForm({ initialData }: { initialData?: any }) {
               showTax
               showDiscount
               showAccountCode
+              scope="sales"
             />
           </CardContent>
         </Card>

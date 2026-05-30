@@ -280,7 +280,7 @@ export function InvoiceForm({ initialData }: { initialData?: any }) {
 
       <div className="space-y-4">
         <h2 className="text-xl font-semibold">Line Items</h2>
-        <LineItemsTable lineItems={lineItems} onChange={setLineItems} showTax showDiscount showAccountCode />
+        <LineItemsTable lineItems={lineItems} onChange={setLineItems} showTax showDiscount showAccountCode scope="sales" />
       </div>
     </div>
   )

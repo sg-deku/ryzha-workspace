@@ -245,19 +245,21 @@ model VendorInvoiceLine {
 }
 
 model Product {
-  id           String   @id @default(cuid())
-  code         String
-  name         String
-  description  String?
-  unitPrice    Float    @default(0)
-  costPrice    Float?
-  taxRate      Float    @default(0)
-  accountCode  String?
-  type         String   @default("service")
-  isActive     Boolean  @default(true)
-  organizationId String
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id              String   @id @default(cuid())
+  code            String
+  name            String
+  description     String?
+  unitPrice       Float    @default(0)
+  costPrice       Float?
+  taxRate         Float    @default(0)
+  accountCode     String?
+  type            String   @default("service")
+  usedInSales     Boolean  @default(true)
+  usedInPurchasing Boolean @default(true)
+  isActive        Boolean  @default(true)
+  organizationId  String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   organization         Organization         @relation(fields: [organizationId], references: [id])
   invoiceLines         InvoiceLineItem[]    @relation("InvoiceLineProduct")

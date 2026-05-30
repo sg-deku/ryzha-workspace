@@ -354,6 +354,21 @@ type ReleaseNote = {
 
 const RELEASE_NOTES: ReleaseNote[] = [
   {
+    tag: "Product Scoping",
+    date: "May 30, 2026",
+    title: "Product Scope, Auto-Generated Codes, and Tax Item Type",
+    summary: "Products and services can now declare whether they belong to Sales, Purchasing, or both. When you open the line items table on a Sales Order or Invoice, only sales-scoped items appear. On a Purchase Order or Vendor Invoice, only purchasing-scoped items appear. Product codes are now auto-generated from a prefix that reflects the item type and scope, though you can edit the code before saving.",
+    changes: [
+      { type: "feat", text: "New Tax item type in the product catalog. Tax items have no scope and do not appear in line item dropdowns on any document. They map directly to a GL tax payable account." },
+      { type: "feat", text: "usedInSales and usedInPurchasing flags added to the Product model. Products can belong to one scope, both, or neither (for internal/admin items)." },
+      { type: "feat", text: "Product code is auto-generated on the new product form based on type and scope: SVC for services, ITEM for physical products, EXP for purchasing-only services, COGS for purchasing-only products, TAX for tax items. A refresh button regenerates the suggestion if you change the type or scope. Code remains editable before first save." },
+      { type: "feat", text: "GET /api/products now accepts a scope query parameter. scope=sales returns only items with usedInSales=true (excluding tax). scope=purchasing returns only items with usedInPurchasing=true (excluding tax)." },
+      { type: "feat", text: "LineItemsTable component accepts a scope prop. Sales Orders and Customer Invoices pass scope=sales; Purchase Orders and Vendor Invoices pass scope=purchasing. Only contextually appropriate items show in the product dropdown." },
+      { type: "improve", text: "Product Catalog page now shows four KPI cards — total active, sales items, purchasing items, and tax items. The catalog table includes a Scope column with Sales and Purchasing badges per row. Product moved to a dedicated Master Data section in the sidebar." },
+      { type: "improve", text: "Product form shows a Usage Scope section with two checkboxes and a live preview badge. Submitting with no scope selected shows a validation error." },
+    ],
+  },
+  {
     tag: "Product Catalog",
     date: "May 30, 2026",
     title: "Product and Service Catalog with Standardised Line Items",

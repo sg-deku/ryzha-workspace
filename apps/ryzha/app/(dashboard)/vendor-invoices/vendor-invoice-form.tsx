@@ -236,6 +236,7 @@ export default function VendorInvoiceForm({ initialData, linkedPO }: { initialDa
               showTax
               showDiscount
               showAccountCode
+              scope="purchasing"
             />
           </CardContent>
         </Card>

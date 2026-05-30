@@ -21,10 +21,22 @@ export default async function ProductsPage() {
   const active = products.filter(p => p.isActive)
   const archived = products.filter(p => !p.isActive)
 
-  const typeBadge = (type: string) =>
-    type === "service"
-      ? <Badge className="bg-blue-100 text-blue-800 border border-blue-300">Service</Badge>
-      : <Badge className="bg-amber-100 text-amber-800 border border-amber-300">Product</Badge>
+  const typeBadge = (type: string) => {
+    if (type === "tax") return <Badge className="bg-purple-100 text-purple-800 border border-purple-300">Tax</Badge>
+    if (type === "service") return <Badge className="bg-blue-100 text-blue-800 border border-blue-300">Service</Badge>
+    return <Badge className="bg-amber-100 text-amber-800 border border-amber-300">Product</Badge>
+  }
+
+  const scopeBadges = (p: typeof products[0]) => {
+    if (p.type === "tax") return null
+    return (
+      <div className="flex gap-1 flex-wrap">
+        {p.usedInSales && <Badge variant="outline" className="text-xs text-blue-700 border-blue-300">Sales</Badge>}
+        {p.usedInPurchasing && <Badge variant="outline" className="text-xs text-amber-700 border-amber-300">Purchasing</Badge>}
+        {!p.usedInSales && !p.usedInPurchasing && <Badge variant="outline" className="text-xs text-muted-foreground">No scope</Badge>}
+      </div>
+    )
+  }
 
   return (
     <div className="flex-1 space-y-6 p-8 pt-6">
@@ -41,7 +53,7 @@ export default async function ProductsPage() {
         </Button>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Active Items</CardTitle>
@@ -53,18 +65,29 @@ export default async function ProductsPage() {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Services</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Sales Items</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-600">{active.filter(p => p.type === "service").length}</div>
+            <div className="text-2xl font-bold text-blue-600">{active.filter(p => p.usedInSales && p.type !== "tax").length}</div>
+            <p className="text-xs text-muted-foreground mt-1">On SO & Invoices</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Products</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Purchasing Items</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-amber-600">{active.filter(p => p.type === "product").length}</div>
+            <div className="text-2xl font-bold text-amber-600">{active.filter(p => p.usedInPurchasing && p.type !== "tax").length}</div>
+            <p className="text-xs text-muted-foreground mt-1">On PO & Vendor Invoices</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Tax Items</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-purple-600">{active.filter(p => p.type === "tax").length}</div>
+            <p className="text-xs text-muted-foreground mt-1">Tax codes</p>
           </CardContent>
         </Card>
       </div>
@@ -72,7 +95,7 @@ export default async function ProductsPage() {
       <Card>
         <CardHeader>
           <CardTitle>Catalog</CardTitle>
-          <CardDescription>Select a product when adding line items to any document. Name, price, tax rate, and GL account code auto-fill.</CardDescription>
+          <CardDescription>Each item's scope controls which document types it appears in. Sales items appear on Sales Orders and Invoices; Purchasing items on Purchase Orders and Vendor Invoices.</CardDescription>
         </CardHeader>
         <CardContent>
           {active.length === 0 ? (
@@ -91,6 +114,7 @@ export default async function ProductsPage() {
                     <th className="pb-3 pr-4 font-medium">Code</th>
                     <th className="pb-3 pr-4 font-medium">Name</th>
                     <th className="pb-3 pr-4 font-medium">Type</th>
+                    <th className="pb-3 pr-4 font-medium">Scope</th>
                     <th className="pb-3 pr-4 font-medium text-right">Unit Price</th>
                     <th className="pb-3 pr-4 font-medium text-right">Tax Rate</th>
                     <th className="pb-3 pr-4 font-medium">GL Account</th>
@@ -103,9 +127,10 @@ export default async function ProductsPage() {
                       <td className="py-3 pr-4 font-mono text-xs text-muted-foreground">{p.code}</td>
                       <td className="py-3 pr-4 font-medium">
                         {p.name}
-                        {p.description && <p className="text-xs text-muted-foreground font-normal truncate max-w-[240px]">{p.description}</p>}
+                        {p.description && <p className="text-xs text-muted-foreground font-normal truncate max-w-[200px]">{p.description}</p>}
                       </td>
                       <td className="py-3 pr-4">{typeBadge(p.type)}</td>
+                      <td className="py-3 pr-4">{scopeBadges(p)}</td>
                       <td className="py-3 pr-4 text-right font-mono">
                         ${p.unitPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </td>

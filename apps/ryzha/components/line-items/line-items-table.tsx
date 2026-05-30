@@ -38,6 +38,7 @@ interface Props {
   showDiscount?: boolean
   showAccountCode?: boolean
   readOnly?: boolean
+  scope?: "sales" | "purchasing"
 }
 
 function computeAmount(item: LineItem): number {
@@ -53,15 +54,18 @@ export function LineItemsTable({
   showDiscount = false,
   showAccountCode = false,
   readOnly = false,
+  scope,
 }: Props) {
   const [products, setProducts] = useState<Product[]>([])
 
   useEffect(() => {
-    fetch("/api/products?active=true")
+    const params = new URLSearchParams({ active: "true" })
+    if (scope) params.set("scope", scope)
+    fetch(`/api/products?${params}`)
       .then(r => r.json())
       .then(data => { if (Array.isArray(data)) setProducts(data) })
       .catch(() => {})
-  }, [])
+  }, [scope])
 
   const updateItem = useCallback((index: number, patch: Partial<LineItem>) => {
     const next = lineItems.map((item, i) => {
