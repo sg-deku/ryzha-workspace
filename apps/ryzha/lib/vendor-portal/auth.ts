@@ -1,11 +1,11 @@
 import { prisma } from "@/lib/prisma"
 import { randomBytes } from "crypto"
 
-export const PORTAL_SESSION_TTL_HOURS = 72
+export const PORTAL_INVITE_TTL_HOURS = 72
 
 export async function createPortalSession(vendorId: string, email: string) {
   const token = randomBytes(32).toString("hex")
-  const expiresAt = new Date(Date.now() + PORTAL_SESSION_TTL_HOURS * 60 * 60 * 1000)
+  const expiresAt = new Date(Date.now() + PORTAL_INVITE_TTL_HOURS * 60 * 60 * 1000)
 
   const session = await prisma.vendorPortalSession.create({
     data: { vendorId, token, email, expiresAt },
@@ -26,10 +26,15 @@ export async function validatePortalToken(token: string) {
   return session
 }
 
+const PERMANENT_EXPIRY = new Date("2099-01-01T00:00:00.000Z")
+
 export async function touchPortalSession(token: string) {
   await prisma.vendorPortalSession.update({
     where: { token },
-    data: { usedAt: new Date() },
+    data: {
+      usedAt: new Date(),
+      expiresAt: PERMANENT_EXPIRY,
+    },
   })
 }
 

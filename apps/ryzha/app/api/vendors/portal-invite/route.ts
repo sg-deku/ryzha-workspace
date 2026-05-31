@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getSession } from "@/lib/session"
 import { prisma } from "@/lib/prisma"
-import { createPortalSession, buildPortalUrl, PORTAL_SESSION_TTL_HOURS } from "@/lib/vendor-portal/auth"
+import { createPortalSession, buildPortalUrl, PORTAL_INVITE_TTL_HOURS } from "@/lib/vendor-portal/auth"
 import { sendPortalInviteEmail } from "@/lib/vendor-portal/emails"
 
 export async function POST(req: NextRequest) {
@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
     vendorName: vendor.name,
     orgName: vendor.organization.name,
     portalUrl,
-    expiryHours: PORTAL_SESSION_TTL_HOURS,
+    expiryHours: PORTAL_INVITE_TTL_HOURS,
   })
 
   await prisma.vendor.update({
