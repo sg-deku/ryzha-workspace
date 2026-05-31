@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma"
 import { getAccountTypeForName } from "./account-mapping"
 import { getNextEntityNumber } from "@/lib/sequences"
+import { validatePostingDate } from "@/lib/accounting/period-engine"
 
 export interface JELine {
   accountName: string
@@ -41,6 +42,11 @@ export async function createSystemJournalEntry(params: CreateSystemJEParams) {
     },
   })
   if (existing) return existing
+
+  const periodCheck = await validatePostingDate(organizationId, entryDate, { overrideSoftClose: true })
+  if (!periodCheck.allowed) {
+    throw new Error(periodCheck.error ?? `Cannot post to period: ${periodCheck.periodName}`)
+  }
 
   const jeNumber = await getNextEntityNumber(organizationId, "JE")
 

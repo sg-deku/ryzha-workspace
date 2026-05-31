@@ -57,9 +57,10 @@ model Organization {
   chatMessages     ChatMessage[]
 
   // GL Models
-  glEntries       GeneralLedgerEntry[]
-  chartOfAccounts ChartOfAccounts[]
-  journalEntries  JournalEntry[]
+  glEntries         GeneralLedgerEntry[]
+  chartOfAccounts   ChartOfAccounts[]
+  journalEntries    JournalEntry[]
+  accountingPeriods AccountingPeriod[]
 
   // Payment Models
   payments         Payment[]
@@ -69,9 +70,14 @@ model Organization {
   bankTransactions BankTransaction[]
   bankAccounts     BankAccount[]
 
+  // Fixed Assets
+  fixedAssets           FixedAsset[]
+  depreciationSchedules DepreciationSchedule[]
+
   // Ops Models
   goodsReceipts GoodsReceipt[]
   dunningLogs   DunningLog[]
+  bankFeedSyncLogs BankFeedSyncLog[]
 
   // Admin Models
   license      License?
@@ -114,6 +120,7 @@ model Vendor {
   purchaseOrders PurchaseOrder[]
   invoices       VendorInvoice[]
   debitMemos     VendorDebitMemo[]
+  fixedAssets    FixedAsset[]
 }
 
 model PurchaseOrder {
@@ -135,6 +142,7 @@ model PurchaseOrder {
   lineItems      PurchaseOrderLine[]
   vendorInvoices VendorInvoice[]
   goodsReceipts  GoodsReceipt[]
+  fixedAssets    FixedAsset[]
 }
 
 model PurchaseOrderLine {
@@ -204,31 +212,38 @@ model VendorPayment {
 }
 
 model BankTransaction {
-  id                     String   @id @default(cuid())
+  id                     String    @id @default(cuid())
   date                   DateTime
   description            String
   amount                 Float
-  currency               String   @default("USD")
+  currency               String    @default("USD")
   balance                Float?
   reference              String?
   counterparty           String?
   matchedPaymentId       String?
   matchedVendorPaymentId String?
-  matchStatus            String   @default("unmatched")
+  matchStatus            String    @default("unmatched")
   matchConfidence        Float?
   matchReason            String?
-  source                 String   @default("manual")
+  source                 String    @default("manual")
   reconciledAt           DateTime?
   organizationId         String
-  createdAt              DateTime @default(now())
-  updatedAt              DateTime @updatedAt
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+  bankAccountId          String?
+  externalId             String?
+  merchantName           String?
+  merchantCategory       String?
+  pending                Boolean   @default(false)
 
   organization         Organization   @relation(fields: [organizationId], references: [id])
   matchedPayment       Payment?       @relation("BankTransactionPayment", fields: [matchedPaymentId], references: [id])
   matchedVendorPayment VendorPayment? @relation("BankTransactionVendorPayment", fields: [matchedVendorPaymentId], references: [id])
 
+  @@unique([organizationId, bankAccountId, externalId])
   @@index([organizationId, date])
   @@index([organizationId, matchStatus])
+  @@index([bankAccountId])
 }
 
 model VendorInvoiceLine {
@@ -1008,7 +1023,24 @@ model BankAccount {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  organization Organization @relation(fields: [organizationId], references: [id])
+  connectionType        String    @default("MANUAL")
+  syncStatus            String    @default("IDLE")
+  lastSyncedAt          DateTime?
+  lastSyncError         String?
+  institutionName       String?
+  institutionLogo       String?
+  plaidItemId           String?   @unique
+  plaidAccountId        String?
+  plaidAccessToken      String?
+  plaidCursor           String?
+  trueLayerConnectionId String?   @unique
+  trueLayerAccountId    String?
+  trueLayerAccessToken  String?
+  trueLayerRefreshToken String?
+  trueLayerTokenExpiry  DateTime?
+
+  organization     Organization      @relation(fields: [organizationId], references: [id])
+  bankFeedSyncLogs BankFeedSyncLog[] @relation("BankAccountSyncLogs")
 
   @@index([organizationId])
 }
@@ -1030,8 +1062,10 @@ model JournalEntry {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  organization Organization      @relation(fields: [organizationId], references: [id])
-  lines        JournalEntryLine[]
+  accountingPeriodId String?
+  accountingPeriod   AccountingPeriod? @relation(fields: [accountingPeriodId], references: [id])
+  organization       Organization      @relation(fields: [organizationId], references: [id])
+  lines              JournalEntryLine[]
 
   @@unique([organizationId, sourceType, sourceId])
   @@index([organizationId, entryDate])
@@ -1039,6 +1073,7 @@ model JournalEntry {
   @@index([organizationId, type])
   @@index([organizationId, period])
   @@index([organizationId, sourceType])
+  @@index([accountingPeriodId])
 }
 
 model JournalEntryLine {
@@ -1131,8 +1166,104 @@ model NumberingSettings {
   txnPrefix      String       @default("TXN")
   contractPrefix String       @default("CON")
   dmPrefix       String       @default("DM")
+  faPrefix       String       @default("FA")
   padding        Int          @default(5)
   organization   Organization @relation(fields: [organizationId], references: [id])
+}
+
+model AccountingPeriod {
+  id             String    @id @default(cuid())
+  organizationId String
+  name           String
+  startDate      DateTime
+  endDate        DateTime
+  fiscalYear     Int
+  status         String    @default("OPEN")
+  closedBy       String?
+  closedAt       DateTime?
+  notes          String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  organization   Organization   @relation(fields: [organizationId], references: [id])
+  journalEntries JournalEntry[]
+
+  @@unique([organizationId, startDate])
+  @@index([organizationId, status])
+  @@index([organizationId, fiscalYear])
+}
+
+model FixedAsset {
+  id                      String    @id @default(cuid())
+  organizationId          String
+  assetNumber             String
+  name                    String
+  description             String?
+  category                String    @default("Equipment")
+  acquisitionDate         DateTime
+  acquisitionCost         Float
+  salvageValue            Float     @default(0)
+  usefulLifeMonths        Int
+  depreciationMethod      String    @default("STRAIGHT_LINE")
+  currentBookValue        Float
+  accumulatedDepreciation Float     @default(0)
+  status                  String    @default("ACTIVE")
+  glAssetAccount          String    @default("Fixed Assets")
+  glDepreciationAccount   String    @default("Depreciation Expense")
+  glAccumulatedAccount    String    @default("Accumulated Depreciation")
+  vendorId                String?
+  purchaseOrderId         String?
+  disposalDate            DateTime?
+  disposalProceeds        Float?
+  disposalNotes           String?
+  tags                    Json?
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+
+  organization         Organization           @relation(fields: [organizationId], references: [id])
+  vendor               Vendor?                @relation(fields: [vendorId], references: [id])
+  purchaseOrder        PurchaseOrder?         @relation(fields: [purchaseOrderId], references: [id])
+  depreciationSchedule DepreciationSchedule[]
+
+  @@unique([organizationId, assetNumber])
+  @@index([organizationId, status])
+  @@index([organizationId, category])
+}
+
+model DepreciationSchedule {
+  id              String    @id @default(cuid())
+  organizationId  String
+  assetId         String
+  period          DateTime
+  scheduledAmount Float
+  actualAmount    Float?
+  posted          Boolean   @default(false)
+  postedAt        DateTime?
+  journalEntryId  String?
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  asset        FixedAsset   @relation(fields: [assetId], references: [id])
+
+  @@unique([assetId, period])
+  @@index([organizationId, period, posted])
+}
+
+model BankFeedSyncLog {
+  id                  String   @id @default(cuid())
+  organizationId      String
+  bankAccountId       String
+  syncedAt            DateTime @default(now())
+  transactionsAdded   Int      @default(0)
+  transactionsSkipped Int      @default(0)
+  status              String   @default("SUCCESS")
+  errorMessage        String?
+  provider            String   @default("MANUAL")
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  bankAccount  BankAccount  @relation("BankAccountSyncLogs", fields: [bankAccountId], references: [id])
+
+  @@index([organizationId, syncedAt])
+  @@index([bankAccountId])
 }
 
 model FinancialDocument {

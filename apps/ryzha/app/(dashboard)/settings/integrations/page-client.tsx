@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Separator } from "@/components/ui/separator"
 import { toast } from "sonner"
-import { Trash2, Plus, Activity, CheckCircle2, XCircle, ArrowRight, Mic, MessageSquare, Volume2 } from "lucide-react"
+import { Trash2, Plus, Activity, CheckCircle2, XCircle, ArrowRight, Mic, MessageSquare, Volume2, Landmark } from "lucide-react"
 import Link from "next/link"
 
 export const dynamic = 'force-dynamic'
@@ -21,13 +21,16 @@ export default function IntegrationsPage() {
   const [stripeConnected, setStripeConnected] = useState(false)
   const [elevenLabsConnected, setElevenLabsConnected] = useState(false)
   const [twilioConnected, setTwilioConnected] = useState(false)
+  const [plaidCount, setPlaidCount] = useState(0)
+  const [truelayerCount, setTruelayerCount] = useState(0)
 
   const fetchData = async () => {
     try {
-      const [wRes, lRes, sRes] = await Promise.all([
+      const [wRes, lRes, sRes, bankRes] = await Promise.all([
         fetch("/api/webhooks/settings"),
         fetch("/api/webhooks/logs"),
         fetch("/api/settings/financial"),
+        fetch("/api/bank-feeds/accounts"),
       ])
       if (wRes.ok) setWebhooks(await wRes.json())
       if (lRes.ok) setLogs(await lRes.json())
@@ -36,6 +39,11 @@ export default function IntegrationsPage() {
         if (settings.stripeSecretKey) setStripeConnected(true)
         if (settings.elevenLabsApiKey) setElevenLabsConnected(true)
         if (settings.twilioAccountSid) setTwilioConnected(true)
+      }
+      if (bankRes.ok) {
+        const bankAccounts = await bankRes.json()
+        setPlaidCount(bankAccounts.filter((a: any) => a.connectionType === "PLAID").length)
+        setTruelayerCount(bankAccounts.filter((a: any) => a.connectionType === "TRUELAYER").length)
       }
     } catch {
       toast.error("Failed to fetch integration data")
@@ -189,6 +197,74 @@ export default function IntegrationsPage() {
                 </div>
                 <CardDescription className="pt-2">
                   Send SMS notifications after agent workflow completions via Twilio.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex justify-end pb-4 pt-0">
+                <div className="flex items-center text-sm font-medium text-primary opacity-0 group-hover:opacity-100 transition-opacity">
+                  Configure <ArrowRight className="ml-1 h-4 w-4" />
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+
+          <Link href="/settings/integrations/plaid" className="block group">
+            <Card className="h-full transition-colors hover:border-primary/50">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center justify-center h-6 w-6 rounded bg-black">
+                      <span className="text-white font-bold text-[9px]">P</span>
+                    </div>
+                    <CardTitle className="text-lg">Plaid</CardTitle>
+                  </div>
+                  {plaidCount > 0 ? (
+                    <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+                      <CheckCircle2 className="h-3 w-3 mr-1" />
+                      {plaidCount} account{plaidCount !== 1 ? "s" : ""}
+                    </Badge>
+                  ) : (
+                    <Badge variant="secondary">
+                      <XCircle className="h-3 w-3 mr-1" />
+                      Not connected
+                    </Badge>
+                  )}
+                </div>
+                <CardDescription className="pt-2">
+                  Connect US and Canadian bank accounts for automated transaction import and bank reconciliation.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex justify-end pb-4 pt-0">
+                <div className="flex items-center text-sm font-medium text-primary opacity-0 group-hover:opacity-100 transition-opacity">
+                  Configure <ArrowRight className="ml-1 h-4 w-4" />
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+
+          <Link href="/settings/integrations/truelayer" className="block group">
+            <Card className="h-full transition-colors hover:border-primary/50">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center justify-center h-6 w-6 rounded bg-[#2B61FF]">
+                      <Landmark className="h-3.5 w-3.5 text-white" />
+                    </div>
+                    <CardTitle className="text-lg">TrueLayer</CardTitle>
+                  </div>
+                  {truelayerCount > 0 ? (
+                    <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+                      <CheckCircle2 className="h-3 w-3 mr-1" />
+                      {truelayerCount} account{truelayerCount !== 1 ? "s" : ""}
+                    </Badge>
+                  ) : (
+                    <Badge variant="secondary">
+                      <XCircle className="h-3 w-3 mr-1" />
+                      Not connected
+                    </Badge>
+                  )}
+                </div>
+                <CardDescription className="pt-2">
+                  Connect UK and European bank accounts via Open Banking (PSD2) for automated transaction import.
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex justify-end pb-4 pt-0">

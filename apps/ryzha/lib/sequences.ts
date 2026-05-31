@@ -12,6 +12,7 @@ export type EntityType =
   | "TXN"
   | "CONTRACT"
   | "DM"
+  | "FA"
 
 const PREFIX_FIELD: Record<EntityType, keyof import("@prisma/client").NumberingSettings> = {
   CUSTOMER: "customerPrefix",
@@ -25,6 +26,7 @@ const PREFIX_FIELD: Record<EntityType, keyof import("@prisma/client").NumberingS
   TXN: "txnPrefix",
   CONTRACT: "contractPrefix",
   DM: "dmPrefix",
+  FA: "faPrefix",
 }
 
 const DEFAULT_PREFIX: Record<EntityType, string> = {
@@ -39,6 +41,7 @@ const DEFAULT_PREFIX: Record<EntityType, string> = {
   TXN: "TXN",
   CONTRACT: "CON",
   DM: "DM",
+  FA: "FA",
 }
 
 export async function getNextEntityNumber(

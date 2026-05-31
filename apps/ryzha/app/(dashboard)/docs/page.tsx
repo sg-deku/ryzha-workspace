@@ -377,6 +377,27 @@ type ReleaseNote = {
 
 const RELEASE_NOTES: ReleaseNote[] = [
   {
+    tag: "Core ERP Expansion",
+    date: "May 31, 2026",
+    title: "Period Close, Fixed Asset Management, and Bank Feed Integration",
+    summary: "Three major ERP capability gaps have been closed: Ryzha now enforces accounting period lifecycle (OPEN → SOFT_CLOSE → HARD_CLOSE) in line with NetSuite and Rillet, preventing backdated posting into locked periods. A full fixed asset register with GAAP/IFRS-compliant depreciation (straight-line and double-declining balance) has been introduced, with automatic schedule generation and one-click monthly depreciation runs. Bank feed connectivity is now available via Plaid (US/CA) and TrueLayer (UK/EU Open Banking), following the same connector pattern as Stripe on the Integrations page.",
+    changes: [
+      { type: "feat", text: "AccountingPeriod model added with OPEN / SOFT_CLOSE / HARD_CLOSE states. Periods are generated per fiscal year (12 calendar months). Period status is enforced in the JE factory — hard-closed periods block all journal entry postings with a clear error message." },
+      { type: "feat", text: "Pre-close checklist endpoint enumerates blocking conditions (draft JEs, unposted depreciation) and warning conditions (unmatched bank transactions, overdue AR/AP) before a period can be hard-closed." },
+      { type: "feat", text: "Accounting Periods UI page at /accounting-periods provides a full period register with one-click soft-close, hard-close, reopen, and checklist dialog." },
+      { type: "feat", text: "FixedAsset model added with full GAAP/IFRS fields: acquisition cost, salvage value, useful life, depreciation method, accumulated depreciation, book value, GL account mapping, and disposal fields." },
+      { type: "feat", text: "DepreciationSchedule model auto-generated on asset creation. Supports straight-line (SL) and double-declining balance (DDB) methods. Idempotent — regeneration is skipped if a schedule already exists." },
+      { type: "feat", text: "Monthly depreciation run posts double-entry JEs (DR Depreciation Expense / CR Accumulated Depreciation) per asset. Assets are automatically marked FULLY_DEPRECIATED when book value reaches salvage value." },
+      { type: "feat", text: "Asset disposal posts a full disposal JE: removes asset cost, clears accumulated depreciation, and recognises gain or loss on disposal. Asset status is set to DISPOSED." },
+      { type: "feat", text: "Fixed Assets UI at /fixed-assets provides an asset register, one-click depreciation run, disposal dialog, and per-asset detail page with a depreciation schedule progress view." },
+      { type: "feat", text: "Plaid bank feed connector: creates a link token, exchanges the public token for an access token, stores it encrypted (AES-256-GCM), and performs an initial transaction sync on connection. Subsequent syncs use a cursor for incremental updates." },
+      { type: "feat", text: "TrueLayer bank feed connector: OAuth 2.0 authorisation flow with automatic token refresh. Transactions are synced by date range with deduplication on external transaction ID." },
+      { type: "feat", text: "Plaid and TrueLayer connector cards added to the Integrations page alongside Stripe, ElevenLabs, and Twilio. Each card links to a dedicated settings page with connection status, sync logs, and account management." },
+      { type: "feat", text: "BankFeedSyncLog model records every sync operation with provider, transactions added/skipped counts, and error details for audit purposes." },
+      { type: "improve", text: "Bank account model extended with connectionType, syncStatus, lastSyncedAt, institutionName, and provider-specific fields (Plaid item/account IDs, TrueLayer connection/account IDs) — all encrypted tokens stored with AES-256-GCM." },
+    ],
+  },
+  {
     tag: "AI & GL Hardening",
     date: "May 31, 2026",
     title: "AI Agent Correctness, GL-Derived Reports, and RAG Knowledge Base",
