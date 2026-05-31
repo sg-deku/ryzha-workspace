@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
+import { NextRequest, NextResponse } from "next/server"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 
@@ -18,9 +18,19 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   })
   if (!expense) return NextResponse.json({ error: "Not found" }, { status: 404 })
 
-  const validStatuses = ["PENDING", "CATEGORIZED", "REVIEWED", "APPROVED", "PAID"]
-  if (status && !validStatuses.includes(status)) {
-    return NextResponse.json({ error: "Invalid status" }, { status: 400 })
+  const editableStatuses = ["PENDING", "CATEGORIZED", "REVIEWED", "PAID"]
+  if (status && !editableStatuses.includes(status)) {
+    return NextResponse.json(
+      { error: `Status "${status}" cannot be set directly. Use the approvals workflow.` },
+      { status: 422 }
+    )
+  }
+
+  if (status === "APPROVED" || status === "REJECTED") {
+    return NextResponse.json(
+      { error: "Approval decisions must go through the approvals workflow." },
+      { status: 422 }
+    )
   }
 
   const updated = await prisma.expense.update({

@@ -377,6 +377,24 @@ type ReleaseNote = {
 
 const RELEASE_NOTES: ReleaseNote[] = [
   {
+    tag: "Approval Workflows",
+    date: "May 31, 2026",
+    title: "Proper Approval Workflows — Enforce Limits, Delegate, Escalate",
+    summary: "Ryzha now has a full, structured approval workflow for both Purchase Orders and Expenses. The autoApproveLimit from P2PSettings is enforced: requests above the threshold are routed to an ApprovalRequest record and placed in PENDING_APPROVAL / PENDING state. Approvers can approve, reject, or delegate requests from a dedicated Approvals inbox. Overdue requests are escalated automatically. Journal entries for expenses are only posted after approval, ensuring the GL is not polluted with unapproved spend.",
+    changes: [
+      { type: "feat", text: "ApprovalRequest model added to schema with full lifecycle: PENDING → APPROVED / REJECTED / DELEGATED / ESCALATED / EXPIRED. Indexed by organizationId+status and approverId+status for efficient inbox queries." },
+      { type: "feat", text: "P2PSettings extended with approvalDeadlineDays (default 3) and escalationApproverId. Due dates are set automatically on request creation based on the deadline setting." },
+      { type: "feat", text: "Expense model extended with approvedBy, approvedAt, and approvalRequestId fields. PurchaseOrder model extended with approvalRequestId." },
+      { type: "fix", text: "purchases/route.ts: Status ROUTED (invalid) replaced with PENDING_APPROVAL. Auto-approve path sets status APPROVED and stamps approvedBy/approvedAt. Above-limit path creates a proper ApprovalRequest via the approval engine." },
+      { type: "fix", text: "expenses/route.ts: autoApproveLimit is now checked on expense creation. Expenses below the limit are auto-approved with a GL journal entry posted immediately. Expenses above the limit are left PENDING with an ApprovalRequest, and the JE is deferred until approval." },
+      { type: "fix", text: "expenses/[id]/route.ts: PATCH endpoint now blocks direct writes of APPROVED or REJECTED status. These transitions must go through the /api/approvals/:id/approve and /reject endpoints, preventing workflow bypass." },
+      { type: "feat", text: "Approval engine (lib/approvals/approval-engine.ts): createApprovalRequest (with deadline + notification), approveRequest (updates entity status + posts deferred JE for expenses), rejectRequest (reverts entity to DRAFT/PENDING), delegateRequest (closes old request, creates new one for delegate), escalateOverdueRequests (marks overdue PENDING requests as ESCALATED, creates escalation request for escalationApproverId)." },
+      { type: "feat", text: "API routes added: GET /api/approvals, GET /api/approvals/pending-count, POST /api/approvals/escalate, POST /api/approvals/:id/approve, POST /api/approvals/:id/reject, POST /api/approvals/:id/delegate." },
+      { type: "feat", text: "Approvals inbox UI at /approvals: tabbed view (Pending / Completed / Delegated / All), overdue date highlighting in red, approve/reject/delegate action buttons, inline note/reason dialogs, and a one-click 'Run Escalation' button." },
+      { type: "feat", text: "Sidebar: Accounting Periods, Fixed Assets, and Approvals are now reachable from the sidebar under their respective sections." },
+    ],
+  },
+  {
     tag: "Core ERP Expansion",
     date: "May 31, 2026",
     title: "Period Close, Fixed Asset Management, and Bank Feed Integration",

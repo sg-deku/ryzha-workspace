@@ -42,10 +42,11 @@ model Organization {
   notifications     Notification[]
 
   // P2P Models
-  vendors        Vendor[]
-  purchaseOrders PurchaseOrder[]
-  vendorInvoices VendorInvoice[]
-  p2pSettings    P2PSettings?
+  vendors          Vendor[]
+  purchaseOrders   PurchaseOrder[]
+  vendorInvoices   VendorInvoice[]
+  p2pSettings      P2PSettings?
+  approvalRequests ApprovalRequest[]
 
   // O2C Models
   customers   Customer[]
@@ -95,12 +96,44 @@ model Organization {
 }
 
 model P2PSettings {
-  id                   String       @id @default(cuid())
-  organizationId       String       @unique
-  autoApproveLimit     Float        @default(500)
-  requireThreeWayMatch Boolean      @default(true)
-  earlyPaymentDiscount Boolean      @default(true)
-  organization         Organization @relation(fields: [organizationId], references: [id])
+  id                      String       @id @default(cuid())
+  organizationId          String       @unique
+  autoApproveLimit        Float        @default(500)
+  requireThreeWayMatch    Boolean      @default(true)
+  earlyPaymentDiscount    Boolean      @default(true)
+  approvalDeadlineDays    Int          @default(3)
+  escalationApproverId    String?
+  organization            Organization @relation(fields: [organizationId], references: [id])
+}
+
+model ApprovalRequest {
+  id               String    @id @default(cuid())
+  organizationId   String
+  entityType       String    // "PurchaseOrder" | "Expense"
+  entityId         String
+  status           String    @default("PENDING") // PENDING | APPROVED | REJECTED | DELEGATED | ESCALATED | EXPIRED
+  approverId       String
+  approverName     String
+  approverEmail    String?
+  requestedBy      String
+  requestedAt      DateTime  @default(now())
+  decidedAt        DateTime?
+  decisionNote     String?
+  delegatedTo      String?
+  delegatedAt      DateTime?
+  escalatedAt      DateTime?
+  dueDate          DateTime?
+  amount           Float?
+  description      String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  organization     Organization    @relation(fields: [organizationId], references: [id])
+  purchaseOrders   PurchaseOrder[]
+  expenses         Expense[]
+
+  @@index([organizationId, status])
+  @@index([approverId, status])
 }
 
 model Vendor {
@@ -124,25 +157,27 @@ model Vendor {
 }
 
 model PurchaseOrder {
-  id             String    @id @default(cuid())
-  poNumber       String    @unique
-  vendorId       String
-  status         String    @default("DRAFT") // DRAFT, PENDING_APPROVAL, APPROVED, ORDERED, RECEIVED, CLOSED
-  totalAmount    Float
-  description    String?
-  notes          String?
-  approvedBy     String?
-  approvedAt     DateTime?
-  organizationId String
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  id                String    @id @default(cuid())
+  poNumber          String    @unique
+  vendorId          String
+  status            String    @default("DRAFT") // DRAFT, PENDING_APPROVAL, APPROVED, ORDERED, RECEIVED, CLOSED
+  totalAmount       Float
+  description       String?
+  notes             String?
+  approvedBy        String?
+  approvedAt        DateTime?
+  approvalRequestId String?
+  organizationId    String
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
-  vendor         Vendor              @relation(fields: [vendorId], references: [id])
-  organization   Organization        @relation(fields: [organizationId], references: [id])
-  lineItems      PurchaseOrderLine[]
-  vendorInvoices VendorInvoice[]
-  goodsReceipts  GoodsReceipt[]
-  fixedAssets    FixedAsset[]
+  vendor          Vendor              @relation(fields: [vendorId], references: [id])
+  organization    Organization        @relation(fields: [organizationId], references: [id])
+  lineItems       PurchaseOrderLine[]
+  vendorInvoices  VendorInvoice[]
+  goodsReceipts   GoodsReceipt[]
+  fixedAssets     FixedAsset[]
+  approvalRequest ApprovalRequest?    @relation(fields: [approvalRequestId], references: [id])
 }
 
 model PurchaseOrderLine {
@@ -537,21 +572,25 @@ model VendorDebitMemo {
 }
 
 model Expense {
-  id             String        @id @default(cuid())
-  expenseNumber  String?
-  date           DateTime
-  description    String
-  amount         Float
-  category       String?
-  taxRelevant    Boolean?
-  status         ExpenseStatus @default(PENDING)
-  organizationId String
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  id                String        @id @default(cuid())
+  expenseNumber     String?
+  date              DateTime
+  description       String
+  amount            Float
+  category          String?
+  taxRelevant       Boolean?
+  status            ExpenseStatus @default(PENDING)
+  approvedBy        String?
+  approvedAt        DateTime?
+  approvalRequestId String?
+  organizationId    String
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
 
-  organization   Organization     @relation(fields: [organizationId], references: [id])
-  anomalies      ExpenseAnomaly[]
-  vendorPayments VendorPayment[]  @relation("VendorPaymentExpense")
+  organization     Organization      @relation(fields: [organizationId], references: [id])
+  anomalies        ExpenseAnomaly[]
+  vendorPayments   VendorPayment[]   @relation("VendorPaymentExpense")
+  approvalRequest  ApprovalRequest?  @relation(fields: [approvalRequestId], references: [id])
 }
 
 model ExpenseAnomaly {

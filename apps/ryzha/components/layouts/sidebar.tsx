@@ -33,6 +33,9 @@ import {
   Scale,
   Hash,
   Package,
+  CalendarDays,
+  TrendingDown,
+  ClipboardCheck,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -127,6 +130,18 @@ export function Sidebar() {
             label="Trial Balance"
             collapsed={collapsed}
           />
+          <SidebarItem
+            href="/accounting-periods"
+            icon={CalendarDays}
+            label="Accounting Periods"
+            collapsed={collapsed}
+          />
+          <SidebarItem
+            href="/fixed-assets"
+            icon={TrendingDown}
+            label="Fixed Assets"
+            collapsed={collapsed}
+          />
 
           {/* ORDER-TO-CASH */}
           <div className="pt-4 pb-2 px-3">
@@ -218,6 +233,12 @@ export function Sidebar() {
             href="/vendor-debit-memos"
             icon={FileMinus}
             label="Debit Memos"
+            collapsed={collapsed}
+          />
+          <SidebarItem
+            href="/approvals"
+            icon={ClipboardCheck}
+            label="Approvals"
             collapsed={collapsed}
           />
 
