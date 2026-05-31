@@ -37,7 +37,7 @@ export async function runThreeWayMatchAgent(vendorPaymentId: string): Promise<Th
             },
           },
           vendor: { select: { name: true } },
-          vendorPayments: { select: { amount: true } },
+          vendorPayments: { select: { id: true, amount: true } },
           lineItems: { select: { productId: true, description: true, quantity: true, unitPrice: true, amount: true } },
         },
       },
@@ -65,7 +65,7 @@ export async function runThreeWayMatchAgent(vendorPaymentId: string): Promise<Th
   }
 
   const totalAlreadyPaid = invoice.vendorPayments
-    .filter(p => p !== payment)
+    .filter(p => p.id !== vendorPaymentId)
     .reduce((s, p) => s + p.amount, 0)
   const outstanding = invoice.amount - totalAlreadyPaid
 

@@ -377,6 +377,17 @@ type ReleaseNote = {
 
 const RELEASE_NOTES: ReleaseNote[] = [
   {
+    tag: "Bug Fix",
+    date: "May 31, 2026",
+    title: "Three-Way Match False Over-Payment Error Fixed",
+    summary: "A critical bug in the three-way match pipeline caused all vendor payments to be blocked with a false 'Over-payment detected' error even when the invoice had a zero outstanding balance and was genuinely unpaid. The root cause was a JavaScript object reference equality check (p !== payment) that compared objects of different shapes — vendorPayments relation objects (containing only amount) vs the top-level VendorPayment record — meaning the filter never excluded the current payment from the 'already paid' sum. For a $100k invoice paid with a $100k payment: totalAlreadyPaid incorrectly included the current payment, leaving outstanding at $0, which then failed the overpayment guard.",
+    changes: [
+      { type: "fix", text: "three-way-match.ts: vendorPayments relation now also selects id alongside amount. Filter uses p.id !== vendorPaymentId (string equality) instead of p !== payment (reference equality). The current payment is now correctly excluded from totalAlreadyPaid." },
+      { type: "fix", text: "outstanding balance is now computed correctly as: invoice.amount minus all prior payments (not including the payment being validated). Partial payments and full payments both pass as expected." },
+      { type: "improve", text: "ERP clarification: PO approval does NOT automatically create a vendor invoice. The correct NetSuite-standard flow is PO → Goods/Services Receipt → Vendor sends bill → VendorInvoice entered referencing PO → Three-Way Match → Payment. A vendor invoice is always driven by the vendor's actual invoice delivery, not the PO approval event." },
+    ],
+  },
+  {
     tag: "Multi-Currency & Budgets",
     date: "May 31, 2026",
     title: "Multi-Currency with Live FX Rates and Budget Management",
