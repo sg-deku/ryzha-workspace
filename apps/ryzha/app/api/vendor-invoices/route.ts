@@ -18,15 +18,30 @@ export async function GET(req: Request) {
   const vendorId = searchParams.get("vendorId")
   const status = searchParams.get("status")
 
+  const statusFilter = status
+    ? status.includes(",")
+      ? { in: status.split(",").map((s: string) => s.trim()) }
+      : status
+    : undefined
+
   const invoices = await prisma.vendorInvoice.findMany({
     where: {
       organizationId: session.user.organizationId,
       ...(vendorId ? { vendorId } : {}),
-      ...(status ? { status } : {}),
+      ...(statusFilter ? { status: statusFilter } : {}),
     },
-    select: { id: true, invoiceNumber: true, amount: true, status: true, dueDate: true },
+    select: {
+      id: true,
+      invoiceNumber: true,
+      amount: true,
+      status: true,
+      dueDate: true,
+      vendorId: true,
+      vendor: { select: { id: true, name: true } },
+      vendorPayments: { select: { amount: true } },
+    },
     orderBy: { createdAt: "desc" },
-    take: 100,
+    take: 200,
   })
 
   return NextResponse.json(invoices)

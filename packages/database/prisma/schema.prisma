@@ -99,6 +99,9 @@ model Organization {
 
   // Budgets
   budgets Budget[]
+
+  // Payment Runs
+  paymentRuns PaymentRun[]
 }
 
 model P2PSettings {
@@ -155,11 +158,20 @@ model Vendor {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
+  bankAccountName   String?
+  bankIban          String?
+  bankBic           String?
+  bankRoutingNumber String?
+  bankAccountNumber String?
+  bankSortCode      String?
+  bankCountry       String?
+
   organization   Organization    @relation(fields: [organizationId], references: [id])
   purchaseOrders PurchaseOrder[]
   invoices       VendorInvoice[]
   debitMemos     VendorDebitMemo[]
   fixedAssets    FixedAsset[]
+  paymentRunItems PaymentRunItem[]
 }
 
 model PurchaseOrder {
@@ -220,12 +232,13 @@ model VendorInvoice {
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
-  vendor         Vendor              @relation(fields: [vendorId], references: [id])
-  purchaseOrder  PurchaseOrder?      @relation(fields: [purchaseOrderId], references: [id])
-  organization   Organization        @relation(fields: [organizationId], references: [id])
-  lineItems      VendorInvoiceLine[]
-  vendorPayments VendorPayment[]
-  debitMemos     VendorDebitMemo[]
+  vendor          Vendor              @relation(fields: [vendorId], references: [id])
+  purchaseOrder   PurchaseOrder?      @relation(fields: [purchaseOrderId], references: [id])
+  organization    Organization        @relation(fields: [organizationId], references: [id])
+  lineItems       VendorInvoiceLine[]
+  vendorPayments  VendorPayment[]
+  debitMemos      VendorDebitMemo[]
+  paymentRunItems PaymentRunItem[]
 }
 
 model VendorPayment {
@@ -1074,6 +1087,9 @@ model BankAccount {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
+  bic        String?
+  sortCode   String?
+
   connectionType        String    @default("MANUAL")
   syncStatus            String    @default("IDLE")
   lastSyncedAt          DateTime?
@@ -1092,6 +1108,7 @@ model BankAccount {
 
   organization     Organization      @relation(fields: [organizationId], references: [id])
   bankFeedSyncLogs BankFeedSyncLog[] @relation("BankAccountSyncLogs")
+  paymentRuns      PaymentRun[]
 
   @@index([organizationId])
 }
@@ -1218,6 +1235,7 @@ model NumberingSettings {
   contractPrefix String       @default("CON")
   dmPrefix       String       @default("DM")
   faPrefix       String       @default("FA")
+  prunPrefix     String       @default("PRUN")
   padding        Int          @default(5)
   organization   Organization @relation(fields: [organizationId], references: [id])
 }
@@ -1381,4 +1399,50 @@ model BudgetLine {
   @@index([budgetId])
   @@index([budgetId, periodLabel])
   @@unique([budgetId, accountName, periodLabel])
+}
+
+model PaymentRun {
+  id            String    @id @default(cuid())
+  organizationId String
+  runNumber     String
+  name          String
+  status        String    @default("DRAFT") // DRAFT | APPROVED | PROCESSING | COMPLETED | PARTIALLY_FAILED | CANCELLED
+  paymentDate   DateTime
+  currency      String    @default("USD")
+  format        String    @default("MANUAL") // SEPA | ACH | BACS | MANUAL
+  bankAccountId String?
+  totalAmount   Float     @default(0)
+  approvedBy    String?
+  approvedAt    DateTime?
+  executedAt    DateTime?
+  notes         String?
+  createdById   String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  organization Organization   @relation(fields: [organizationId], references: [id])
+  bankAccount  BankAccount?   @relation(fields: [bankAccountId], references: [id])
+  items        PaymentRunItem[]
+
+  @@index([organizationId, status])
+  @@index([organizationId, paymentDate])
+}
+
+model PaymentRunItem {
+  id              String    @id @default(cuid())
+  paymentRunId    String
+  vendorInvoiceId String
+  vendorId        String
+  amount          Float
+  status          String    @default("PENDING") // PENDING | PAID | FAILED | SKIPPED
+  failureReason   String?
+  vendorPaymentId String?
+  createdAt       DateTime  @default(now())
+
+  paymentRun    PaymentRun    @relation(fields: [paymentRunId], references: [id], onDelete: Cascade)
+  vendorInvoice VendorInvoice @relation(fields: [vendorInvoiceId], references: [id])
+  vendor        Vendor        @relation(fields: [vendorId], references: [id])
+
+  @@index([paymentRunId])
+  @@unique([paymentRunId, vendorInvoiceId])
 }

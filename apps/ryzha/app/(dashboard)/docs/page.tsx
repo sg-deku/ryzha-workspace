@@ -377,6 +377,27 @@ type ReleaseNote = {
 
 const RELEASE_NOTES: ReleaseNote[] = [
   {
+    tag: "Batch AP Payments",
+    date: "May 31, 2026",
+    title: "Payment Runs — Batch AP Payments with SEPA / ACH / BACS File Generation",
+    summary: "Ryzha now supports NetSuite-style batch payment runs for Accounts Payable. Instead of paying vendor invoices one at a time, finance teams can create a Payment Run, select multiple open vendor invoices, approve the batch, execute it (creating VendorPayments and GL Journal Entries per invoice in one operation), and download a bank-ready file in SEPA (ISO 20022 pain.001.001.03), ACH/NACHA (US), or BACS Standard 18 (UK) format. Vendor master data extended with IBAN, BIC, ABA routing, account numbers, and sort codes.",
+    changes: [
+      { type: "feat", text: "PaymentRun model: lifecycle DRAFT → APPROVED → PROCESSING → COMPLETED / PARTIALLY_FAILED. Stores format (SEPA/ACH/BACS/MANUAL), currency, bank account, payment date, approver, and execution timestamp." },
+      { type: "feat", text: "PaymentRunItem model: one row per invoice in the batch. Tracks amount, item status (PENDING/PAID/FAILED/SKIPPED), failure reason, and links back to the created VendorPayment on execution." },
+      { type: "feat", text: "Vendor model extended: bankAccountName, bankIban, bankBic (SEPA), bankRoutingNumber, bankAccountNumber (ACH/BACS), bankSortCode (BACS), bankCountry." },
+      { type: "feat", text: "BankAccount model extended: bic (SWIFT/BIC for SEPA debit side), sortCode (UK sort code for BACS debit side)." },
+      { type: "feat", text: "sepa-generator.ts: generates ISO 20022 pain.001.001.03 XML with one CdtTrfTxInf block per item. Validates debtor/creditor IBAN and BIC presence before generation." },
+      { type: "feat", text: "ach-generator.ts: generates NACHA fixed-width file with File Header / Company Batch Header / Entry Detail (6) / Batch Control / File Control records. Amounts in cents, SEC code PPD/CCD." },
+      { type: "feat", text: "bacs-generator.ts: generates Bacs Standard 18 fixed-width file with VOL1/HDR1/HDR2/UHL1 labels, credit records (transaction code 99), and UTL1/EOF1 trailers. Amounts in pence." },
+      { type: "feat", text: "payment-run-engine.ts: executePaymentRun creates a VendorPayment per item, posts DR Accounts Payable / CR Cash GL JE, marks invoice PAID or PARTIALLY_PAID, and sets item status. Errors per-item — a single item failure does not abort the entire run. Run status set to PARTIALLY_FAILED if any items fail." },
+      { type: "feat", text: "API routes: POST /api/payment-runs (create), GET /api/payment-runs (list), GET/PATCH/DELETE /api/payment-runs/:id (detail/edit/delete), POST /api/payment-runs/:id/items (add invoices), DELETE /api/payment-runs/:id/items/:itemId (remove), POST /api/payment-runs/:id/approve, POST /api/payment-runs/:id/execute, GET /api/payment-runs/:id/export (streams file download)." },
+      { type: "feat", text: "vendor-invoices GET: now supports comma-separated ?status= filter (e.g. ?status=APPROVED,RECEIVED,MATCHED) and returns vendor name + vendorPayments for outstanding balance calculation." },
+      { type: "feat", text: "Payment Runs UI at /payment-runs: two-pane layout — run list on left with status/format badges, run detail on right with item table showing vendor banking status (✓ Set / ⚠ Missing), approve/execute/download actions, and invoice selector dialog with outstanding balance per invoice." },
+      { type: "feat", text: "Sidebar: Payment Runs added under Procure-to-Pay section with Layers icon." },
+      { type: "feat", text: "PRUN sequence added to NumberingSettings and EntitySequence system. Auto-generates PRUN-00001 style numbers." },
+    ],
+  },
+  {
     tag: "Bug Fix",
     date: "May 31, 2026",
     title: "Three-Way Match False Over-Payment Error Fixed",

@@ -38,6 +38,7 @@ import {
   ClipboardCheck,
   BarChart2,
   DollarSign,
+  Layers,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -253,6 +254,12 @@ export function Sidebar() {
             href="/approvals"
             icon={ClipboardCheck}
             label="Approvals"
+            collapsed={collapsed}
+          />
+          <SidebarItem
+            href="/payment-runs"
+            icon={Layers}
+            label="Payment Runs"
             collapsed={collapsed}
           />
 
