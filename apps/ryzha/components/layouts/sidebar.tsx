@@ -36,6 +36,8 @@ import {
   CalendarDays,
   TrendingDown,
   ClipboardCheck,
+  BarChart2,
+  DollarSign,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -140,6 +142,18 @@ export function Sidebar() {
             href="/fixed-assets"
             icon={TrendingDown}
             label="Fixed Assets"
+            collapsed={collapsed}
+          />
+          <SidebarItem
+            href="/fx-rates"
+            icon={DollarSign}
+            label="FX Rates"
+            collapsed={collapsed}
+          />
+          <SidebarItem
+            href="/budgets"
+            icon={BarChart2}
+            label="Budgets"
             collapsed={collapsed}
           />
 

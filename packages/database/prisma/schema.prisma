@@ -93,6 +93,12 @@ model Organization {
 
   // RAG / Knowledge Base
   financialDocuments FinancialDocument[]
+
+  // FX
+  exchangeRates ExchangeRate[]
+
+  // Budgets
+  budgets Budget[]
 }
 
 model P2PSettings {
@@ -439,23 +445,26 @@ model FinancialSettings {
 }
 
 model Invoice {
-  id             String        @id @default(cuid())
-  invoiceNumber  String
-  issueDate      DateTime      @default(now())
-  dueDate        DateTime
-  clientName     String
-  clientEmail    String
-  clientAddress  Json?
-  subtotal       Float
-  totalTax       Float
-  total          Float
-  status         InvoiceStatus @default(DRAFT)
-  pdfUrl         String?
-  organizationId String
-  customerId     String?
-  salesOrderId   String?
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  id               String        @id @default(cuid())
+  invoiceNumber    String
+  issueDate        DateTime      @default(now())
+  dueDate          DateTime
+  clientName       String
+  clientEmail      String
+  clientAddress    Json?
+  subtotal         Float
+  totalTax         Float
+  total            Float
+  currency         String        @default("USD")
+  fxRate           Float?
+  totalFunctional  Float?
+  status           InvoiceStatus @default(DRAFT)
+  pdfUrl           String?
+  organizationId   String
+  customerId       String?
+  salesOrderId     String?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
 
   lineItems    InvoiceLineItem[]
   payments     Payment[]
@@ -577,6 +586,9 @@ model Expense {
   date              DateTime
   description       String
   amount            Float
+  currency          String        @default("USD")
+  fxRate            Float?
+  amountFunctional  Float?
   category          String?
   taxRelevant       Boolean?
   status            ExpenseStatus @default(PENDING)
@@ -1318,4 +1330,55 @@ model FinancialDocument {
 
   @@index([organizationId])
   @@index([organizationId, sourceType])
+}
+
+model ExchangeRate {
+  id             String   @id @default(cuid())
+  organizationId String
+  fromCurrency   String
+  toCurrency     String
+  rate           Float
+  source         String   @default("API") // API | MANUAL | ECB | OPEN_EXCHANGE
+  rateDate       DateTime
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  @@unique([organizationId, fromCurrency, toCurrency, rateDate])
+  @@index([organizationId, fromCurrency, toCurrency])
+  @@index([rateDate])
+}
+
+model Budget {
+  id             String       @id @default(cuid())
+  organizationId String
+  name           String
+  fiscalYear     Int
+  period         String       @default("MONTHLY") // MONTHLY | QUARTERLY | ANNUAL
+  status         String       @default("DRAFT") // DRAFT | ACTIVE | ARCHIVED
+  currency       String       @default("USD")
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  lines        BudgetLine[]
+
+  @@index([organizationId, fiscalYear])
+  @@index([organizationId, status])
+}
+
+model BudgetLine {
+  id          String  @id @default(cuid())
+  budgetId    String
+  accountName String
+  accountType String
+  periodLabel String  // "2026-01", "2026-Q1", "2026"
+  budgeted    Float
+  notes       String?
+
+  budget Budget @relation(fields: [budgetId], references: [id], onDelete: Cascade)
+
+  @@index([budgetId])
+  @@index([budgetId, periodLabel])
+  @@unique([budgetId, accountName, periodLabel])
 }

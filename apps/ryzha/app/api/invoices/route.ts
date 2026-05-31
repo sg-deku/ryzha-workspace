@@ -6,6 +6,7 @@ import { NextResponse } from "next/server"
 import { after } from "next/server"
 import { createSystemJournalEntry } from "@/lib/reports/general-ledger/je-factory"
 import { mapInvoiceToAccount } from "@/lib/reports/general-ledger/account-mapping"
+import { convertAmount } from "@/lib/fx/fx-engine"
 
 export const dynamic = "force-dynamic";
 
@@ -43,8 +44,24 @@ export async function POST(req: Request) {
       lineItems, 
       subtotal, 
       totalTax, 
-      total 
+      total,
+      currency,
     } = body
+
+    const org = await prisma.organization.findUnique({
+      where: { id: session.user.organizationId },
+      select: { currency: true },
+    })
+    const functionalCurrency = org?.currency ?? "USD"
+    const invoiceCurrency = (currency ?? functionalCurrency).toUpperCase()
+
+    let fxRate: number | undefined
+    let totalFunctional: number | undefined
+    if (invoiceCurrency !== functionalCurrency) {
+      const fx = await convertAmount(session.user.organizationId, total, invoiceCurrency, functionalCurrency, new Date(issueDate))
+      fxRate = fx.rate
+      totalFunctional = fx.converted
+    }
 
     const invoice = await prisma.invoice.create({
       data: {
@@ -57,6 +74,9 @@ export async function POST(req: Request) {
         subtotal,
         totalTax,
         total,
+        currency: invoiceCurrency,
+        fxRate: fxRate ?? null,
+        totalFunctional: totalFunctional ?? null,
         status: "DRAFT",
         organizationId: session.user.organizationId,
         lineItems: {

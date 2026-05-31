@@ -9,6 +9,7 @@ import { mapExpenseCategoryToAccount } from "@/lib/reports/general-ledger/accoun
 import { getNextEntityNumber } from "@/lib/sequences"
 import { createApprovalRequest } from "@/lib/approvals/approval-engine"
 import { runExpenseApprovalAgent } from "@/lib/agents/p2p/approval"
+import { convertAmount } from "@/lib/fx/fx-engine"
 
 export const dynamic = "force-dynamic";
 
@@ -32,7 +33,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { date, description, amount, category } = await req.json()
+    const { date, description, amount, category, currency } = await req.json()
 
     if (!date || !description || amount === undefined) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
@@ -42,8 +43,21 @@ export async function POST(req: Request) {
     const expenseAmount = Number(amount)
     const expenseNumber = await getNextEntityNumber(organizationId, "EXPENSE")
 
-    const settings = await prisma.p2PSettings.findUnique({ where: { organizationId } })
+    const [settings, org] = await Promise.all([
+      prisma.p2PSettings.findUnique({ where: { organizationId } }),
+      prisma.organization.findUnique({ where: { id: organizationId }, select: { currency: true } }),
+    ])
     const autoApproveLimit = settings?.autoApproveLimit ?? 500
+    const functionalCurrency = org?.currency ?? "USD"
+    const expenseCurrency = (currency ?? functionalCurrency).toUpperCase()
+
+    let fxRate: number | undefined
+    let amountFunctional: number | undefined
+    if (expenseCurrency !== functionalCurrency) {
+      const fx = await convertAmount(organizationId, expenseAmount, expenseCurrency, functionalCurrency, new Date(date))
+      fxRate = fx.rate
+      amountFunctional = fx.converted
+    }
 
     const needsApproval = expenseAmount > autoApproveLimit
 
@@ -53,6 +67,9 @@ export async function POST(req: Request) {
         date: new Date(date),
         description,
         amount: expenseAmount,
+        currency: expenseCurrency,
+        fxRate: fxRate ?? null,
+        amountFunctional: amountFunctional ?? null,
         category: category || null,
         status: needsApproval ? "PENDING" : "APPROVED",
         ...(needsApproval

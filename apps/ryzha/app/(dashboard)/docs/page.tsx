@@ -377,6 +377,28 @@ type ReleaseNote = {
 
 const RELEASE_NOTES: ReleaseNote[] = [
   {
+    tag: "Multi-Currency & Budgets",
+    date: "May 31, 2026",
+    title: "Multi-Currency with Live FX Rates and Budget Management",
+    summary: "Ryzha now supports multi-currency invoicing and expenses with live FX rate fetching (Frankfurter/ECB + OpenExchangeRates), daily rate caching, and automated month-end revaluation JEs (FX Gain/Loss). Budget Management lets you build account-level budgets (monthly/quarterly/annual), import lines from CSV, and compare budgeted vs GL actuals with variance % — a critical FP&A feature present in NetSuite, Xentral, and Rillet.",
+    changes: [
+      { type: "feat", text: "ExchangeRate model: daily rate cache per org per currency pair. Source tracked (ECB / OPEN_EXCHANGE / MANUAL). Rates upserted per date to avoid duplicates." },
+      { type: "feat", text: "fetchLiveRate: tries OpenExchangeRates (if API key set) then falls back to Frankfurter (ECB free tier, no key required). Returns 1 for same-currency pairs." },
+      { type: "feat", text: "convertAmount: resolves or fetches rate, returns converted amount + rate + source. Used at invoice and expense creation time." },
+      { type: "feat", text: "Invoice creation: accepts optional currency field. If foreign currency, FX rate is fetched at issue date, fxRate and totalFunctional stored. JE always posts in functional currency." },
+      { type: "feat", text: "Expense creation: accepts optional currency field. FX conversion applied at transaction date. amountFunctional stored for reporting." },
+      { type: "feat", text: "revaluateOpenItems: month-end cron-ready function — fetches current rates for all open foreign-currency invoices/expenses, updates functional amounts, posts a single ADJUSTING JE with FX Gain / FX Loss GL lines." },
+      { type: "feat", text: "API routes: GET/POST /api/fx/rates (rate registry + live fetch by ?from=&to= params), POST /api/fx/revalue (trigger revaluation)." },
+      { type: "feat", text: "FX Rates UI at /fx-rates: rate register table, 'Fetch Live' button pre-fills rate from ECB, manual rate override, source badge (ECB / OPEN_EXCHANGE / MANUAL), one-click 'Run Revaluation' button." },
+      { type: "feat", text: "Budget model: name, fiscalYear, period (MONTHLY/QUARTERLY/ANNUAL), currency, status (DRAFT/ACTIVE/ARCHIVED). BudgetLine: accountName, accountType, periodLabel, budgeted." },
+      { type: "feat", text: "getBudgetVariance: queries GL actuals from GeneralLedgerEntry grouped by account for the period date range. Returns budgeted, actual, variance, variance% per account per period." },
+      { type: "feat", text: "parseBudgetCsv: header-detection parser (Account Name, Account Type, Period, Budgeted). Tolerates quoted fields and flexible column order." },
+      { type: "feat", text: "API routes: GET/POST /api/budgets, GET/PATCH/DELETE /api/budgets/:id, GET /api/budgets/:id/variance, POST /api/budgets/import (multipart CSV upload replaces lines)." },
+      { type: "feat", text: "Budget UI at /budgets: split-pane layout — budget list on left with period/status badges, variance table on right with tabbed periods. Color-coded variance (green favourable, red unfavourable), totals row, CSV import dialog with format instructions." },
+      { type: "feat", text: "Sidebar: FX Rates and Budgets links added under Accounting section." },
+    ],
+  },
+  {
     tag: "Approval Workflows",
     date: "May 31, 2026",
     title: "Proper Approval Workflows — Enforce Limits, Delegate, Escalate",
