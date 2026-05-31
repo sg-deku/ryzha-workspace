@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { ArrowLeft, Mail, MapPin, Pencil } from "lucide-react"
 import Link from "next/link"
 import { VendorActivityTabs } from "./vendor-activity-tabs"
+import { PortalPanel } from "./portal-panel"
 
 export const dynamic = "force-dynamic"
 
@@ -43,6 +44,11 @@ export default async function VendorDetailsPage({ params }: { params: Promise<{ 
             },
           },
         },
+      },
+      profileChanges: {
+        where: { status: "PENDING" },
+        orderBy: { requestedAt: "desc" },
+        select: { id: true, status: true, changes: true, requestedAt: true },
       },
     },
   })
@@ -111,45 +117,61 @@ export default async function VendorDetailsPage({ params }: { params: Promise<{ 
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
-        <Card className="lg:col-span-1">
-          <CardHeader>
-            <CardTitle>Details</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {vendor.email && (
-              <div className="flex items-start gap-2">
-                <Mail className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
+        <div className="lg:col-span-1 space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Details</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {vendor.email && (
+                <div className="flex items-start gap-2">
+                  <Mail className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
+                  <div>
+                    <p className="text-xs text-muted-foreground">Email</p>
+                    <p className="text-sm">{vendor.email}</p>
+                  </div>
+                </div>
+              )}
+              {addr && (
+                <div className="flex items-start gap-2">
+                  <MapPin className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
+                  <div>
+                    <p className="text-xs text-muted-foreground">Address</p>
+                    <p className="text-sm">{addr}</p>
+                  </div>
+                </div>
+              )}
+              <div className="border-t pt-4 space-y-3">
                 <div>
-                  <p className="text-xs text-muted-foreground">Email</p>
-                  <p className="text-sm">{vendor.email}</p>
+                  <p className="text-xs text-muted-foreground">Tax ID</p>
+                  <p className="text-sm">{vendor.taxId || "—"}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Payment Terms</p>
+                  <p className="text-sm">{vendor.paymentTerms || "NET30"}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Created</p>
+                  <p className="text-sm">{new Date(vendor.createdAt).toLocaleDateString()}</p>
                 </div>
               </div>
-            )}
-            {addr && (
-              <div className="flex items-start gap-2">
-                <MapPin className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
-                <div>
-                  <p className="text-xs text-muted-foreground">Address</p>
-                  <p className="text-sm">{addr}</p>
-                </div>
-              </div>
-            )}
-            <div className="border-t pt-4 space-y-3">
-              <div>
-                <p className="text-xs text-muted-foreground">Tax ID</p>
-                <p className="text-sm">{vendor.taxId || "—"}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Payment Terms</p>
-                <p className="text-sm">{vendor.paymentTerms || "NET30"}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Created</p>
-                <p className="text-sm">{new Date(vendor.createdAt).toLocaleDateString()}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+
+          <PortalPanel
+            vendorId={vendor.id}
+            vendorEmail={vendor.email ?? null}
+            portalEnabled={vendor.portalEnabled}
+            portalEmail={vendor.portalEmail ?? null}
+            portalInvitedAt={vendor.portalInvitedAt?.toISOString() ?? null}
+            profileChanges={vendor.profileChanges.map((c) => ({
+              id: c.id,
+              status: c.status,
+              changes: c.changes,
+              requestedAt: c.requestedAt.toISOString(),
+            }))}
+          />
+        </div>
 
         <Card className="lg:col-span-2">
           <CardHeader>

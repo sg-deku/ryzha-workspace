@@ -377,6 +377,24 @@ type ReleaseNote = {
 
 const RELEASE_NOTES: ReleaseNote[] = [
   {
+    tag: "Vendor Portal",
+    date: "May 31, 2026",
+    title: "Vendor Self-Service Portal — Magic-Link Access, PO Acknowledgment, Profile Change Requests",
+    summary: "Ryzha now offers a Vendor Portal — a standalone, branded self-service experience for suppliers. Finance teams invite vendors by email; vendors receive a secure 72-hour magic link and land in a portal where they can view their purchase orders, acknowledge receipt, track invoice status, see full payment history, and request profile updates (contact details, banking). Profile change requests enter a pending queue visible to AP staff on the vendor detail page, requiring approval before any data is written. This is comparable to NetSuite Vendor Center and Coupa Supplier Portal.",
+    changes: [
+      { type: "feat", text: "VendorPortalSession model: stores a 32-byte random token with expiry (72 h) and usedAt timestamp. Tokens are single-org, vendor-scoped, and purged on revoke." },
+      { type: "feat", text: "VendorProfileChange model: vendor-submitted change requests with PENDING/APPROVED/REJECTED lifecycle. Approved changes are applied atomically to the Vendor record; rejected changes are discarded. Reviewer name, timestamp, and optional note are stored." },
+      { type: "feat", text: "VendorPOAcknowledgment model: idempotent per vendor+PO. Vendors can acknowledge an APPROVED/ORDERED PO once; subsequent taps update the timestamp. Acknowledgment date is shown on the PO card." },
+      { type: "feat", text: "Vendor model extended: portalEnabled (Boolean), portalEmail (String?), portalInvitedAt (DateTime?)." },
+      { type: "feat", text: "Magic-link auth at /vendor-portal/auth: validates token, touches usedAt, drops a httpOnly vp_token cookie (path=/vendor-portal, 72 h), and redirects to /vendor-portal/dashboard. Expired or unknown tokens land on /vendor-portal/expired." },
+      { type: "feat", text: "Portal layout at /vendor-portal/layout.tsx: sticky header with Ryzha branding, responsive nav (desktop horizontal / mobile bottom tabs) for Dashboard, Purchase Orders, Invoices, Payments, and My Profile." },
+      { type: "feat", text: "Portal API routes (/api/vendor-portal/*): /me (GET vendor + org), /orders (GET list + POST acknowledge), /invoices (GET), /payments (GET), /profile (PUT — creates change request). All authenticated via vp_token cookie, never NextAuth." },
+      { type: "feat", text: "Internal API: POST /api/vendors/portal-invite (sends invite email via Brevo, creates session, sets portalEnabled), POST /api/vendors/portal-revoke (deletes all sessions, clears flag), GET /api/vendors/profile-changes (list pending), PATCH /api/vendors/profile-changes/:id (approve/reject)." },
+      { type: "feat", text: "Vendor detail page at /vendors/:id: left column split into Details card and new Portal Panel card. Portal Panel shows invite form (or active status + resend/revoke buttons), plus a yellow pending-changes widget that appears when the vendor has submitted profile change requests awaiting review." },
+      { type: "feat", text: "Remittance advice email: sendRemittanceAdviceEmail in lib/vendor-portal/emails.ts generates an HTML table of paid invoices with totals, payment reference, and date — can be called from payment execution flows." },
+    ],
+  },
+  {
     tag: "Batch AP Payments",
     date: "May 31, 2026",
     title: "Payment Runs — Batch AP Payments with SEPA / ACH / BACS File Generation",

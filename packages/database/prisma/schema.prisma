@@ -102,6 +102,9 @@ model Organization {
 
   // Payment Runs
   paymentRuns PaymentRun[]
+
+  // Vendor Portal
+  vendorProfileChanges VendorProfileChange[]
 }
 
 model P2PSettings {
@@ -166,12 +169,19 @@ model Vendor {
   bankSortCode      String?
   bankCountry       String?
 
-  organization   Organization    @relation(fields: [organizationId], references: [id])
-  purchaseOrders PurchaseOrder[]
-  invoices       VendorInvoice[]
-  debitMemos     VendorDebitMemo[]
-  fixedAssets    FixedAsset[]
-  paymentRunItems PaymentRunItem[]
+  portalEnabled   Boolean  @default(false)
+  portalEmail     String?
+  portalInvitedAt DateTime?
+
+  organization      Organization          @relation(fields: [organizationId], references: [id])
+  purchaseOrders    PurchaseOrder[]
+  invoices          VendorInvoice[]
+  debitMemos        VendorDebitMemo[]
+  fixedAssets       FixedAsset[]
+  paymentRunItems   PaymentRunItem[]
+  portalSessions    VendorPortalSession[]
+  profileChanges    VendorProfileChange[]
+  poAcknowledgments VendorPOAcknowledgment[]
 }
 
 model PurchaseOrder {
@@ -189,13 +199,14 @@ model PurchaseOrder {
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
-  vendor          Vendor              @relation(fields: [vendorId], references: [id])
-  organization    Organization        @relation(fields: [organizationId], references: [id])
-  lineItems       PurchaseOrderLine[]
-  vendorInvoices  VendorInvoice[]
-  goodsReceipts   GoodsReceipt[]
-  fixedAssets     FixedAsset[]
-  approvalRequest ApprovalRequest?    @relation(fields: [approvalRequestId], references: [id])
+  vendor            Vendor                   @relation(fields: [vendorId], references: [id])
+  organization      Organization             @relation(fields: [organizationId], references: [id])
+  lineItems         PurchaseOrderLine[]
+  vendorInvoices    VendorInvoice[]
+  goodsReceipts     GoodsReceipt[]
+  fixedAssets       FixedAsset[]
+  approvalRequest   ApprovalRequest?         @relation(fields: [approvalRequestId], references: [id])
+  poAcknowledgments VendorPOAcknowledgment[]
 }
 
 model PurchaseOrderLine {
@@ -1445,4 +1456,51 @@ model PaymentRunItem {
 
   @@index([paymentRunId])
   @@unique([paymentRunId, vendorInvoiceId])
+}
+
+model VendorPortalSession {
+  id         String   @id @default(cuid())
+  vendorId   String
+  token      String   @unique
+  email      String
+  expiresAt  DateTime
+  usedAt     DateTime?
+  createdAt  DateTime @default(now())
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId])
+  @@index([token])
+}
+
+model VendorProfileChange {
+  id             String    @id @default(cuid())
+  vendorId       String
+  organizationId String
+  status         String    @default("PENDING") // PENDING | APPROVED | REJECTED
+  changes        Json
+  requestedAt    DateTime  @default(now())
+  reviewedAt     DateTime?
+  reviewedBy     String?
+  reviewNote     String?
+
+  vendor       Vendor       @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId, status])
+  @@index([vendorId])
+}
+
+model VendorPOAcknowledgment {
+  id              String   @id @default(cuid())
+  vendorId        String
+  purchaseOrderId String
+  acknowledgedAt  DateTime @default(now())
+  note            String?
+
+  vendor        Vendor        @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  purchaseOrder PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+
+  @@unique([vendorId, purchaseOrderId])
+  @@index([vendorId])
 }
