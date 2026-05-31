@@ -245,13 +245,6 @@ export function Sidebar() {
             label="System Docs"
             collapsed={collapsed}
           />
-          <SidebarItem
-            href="/api-docs"
-            icon={Zap}
-            label="API Reference"
-            collapsed={collapsed}
-          />
-
           {/* ADMIN */}
           <Authorized permission="users:manage">
             <div className="pt-4 pb-2 px-3">
