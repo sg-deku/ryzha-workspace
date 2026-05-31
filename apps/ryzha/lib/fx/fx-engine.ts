@@ -2,38 +2,80 @@ import { prisma } from "@/lib/prisma"
 import { createSystemJournalEntry } from "@/lib/reports/general-ledger/je-factory"
 import { startOfDay } from "date-fns"
 
-const ECB_URL = "https://api.frankfurter.app/latest"
 const OPEN_EXCHANGE_URL = "https://openexchangerates.org/api/latest.json"
+const FRANKFURTER_URL = "https://api.frankfurter.app/latest"
+const FREE_EXCHANGE_URL = "https://open.er-api.com/v6/latest"
+
+const NO_STORE = { cache: "no-store" } as const
+
+export async function fetchLiveRateWithSource(
+  fromCurrency: string,
+  toCurrency: string
+): Promise<{ rate: number; source: string } | null> {
+  if (fromCurrency === toCurrency) return { rate: 1, source: "IDENTITY" }
+
+  const appId = process.env.OPEN_EXCHANGE_APP_ID
+  if (appId) {
+    try {
+      const res = await fetch(
+        `${OPEN_EXCHANGE_URL}?app_id=${appId}&base=USD&symbols=${fromCurrency},${toCurrency}`,
+        NO_STORE
+      )
+      if (res.ok) {
+        const data = await res.json()
+        const rates: Record<string, number> = data.rates ?? {}
+        const fromRate = rates[fromCurrency]
+        const toRate = rates[toCurrency]
+        if (fromRate && toRate) {
+          let rate: number
+          if (fromCurrency === "USD") rate = toRate
+          else if (toCurrency === "USD") rate = 1 / fromRate
+          else rate = toRate / fromRate
+          return { rate, source: "OPEN_EXCHANGE" }
+        }
+      }
+    } catch (e) {
+      console.warn("[FX] OpenExchangeRates failed:", e)
+    }
+  }
+
+  try {
+    const res = await fetch(`${FREE_EXCHANGE_URL}/${fromCurrency}`, NO_STORE)
+    if (res.ok) {
+      const data = await res.json()
+      if (data.result === "success") {
+        const rate: number | undefined = data.rates?.[toCurrency]
+        if (rate) return { rate, source: "ECB" }
+      }
+    }
+  } catch (e) {
+    console.warn("[FX] open.er-api.com failed:", e)
+  }
+
+  try {
+    const res = await fetch(
+      `${FRANKFURTER_URL}?from=${fromCurrency}&to=${toCurrency}`,
+      NO_STORE
+    )
+    if (res.ok) {
+      const data = await res.json()
+      const rate: number | undefined = data.rates?.[toCurrency]
+      if (rate) return { rate, source: "ECB" }
+    }
+  } catch (e) {
+    console.warn("[FX] Frankfurter (ECB) failed:", e)
+  }
+
+  console.error(`[FX] All providers failed for ${fromCurrency}→${toCurrency}`)
+  return null
+}
 
 export async function fetchLiveRate(
   fromCurrency: string,
   toCurrency: string
-): Promise<number> {
-  if (fromCurrency === toCurrency) return 1
-
-  try {
-    const appId = process.env.OPEN_EXCHANGE_APP_ID
-    if (appId) {
-      const res = await fetch(`${OPEN_EXCHANGE_URL}?app_id=${appId}&base=USD&symbols=${fromCurrency},${toCurrency}`)
-      if (res.ok) {
-        const data = await res.json()
-        const rates = data.rates ?? {}
-        if (fromCurrency === "USD") return rates[toCurrency] ?? 1
-        if (toCurrency === "USD") return 1 / (rates[fromCurrency] ?? 1)
-        return (rates[toCurrency] ?? 1) / (rates[fromCurrency] ?? 1)
-      }
-    }
-  } catch {}
-
-  try {
-    const res = await fetch(`${ECB_URL}?from=${fromCurrency}&to=${toCurrency}`)
-    if (res.ok) {
-      const data = await res.json()
-      return data.rates?.[toCurrency] ?? 1
-    }
-  } catch {}
-
-  return 1
+): Promise<number | null> {
+  const result = await fetchLiveRateWithSource(fromCurrency, toCurrency)
+  return result?.rate ?? null
 }
 
 export async function getOrFetchRate(
@@ -57,8 +99,10 @@ export async function getOrFetchRate(
   })
   if (cached) return { rate: cached.rate, source: cached.source }
 
-  const liveRate = await fetchLiveRate(fromCurrency, toCurrency)
-  const source = process.env.OPEN_EXCHANGE_APP_ID ? "OPEN_EXCHANGE" : "ECB"
+  const live = await fetchLiveRateWithSource(fromCurrency, toCurrency)
+  if (live === null) {
+    throw new Error(`FX rate unavailable for ${fromCurrency}→${toCurrency}. All providers failed.`)
+  }
 
   await prisma.exchangeRate.upsert({
     where: {
@@ -74,14 +118,14 @@ export async function getOrFetchRate(
       organizationId,
       fromCurrency,
       toCurrency,
-      rate: liveRate,
-      source,
+      rate: live.rate,
+      source: live.source,
       rateDate: dayStart,
     },
-    update: { rate: liveRate, source },
+    update: { rate: live.rate, source: live.source },
   })
 
-  return { rate: liveRate, source }
+  return { rate: live.rate, source: live.source }
 }
 
 export async function convertAmount(
