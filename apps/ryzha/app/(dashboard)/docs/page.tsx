@@ -377,6 +377,31 @@ type ReleaseNote = {
 
 const RELEASE_NOTES: ReleaseNote[] = [
   {
+    tag: "AI & GL Hardening",
+    date: "May 31, 2026",
+    title: "AI Agent Correctness, GL-Derived Reports, and RAG Knowledge Base",
+    summary: "A comprehensive internal audit of all AI agents and GL accounting logic resulted in nine targeted fixes across the agent pipeline, report layer, and AI infrastructure. Every agent now posts real double-entry journal entries. Reports are derived from the General Ledger, not denormalised tables. The RAG context layer is backed by a real pgvector embedding index. Lyla now has persistent, server-side conversation memory.",
+    changes: [
+      { type: "fix", text: "Audit hash is now fully deterministic — the hourly timestamp that made hashes non-reproducible across hours has been removed. Hashes are derived only from immutable transaction fields." },
+      { type: "fix", text: "R2R Agent now posts a real double-entry journal entry (DR Cash / CR Subscription Revenue) for every transaction it processes, instead of only updating metadata fields. Idempotency guard prevents duplicate JEs on retry." },
+      { type: "fix", text: "O&M Agent now posts an ASC 606 deferral journal entry (DR Revenue / CR Deferred Revenue Liability) when a transaction is deferred. Deferred revenue is correctly removed from the P&L until it is released." },
+      { type: "fix", text: "P&L report now reads directly from GeneralLedgerEntry (accountType Revenue and Expenses) instead of the Invoice table. Revenue is only recognised when GL credits exist — deferred and unrecognised amounts are excluded." },
+      { type: "fix", text: "Cash Flow report now uses actual Payment and VendorPayment dates (cash-basis) instead of invoice accrual dates, giving an accurate picture of when money moved." },
+      { type: "fix", text: "FP&A runway calculation now derives bank balance from live GL Cash account balances (DR − CR on Cash, Bank Account, Stripe Clearing Account, Undeposited Funds). Falls back to the manual FinancialSnapshot only for brand-new organisations with no GL activity." },
+      { type: "fix", text: "Lyla invoice numbering replaced count()+1 with the atomic getNextEntityNumber sequence, eliminating race conditions under concurrent requests. Purchase Order and Sales Order creation uses the same sequence system." },
+      { type: "fix", text: "Lyla now guards vendor and customer lookups before creating POs and SOs. If the named vendor or customer does not exist, a clear error is returned instead of crashing with a Prisma FK null violation." },
+      { type: "fix", text: "Lyla conversation history is now loaded from the ChatMessage database table on every request. The co-pilot retains full context across browser refreshes and device switches — it is no longer stateless between sessions." },
+      { type: "fix", text: "Tax engine no longer uses a module-level in-memory cache that silently emptied on every Vercel cold start. Tax rules are now fetched from Postgres on each invocation, which is correct for serverless deployments." },
+      { type: "fix", text: "JSON-mode response format is now enabled for Groq as well as OpenAI. Agents running on Groq-hosted models (Llama 3, Mixtral) previously received unstructured text and silently failed JSON parsing." },
+      { type: "fix", text: "Workflow Studio manual trigger now checks for any already-running workflow in the organisation before starting a new one, returning HTTP 409 Conflict on double-click. The simulated payment intent ID is now a collision-safe UUID instead of Date.now()." },
+      { type: "fix", text: "SalesOrder → Invoice foreign key direction corrected. invoiceId has been moved from SalesOrder to Invoice so that a single sales order can generate multiple partial invoices — the standard O2C pattern." },
+      { type: "fix", text: "GeneralLedgerEntry unique constraint removed. The previous constraint prevented more than one GL line from referencing the same account from the same source, which is invalid for double-entry bookkeeping (e.g. two debit lines to Cash in the same JE)." },
+      { type: "feat", text: "RAG context layer is now backed by a real pgvector embedding index. Financial documents can be ingested via ingestDocument() and are retrieved using cosine similarity search against the query embedding. Falls back gracefully if the pgvector extension is unavailable." },
+      { type: "feat", text: "New FinancialDocument model added to the schema for storing policy documents, accounting standards references, and contract summaries used by the AI agent RAG pipeline." },
+      { type: "improve", text: "callLLM in llm.ts is now the single AI call path for all agents. The parallel OpenAI-SDK client in client.ts is retained only for Lyla (which requires JSON mode and usage tracking). Anthropic, Gemini, Groq, and Ollama all route correctly through LangChain providers." },
+    ],
+  },
+  {
     tag: "Product Scoping",
     date: "May 30, 2026",
     title: "Product Scope, Auto-Generated Codes, and Tax Item Type",

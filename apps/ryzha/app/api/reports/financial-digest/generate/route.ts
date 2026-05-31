@@ -61,7 +61,7 @@ export async function POST() {
       Format all numbers as USD currency strings. Use plausible but positive changes if historical data isn't provided.`
     },
     { role: "user", content: promptContext }
-  ], "agent_fpna", { modelName: "gpt-4o-mini", temperature: 0.3 })
+  ], "agent_fpna", { temperature: 0.3 })
 
   let data
   try {

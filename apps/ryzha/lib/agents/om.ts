@@ -3,6 +3,7 @@ import { getFinancialContext } from "@/lib/ai/rag"
 import { callLLM } from "@/lib/ai/llm"
 import { parseAIJson } from "@/lib/ai/client"
 import { appendAgentLog } from "./utils"
+import { createSystemJournalEntry } from "@/lib/reports/general-ledger/je-factory"
 import { addMonths, startOfMonth } from "date-fns"
 
 export async function runOMAgent(transactionId: string) {
@@ -89,6 +90,31 @@ export async function runOMAgent(transactionId: string) {
       }))
       await prisma.deferredRevenueSchedule.createMany({ data: scheduleRows })
     }
+
+    await createSystemJournalEntry({
+      organizationId: tx.organizationId,
+      sourceType: "OM_Deferred",
+      sourceId: transactionId,
+      reference: `OM-DEF-${transactionId.slice(-8)}`,
+      description: `ASC 606 deferral — ${tx.description ?? transactionId}`,
+      entryDate: new Date(),
+      lines: [
+        {
+          accountName: "Subscription Revenue",
+          accountType: "Revenue",
+          debit: deferred,
+          credit: 0,
+          description: `Reverse immediate recognition — deferred portion`,
+        },
+        {
+          accountName: "Deferred Revenue",
+          accountType: "Liabilities",
+          debit: 0,
+          credit: deferred,
+          description: `Deferred over ${deferralMonths} months`,
+        },
+      ],
+    })
   } else {
     const logMessage = aiReasoning || "Approved: immediate revenue recognition."
     await appendAgentLog(transactionId, "O&M", logMessage)

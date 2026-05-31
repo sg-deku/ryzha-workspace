@@ -93,7 +93,7 @@ export async function invokeAI(
 ): Promise<string> {
   const { client, model, provider } = await getAIClientConfig(organizationId)
 
-  const supportsJsonMode = provider === "openai"
+  const supportsJsonMode = provider === "openai" || provider === "groq"
   const completion = await client.chat.completions.create({
     model,
     messages: [{ role: "user", content: prompt }],

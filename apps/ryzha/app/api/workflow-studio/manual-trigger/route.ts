@@ -4,6 +4,7 @@ import { NextResponse, after } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { startAgentWorkflow, startP2PWorkflow, startO2CWorkflow } from "@/lib/agents/orchestrator"
 import { createSystemJournalEntry } from "@/lib/reports/general-ledger/je-factory"
+import { randomUUID } from "crypto"
 
 export const dynamic = "force-dynamic"
 
@@ -16,8 +17,19 @@ export async function POST(req: Request) {
     const orgId = session.user.organizationId
     let executionId = ""
 
+    const runningTransaction = await prisma.transaction.findFirst({
+      where: { organizationId: orgId, workflowStatus: "running" },
+      select: { id: true },
+    })
+    if (runningTransaction) {
+      return NextResponse.json(
+        { error: "A workflow is already running. Wait for it to complete before triggering another." },
+        { status: 409 }
+      )
+    }
+
     if (type === "stripe") {
-      const intentId = `sim_tx_${Date.now()}`
+      const intentId = `sim_pi_${randomUUID().replace(/-/g, "").slice(0, 24)}`
       const amount = Number(payload?.amount) || 1000
       const description = payload?.description || "Manual Stripe Simulation"
 

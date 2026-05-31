@@ -17,10 +17,20 @@ export async function runFPAgent(transactionId: string) {
   const settings = tx.organization.financialSettings
   const targetMonthlyRevenue = settings?.targetMonthlyRevenue || 10000
 
-  // Bank balance comes from FinancialSnapshot plus adjustments
   const snapshot = await prisma.financialSnapshot.findUnique({ where: { organizationId: tx.organizationId } })
-  const lastKnownBalance = snapshot?.bankBalance ?? settings?.bankBalance ?? 0
-  const bankBalance = lastKnownBalance
+
+  const cashAccounts = await prisma.generalLedgerEntry.aggregate({
+    where: {
+      organizationId: tx.organizationId,
+      accountType: "Assets",
+      accountName: { in: ["Cash", "Stripe Clearing Account", "Bank Account", "Undeposited Funds"] },
+    },
+    _sum: { debit: true, credit: true },
+  })
+  const glCashBalance = (cashAccounts._sum.debit ?? 0) - (cashAccounts._sum.credit ?? 0)
+  const bankBalance = glCashBalance > 0
+    ? glCashBalance
+    : (snapshot?.bankBalance ?? settings?.bankBalance ?? 0)
 
   const monthStart = new Date()
   monthStart.setDate(1)
@@ -103,18 +113,17 @@ export async function runFPAgent(transactionId: string) {
     data: { runwayMonths, zeroCashDate, percentAhead },
   })
 
-  // Update global financial snapshot
   await prisma.financialSnapshot.upsert({
     where: { organizationId: tx.organizationId },
     update: { 
-      bankBalance, 
+      bankBalance,
       averageMonthlyExpenses: avgMonthlyExpenses, 
       runwayMonths, 
       zeroCashDate 
     },
     create: { 
       organizationId: tx.organizationId, 
-      bankBalance, 
+      bankBalance,
       averageMonthlyExpenses: avgMonthlyExpenses, 
       runwayMonths, 
       zeroCashDate 

@@ -1,10 +1,9 @@
 import { prisma } from "@/lib/prisma"
-import { BaseMessage } from "@langchain/core/messages"
+import { BaseMessage, HumanMessage, AIMessage, SystemMessage } from "@langchain/core/messages"
 import { ChatOpenAI } from "@langchain/openai"
 import { ChatAnthropic } from "@langchain/anthropic"
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai"
 import { ChatOllama } from "@langchain/ollama"
-import { getAIClientConfig } from "@/lib/ai/client"
 
 function detectAvailableProvider(): string {
   if (process.env.GROQ_API_KEY) return "groq"
@@ -23,14 +22,15 @@ function defaultModelForProvider(provider: string): string {
   }
 }
 
-export async function getLLM(organizationId: string, options: any = {}) {
+export async function getLLM(organizationId: string, options: { temperature?: number } = {}) {
   const settings = await prisma.financialSettings.findUnique({
     where: { organizationId },
+    select: { aiProvider: true, aiModel: true, aiApiKey: true },
   })
 
-  const provider = settings?.aiProvider || detectAvailableProvider()
-  const model = settings?.aiModel || defaultModelForProvider(provider)
-  const dbKey = settings?.aiApiKey && settings.aiApiKey.trim() !== "" ? settings.aiApiKey : undefined
+  const provider = settings?.aiProvider?.trim() || detectAvailableProvider()
+  const model = settings?.aiModel?.trim() || defaultModelForProvider(provider)
+  const dbKey = settings?.aiApiKey?.trim() || undefined
 
   function requireKey(envVar: string, providerName: string): string {
     const key = dbKey || process.env[envVar]
@@ -44,93 +44,88 @@ export async function getLLM(organizationId: string, options: any = {}) {
     return key
   }
 
+  const temp = options.temperature ?? 0.2
+
   switch (provider) {
     case "anthropic":
       return new ChatAnthropic({
         modelName: model,
-        temperature: options.temperature ?? 0.2,
+        temperature: temp,
         anthropicApiKey: requireKey("ANTHROPIC_API_KEY", "Anthropic"),
-        ...options,
       })
     case "gemini":
       return new ChatGoogleGenerativeAI({
-        modelName: model,
-        temperature: options.temperature ?? 0.2,
+        model: model,
+        temperature: temp,
         apiKey: requireKey("GOOGLE_API_KEY", "Google Gemini"),
-        ...options,
       })
     case "groq":
       return new ChatOpenAI({
         modelName: model || "llama-3.3-70b-versatile",
-        temperature: options.temperature ?? 0.2,
+        temperature: temp,
         openAIApiKey: requireKey("GROQ_API_KEY", "Groq"),
-        configuration: {
-          baseURL: "https://api.groq.com/openai/v1",
-        },
-        ...options,
+        configuration: { baseURL: "https://api.groq.com/openai/v1" },
       })
     case "ollama":
       return new ChatOllama({
         baseUrl: "http://localhost:11434",
         model: model || "llama3",
-        temperature: options.temperature ?? 0.2,
-        ...options,
+        temperature: temp,
       })
     case "openai":
     default:
       return new ChatOpenAI({
         modelName: model,
-        temperature: options.temperature ?? 0.2,
+        temperature: temp,
         openAIApiKey: requireKey("OPENAI_API_KEY", "OpenAI"),
-        ...options,
       })
   }
 }
 
-function toRawMessages(messages: (BaseMessage | { role: string; content: string })[]) {
+function toBaseMessages(messages: ({ role: string; content: string } | BaseMessage)[]): BaseMessage[] {
   return messages.map((m) => {
-    if (typeof (m as any).role === "string") {
-      return m as { role: string; content: string }
-    }
-    const lc = m as BaseMessage
-    const type = lc._getType()
-    const role = type === "human" ? "user" : type === "ai" ? "assistant" : "system"
-    const content = typeof lc.content === "string" ? lc.content : JSON.stringify(lc.content)
-    return { role, content }
+    if (m instanceof BaseMessage) return m
+    const raw = m as { role: string; content: string }
+    if (raw.role === "system") return new SystemMessage(raw.content)
+    if (raw.role === "assistant") return new AIMessage(raw.content)
+    return new HumanMessage(raw.content)
   })
 }
 
 export async function callLLM(
   organizationId: string,
-  messages: (BaseMessage | { role: string; content: string })[],
+  messages: ({ role: string; content: string } | BaseMessage)[],
   feature: string,
-  options: any = {}
+  options: { temperature?: number } = {}
 ) {
-  const { client, model, provider } = await getAIClientConfig(organizationId)
+  const llm = await getLLM(organizationId, options)
+  const baseMessages = toBaseMessages(messages)
+  const response = await llm.invoke(baseMessages)
 
-  const rawMessages = toRawMessages(messages)
+  const usageMeta = (response as any).response_metadata
+  const usage = usageMeta?.usage ?? usageMeta?.tokenUsage
 
-  const completion = await client.chat.completions.create({
-    model,
-    messages: rawMessages as any,
-    temperature: options.temperature ?? 0.2,
-  })
-
-  const usage = completion.usage
   if (usage) {
+    const settings = await prisma.financialSettings.findUnique({
+      where: { organizationId },
+      select: { aiProvider: true, aiModel: true },
+    })
     prisma.aIUsageLog.create({
       data: {
         organizationId,
         feature,
-        model,
-        provider,
-        promptTokens: usage.prompt_tokens,
-        completionTokens: usage.completion_tokens,
-        totalTokens: usage.total_tokens,
+        model: settings?.aiModel ?? "unknown",
+        provider: settings?.aiProvider ?? "unknown",
+        promptTokens: usage.input_tokens ?? usage.promptTokens ?? 0,
+        completionTokens: usage.output_tokens ?? usage.completionTokens ?? 0,
+        totalTokens: (usage.input_tokens ?? usage.promptTokens ?? 0) + (usage.output_tokens ?? usage.completionTokens ?? 0),
       },
     }).catch(() => {})
   }
 
-  const content = completion.choices[0]?.message?.content || ""
+  const content = typeof response.content === "string"
+    ? response.content
+    : JSON.stringify(response.content)
+
   return { content, text: content }
 }

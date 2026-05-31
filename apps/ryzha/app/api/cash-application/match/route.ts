@@ -37,7 +37,7 @@ export async function POST() {
     }
   `
 
-  const aiRes = await callLLM(orgId, [{ role: "user", content: prompt }], "agent_o2c", { modelName: "gpt-4o-mini" })
+  const aiRes = await callLLM(orgId, [{ role: "user", content: prompt }], "agent_o2c")
   let matches = []
   try {
     const data = parseAIJson(aiRes.content as string)

@@ -12,29 +12,18 @@ async function syncJournalEntries(organizationId: string) {
 
   for (const je of entries) {
     for (const line of je.lines) {
-      await prisma.generalLedgerEntry.upsert({
-        where: {
-          org_source_account: {
-            organizationId,
-            sourceId: `${je.id}-${line.id}`,
-            sourceType: "JournalEntry",
-            accountName: line.accountName,
-          },
-        },
-        update: {
-          date: je.entryDate,
-          debit: line.debit,
-          credit: line.credit,
-          amount: line.debit > 0 ? line.debit : -line.credit,
-          description: line.description
-            ? `[${je.reference || je.id.slice(-6)}] ${line.description}`
-            : `[${je.reference || je.id.slice(-6)}] ${je.description}`,
-          accountType: line.accountType,
-        },
-        create: {
+      const glSourceId = `${je.id}-${line.id}`
+      const existing = await prisma.generalLedgerEntry.findFirst({
+        where: { organizationId, sourceType: "JournalEntry", sourceId: glSourceId },
+        select: { id: true },
+      })
+      if (existing) continue
+
+      await prisma.generalLedgerEntry.create({
+        data: {
           organizationId,
           sourceType: "JournalEntry",
-          sourceId: `${je.id}-${line.id}`,
+          sourceId: glSourceId,
           date: je.entryDate,
           accountType: line.accountType,
           accountName: line.accountName,

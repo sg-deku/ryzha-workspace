@@ -146,14 +146,13 @@ Respond ONLY with JSON: { "is_anomaly": boolean, "risk_score": number (0-100), "
     auditHash = crypto.createHash("sha256")
       .update([
         tx.id,
-        tx.stripePaymentIntentId,
+        tx.stripePaymentIntentId ?? "",
         tx.amount.toString(),
         tx.customerEmail ?? "",
         refId,
         contractMatchType,
         contractMatchType === "contract" ? (contract?.status ?? "") : "paid",
         tx.organizationId,
-        new Date().toISOString().slice(0, 13)
       ].join("|"))
       .digest("hex")
 
@@ -194,15 +193,15 @@ Respond ONLY with JSON: { "is_anomaly": boolean, "risk_score": number (0-100), "
 }
 
 async function postSuspenseJE(
-  tx: { id: string; stripePaymentIntentId: string; amount: number; customerEmail: string | null; organizationId: string; description: string | null },
+  tx: { id: string; stripePaymentIntentId: string | null; amount: number; customerEmail: string | null; organizationId: string; description: string | null },
   transactionId: string
 ) {
   await createSystemJournalEntry({
     organizationId: tx.organizationId,
     sourceType: "AuditorFlagged",
     sourceId: transactionId,
-    reference: tx.stripePaymentIntentId,
-    description: `Audit hold – ${tx.description ?? tx.stripePaymentIntentId}`,
+    reference: tx.stripePaymentIntentId ?? tx.id,
+    description: `Audit hold – ${tx.description ?? tx.stripePaymentIntentId ?? tx.id}`,
     entryDate: new Date(),
     type: "ADJUSTING",
     lines: [

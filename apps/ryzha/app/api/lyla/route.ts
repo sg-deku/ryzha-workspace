@@ -3,6 +3,7 @@ import { authOptions } from "@/lib/auth"
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getAIClientConfig, parseAIJson } from "@/lib/ai/client"
+import { getNextEntityNumber } from "@/lib/sequences"
 
 export const dynamic = "force-dynamic"
 
@@ -103,8 +104,7 @@ async function executeAction(action: string, params: any, orgId: string, userId:
         const today = new Date()
         const due = params.dueDate ? new Date(params.dueDate) : new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000)
 
-        const countRes = await prisma.invoice.count({ where: { organizationId: orgId } })
-        const invoiceNumber = `INV-${String(countRes + 1).padStart(4, "0")}`
+        const invoiceNumber = await getNextEntityNumber(orgId, "INVOICE")
 
         const lineItems = (params.lineItems || []).map((li: any) => ({
           description: li.description,
@@ -211,14 +211,22 @@ async function executeAction(action: string, params: any, orgId: string, userId:
       }
 
       case "create_purchase_order": {
-        let vendor = null
-        if (params.vendorName) {
-          vendor = await prisma.vendor.findFirst({
-            where: {
-              organizationId: orgId,
-              name: { contains: params.vendorName, mode: "insensitive" },
-            },
-          })
+        if (!params.vendorName) {
+          return { success: false, error: "vendorName is required to create a purchase order." }
+        }
+
+        const vendor = await prisma.vendor.findFirst({
+          where: {
+            organizationId: orgId,
+            name: { contains: params.vendorName, mode: "insensitive" },
+          },
+        })
+
+        if (!vendor) {
+          return {
+            success: false,
+            error: `Vendor "${params.vendorName}" not found. Please create the vendor first or check the spelling.`,
+          }
         }
 
         const lineItems = (params.lineItems || []).map((li: any) => ({
@@ -229,13 +237,12 @@ async function executeAction(action: string, params: any, orgId: string, userId:
         }))
 
         const total = lineItems.reduce((s: number, li: any) => s + li.amount, 0)
-        const poNumber = `PO-${Date.now().toString().slice(-6)}`
+        const poNumber = await getNextEntityNumber(orgId, "PO")
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const po = await (prisma.purchaseOrder.create as any)({
+        const po = await prisma.purchaseOrder.create({
           data: {
             organizationId: orgId,
-            vendorId: vendor?.id || null,
+            vendorId: vendor.id,
             poNumber,
             status: "DRAFT",
             totalAmount: total,
@@ -249,19 +256,27 @@ async function executeAction(action: string, params: any, orgId: string, userId:
           entityType: "purchase_order",
           entityId: po.id,
           link: `/purchases/${po.id}`,
-          summary: `Created purchase order **${poNumber}**${vendor ? ` for **${vendor.name}**` : ""} — $${total.toFixed(2)}`,
+          summary: `Created purchase order **${poNumber}** for **${vendor.name}** — $${total.toFixed(2)}`,
         }
       }
 
       case "create_sales_order": {
-        let customer = null
-        if (params.customerName) {
-          customer = await prisma.customer.findFirst({
-            where: {
-              organizationId: orgId,
-              name: { contains: params.customerName, mode: "insensitive" },
-            },
-          })
+        if (!params.customerName) {
+          return { success: false, error: "customerName is required to create a sales order." }
+        }
+
+        const customer = await prisma.customer.findFirst({
+          where: {
+            organizationId: orgId,
+            name: { contains: params.customerName, mode: "insensitive" },
+          },
+        })
+
+        if (!customer) {
+          return {
+            success: false,
+            error: `Customer "${params.customerName}" not found. Please create the customer first or check the spelling.`,
+          }
         }
 
         const lineItems = (params.lineItems || []).map((li: any) => ({
@@ -272,13 +287,12 @@ async function executeAction(action: string, params: any, orgId: string, userId:
         }))
 
         const total = lineItems.reduce((s: number, li: any) => s + li.amount, 0)
-        const orderNumber = `SO-${Date.now().toString().slice(-6)}`
+        const orderNumber = await getNextEntityNumber(orgId, "SO")
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const so = await (prisma.salesOrder.create as any)({
+        const so = await prisma.salesOrder.create({
           data: {
             organizationId: orgId,
-            customerId: customer?.id || null,
+            customerId: customer.id,
             orderNumber,
             status: "DRAFT",
             totalAmount: total,
@@ -292,7 +306,7 @@ async function executeAction(action: string, params: any, orgId: string, userId:
           entityType: "sales_order",
           entityId: so.id,
           link: `/sales-orders/${so.id}`,
-          summary: `Created sales order **${orderNumber}**${customer ? ` for **${customer.name}**` : ""} — $${total.toFixed(2)}`,
+          summary: `Created sales order **${orderNumber}** for **${customer.name}** — $${total.toFixed(2)}`,
         }
       }
 
@@ -427,21 +441,30 @@ export async function POST(req: Request) {
   const userId = session.user.id
   if (!orgId) return NextResponse.json({ error: "No organization" }, { status: 400 })
 
-  const { message, history = [] } = await req.json()
+  const { message } = await req.json()
   if (!message) return NextResponse.json({ error: "message required" }, { status: 400 })
 
   try {
     const { client, model, provider } = await getAIClientConfig(orgId)
 
+    const dbHistory = await prisma.chatMessage.findMany({
+      where: {
+        userId,
+        organizationId: orgId,
+        role: { in: ["lyla_user", "lyla_assistant"] },
+      },
+      orderBy: { createdAt: "asc" },
+      take: 20,
+      select: { role: true, content: true },
+    })
+
     const roleMap: Record<string, string> = {
       lyla_user: "user",
       lyla_assistant: "assistant",
-      user: "user",
-      assistant: "assistant",
     }
     const messages: any[] = [
       { role: "system", content: ARIA_SYSTEM_PROMPT },
-      ...history.slice(-10).map((h: any) => ({ role: roleMap[h.role] || "user", content: h.content })),
+      ...dbHistory.map((h) => ({ role: roleMap[h.role] || "user", content: h.content })),
       { role: "user", content: message },
     ]
 

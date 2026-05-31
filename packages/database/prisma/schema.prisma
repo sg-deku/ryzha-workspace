@@ -83,6 +83,9 @@ model Organization {
 
   // Product Catalog
   products Product[]
+
+  // RAG / Knowledge Base
+  financialDocuments FinancialDocument[]
 }
 
 model P2PSettings {
@@ -311,13 +314,12 @@ model SalesOrder {
   agentLogs      Json?     @default("[]")
   workflowStatus String?
   organizationId String
-  invoiceId      String?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
   customer     Customer         @relation(fields: [customerId], references: [id])
   organization Organization     @relation(fields: [organizationId], references: [id])
-  invoice      Invoice?         @relation(fields: [invoiceId], references: [id])
+  invoices     Invoice[]
   lineItems    SalesOrderLine[]
   dunningLogs  DunningLog[]
 }
@@ -401,6 +403,7 @@ model Invoice {
   pdfUrl         String?
   organizationId String
   customerId     String?
+  salesOrderId   String?
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 
@@ -408,11 +411,12 @@ model Invoice {
   payments     Payment[]
   creditNotes  CreditNote[]
   transactions Transaction[]
-  salesOrders  SalesOrder[]
+  salesOrder   SalesOrder?       @relation(fields: [salesOrderId], references: [id])
   customer     Customer?         @relation(fields: [customerId], references: [id])
   organization Organization      @relation(fields: [organizationId], references: [id])
 
   @@index([customerId])
+  @@index([salesOrderId])
 }
 
 model InvoiceLineItem {
@@ -918,7 +922,6 @@ model GeneralLedgerEntry {
   organization      Organization              @relation(fields: [organizationId], references: [id])
   deferredSchedules DeferredRevenueSchedule[]
 
-  @@unique([organizationId, sourceId, sourceType, accountName], name: "org_source_account")
   @@index([organizationId, date])
   @@index([organizationId, accountType])
   @@index([organizationId, sourceType])
@@ -1130,4 +1133,19 @@ model NumberingSettings {
   dmPrefix       String       @default("DM")
   padding        Int          @default(5)
   organization   Organization @relation(fields: [organizationId], references: [id])
+}
+
+model FinancialDocument {
+  id             String       @id @default(cuid())
+  organizationId String
+  title          String
+  content        String       @db.Text
+  sourceType     String
+  sourceId       String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([organizationId, sourceType])
 }
