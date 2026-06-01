@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { WsConnectionsPanel } from "./ws-connections-panel"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -101,6 +102,8 @@ export default function IntegrationsPage() {
         <h1 className="text-3xl font-bold tracking-tight">Integrations</h1>
         <p className="text-muted-foreground">Connect Ryzha with your existing tools and workflows.</p>
       </div>
+
+      <WsConnectionsPanel />
 
       <div className="space-y-4">
         <h2 className="text-xl font-semibold tracking-tight">Connectors</h2>

@@ -108,6 +108,10 @@ model Organization {
 
   // Vendor Portal
   vendorProfileChanges VendorProfileChange[]
+
+  // Workflow Studio v2
+  wsConnections WsConnection[]
+  wsWorkflows   WsWorkflow[]
 }
 
 model P2PSettings {
@@ -1538,4 +1542,179 @@ model Dimension {
   @@unique([organizationId, type, code])
   @@index([organizationId, type])
   @@index([organizationId, isActive])
+}
+
+// ─── Workflow Studio v2 ───────────────────────────────────────────────────────
+
+model WsConnector {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  name        String
+  description String
+  category    String
+  iconUrl     String?
+  color       String   @default("#6366f1")
+  authType    String   @default("none") // none | apikey | oauth2 | basic
+  isActive    Boolean  @default(true)
+  isPremium   Boolean  @default(false)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  triggers    WsConnectorTrigger[]
+  actions     WsConnectorAction[]
+  connections WsConnection[]
+
+  @@index([category])
+  @@index([isActive])
+}
+
+model WsConnectorTrigger {
+  id           String   @id @default(cuid())
+  connectorId  String
+  slug         String
+  name         String
+  description  String
+  inputSchema  Json     @default("{}")
+  outputSchema Json     @default("{}")
+  sampleOutput Json     @default("{}")
+  sortOrder    Int      @default(0)
+
+  connector    WsConnector    @relation(fields: [connectorId], references: [id])
+  nodes        WsWorkflowNode[]
+
+  @@unique([connectorId, slug])
+}
+
+model WsConnectorAction {
+  id           String   @id @default(cuid())
+  connectorId  String
+  slug         String
+  name         String
+  description  String
+  inputSchema  Json     @default("{}")
+  outputSchema Json     @default("{}")
+  sampleOutput Json     @default("{}")
+  sortOrder    Int      @default(0)
+
+  connector    WsConnector    @relation(fields: [connectorId], references: [id])
+  nodes        WsWorkflowNode[]
+
+  @@unique([connectorId, slug])
+}
+
+model WsConnection {
+  id              String   @id @default(cuid())
+  organizationId  String
+  connectorId     String
+  name            String
+  status          String   @default("ACTIVE") // ACTIVE | ERROR | PENDING
+  encryptedConfig String   @default("{}")
+  lastTestedAt    DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  organization    Organization   @relation(fields: [organizationId], references: [id])
+  connector       WsConnector    @relation(fields: [connectorId], references: [id])
+  nodes           WsWorkflowNode[]
+
+  @@index([organizationId])
+  @@index([organizationId, connectorId])
+}
+
+model WsWorkflow {
+  id             String   @id @default(cuid())
+  organizationId String
+  name           String
+  description    String   @default("")
+  status         String   @default("DRAFT") // DRAFT | ACTIVE | PAUSED
+  version        Int      @default(1)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization   Organization      @relation(fields: [organizationId], references: [id])
+  nodes          WsWorkflowNode[]
+  edges          WsWorkflowEdge[]
+  executions     WsWorkflowExecution[]
+
+  @@index([organizationId])
+  @@index([organizationId, status])
+}
+
+model WsWorkflowNode {
+  id           String   @id @default(cuid())
+  workflowId   String
+  triggerId    String?
+  actionId     String?
+  connectionId String?
+  nodeType     String   // TRIGGER | ACTION | LOGIC
+  label        String
+  config       Json     @default("{}")
+  positionX    Float    @default(0)
+  positionY    Float    @default(0)
+  createdAt    DateTime @default(now())
+
+  workflow     WsWorkflow          @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  trigger      WsConnectorTrigger? @relation(fields: [triggerId], references: [id])
+  action       WsConnectorAction?  @relation(fields: [actionId], references: [id])
+  connection   WsConnection?       @relation(fields: [connectionId], references: [id])
+  sourcedEdges WsWorkflowEdge[]    @relation("EdgeSource")
+  targetEdges  WsWorkflowEdge[]    @relation("EdgeTarget")
+  nodeLogs     WsWorkflowNodeLog[]
+
+  @@index([workflowId])
+}
+
+model WsWorkflowEdge {
+  id           String   @id @default(cuid())
+  workflowId   String
+  sourceNodeId String
+  targetNodeId String
+  sourceHandle String   @default("default")
+  targetHandle String   @default("default")
+  label        String?
+
+  workflow     WsWorkflow     @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  sourceNode   WsWorkflowNode @relation("EdgeSource", fields: [sourceNodeId], references: [id], onDelete: Cascade)
+  targetNode   WsWorkflowNode @relation("EdgeTarget", fields: [targetNodeId], references: [id], onDelete: Cascade)
+
+  @@unique([workflowId, sourceNodeId, targetNodeId, sourceHandle])
+  @@index([workflowId])
+}
+
+model WsWorkflowExecution {
+  id             String   @id @default(cuid())
+  workflowId     String
+  status         String   @default("RUNNING") // RUNNING | COMPLETED | FAILED | CANCELLED
+  triggeredBy    String   @default("MANUAL_TEST") // EVENT | WEBHOOK | SCHEDULE | MANUAL_TEST
+  triggerPayload Json     @default("{}")
+  errorMessage   String?
+  startedAt      DateTime @default(now())
+  finishedAt     DateTime?
+  durationMs     Int?
+
+  workflow       WsWorkflow          @relation(fields: [workflowId], references: [id])
+  nodeLogs       WsWorkflowNodeLog[]
+
+  @@index([workflowId])
+  @@index([workflowId, status])
+  @@index([startedAt])
+}
+
+model WsWorkflowNodeLog {
+  id          String   @id @default(cuid())
+  executionId String
+  nodeId      String
+  status      String   @default("RUNNING") // SKIPPED | RUNNING | COMPLETED | FAILED | RETRYING
+  input       Json     @default("{}")
+  output      Json     @default("{}")
+  error       String?
+  attempt     Int      @default(1)
+  startedAt   DateTime @default(now())
+  durationMs  Int?
+
+  execution   WsWorkflowExecution @relation(fields: [executionId], references: [id], onDelete: Cascade)
+  node        WsWorkflowNode      @relation(fields: [nodeId], references: [id])
+
+  @@index([executionId])
+  @@index([nodeId])
 }
