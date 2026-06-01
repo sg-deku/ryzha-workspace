@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
-import { FileText, PieChart, TrendingUp, Landmark, ArrowRight, BarChart3, BookOpen, Scale, Clock, Building2 } from "lucide-react"
+import { FileText, PieChart, TrendingUp, Landmark, ArrowRight, BarChart3, BookOpen, Scale, Clock, Building2, ListOrdered } from "lucide-react"
 
 export function StandardReports() {
   const reports: any[] = [
@@ -68,6 +68,30 @@ export function StandardReports() {
       icon: Building2,
       color: "text-rose-600",
       bgColor: "bg-rose-100",
+    },
+    {
+      title: "Trial Balance",
+      description: "Debit and credit totals for all accounts to verify the ledger is in balance.",
+      href: "/trial-balance",
+      icon: ListOrdered,
+      color: "text-indigo-600",
+      bgColor: "bg-indigo-100",
+    },
+    {
+      title: "General Ledger",
+      description: "Complete transaction history for every account in your chart of accounts.",
+      href: "/reports/general-ledger",
+      icon: BookOpen,
+      color: "text-slate-600",
+      bgColor: "bg-slate-100",
+    },
+    {
+      title: "Budget vs. Actuals",
+      description: "Monthly budget targets compared against actual GL spend and revenue.",
+      href: "/reports/budget-vs-actuals",
+      icon: BarChart3,
+      color: "text-teal-600",
+      bgColor: "bg-teal-100",
     },
   ]
 

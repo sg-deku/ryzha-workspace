@@ -33,7 +33,6 @@ import {
   Globe,
   ChevronLeft,
   ChevronRight,
-  Scale,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -121,7 +120,6 @@ export function Sidebar() {
 
           <SidebarSection label="Reports" storageKey="reports" collapsed={collapsed}>
             <SidebarItem href="/reports" icon={BarChart} label="All Reports" collapsed={collapsed} />
-            <SidebarItem href="/trial-balance" icon={Scale} label="Trial Balance" collapsed={collapsed} />
             <SidebarItem href="/audit-log" icon={ShieldCheck} label="Audit Log" collapsed={collapsed} />
           </SidebarSection>
 
