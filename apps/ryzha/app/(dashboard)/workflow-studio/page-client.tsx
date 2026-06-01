@@ -2,50 +2,26 @@
 import { useState } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { WorkflowGraph } from "./components/workflow-graph"
-import { ManualTriggerPanel } from "./components/manual-trigger-panel"
 import { LiveExecutionView } from "./components/live-execution-view"
 import { HistoryList } from "./components/history-list"
 
-interface EntityOption {
-  id: string
-  name: string
-  email: string | null
-}
-
-interface WorkflowStudioPageProps {
-  customers: EntityOption[]
-  vendors: EntityOption[]
-}
-
-export default function WorkflowStudioPage({ customers, vendors }: WorkflowStudioPageProps) {
+export default function WorkflowStudioPage() {
   const [activeExecutionId, setActiveExecutionId] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState("trigger")
+  const [activeTab, setActiveTab] = useState("graph")
 
   return (
     <div className="container mx-auto py-6 space-y-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Workflow Studio</h1>
-        <p className="text-muted-foreground">Test, debug, and manually trigger agent workflows</p>
+        <p className="text-muted-foreground">Design, automate, and monitor integration workflows</p>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList>
-          <TabsTrigger value="trigger">Manual Trigger</TabsTrigger>
           <TabsTrigger value="graph">Agent Graph</TabsTrigger>
           <TabsTrigger value="live">Live Execution</TabsTrigger>
           <TabsTrigger value="history">History</TabsTrigger>
         </TabsList>
-
-        <TabsContent value="trigger">
-          <ManualTriggerPanel
-            customers={customers}
-            vendors={vendors}
-            onTrigger={(executionId) => {
-              setActiveExecutionId(executionId)
-              setActiveTab("live")
-            }}
-          />
-        </TabsContent>
 
         <TabsContent value="graph" className="h-[600px]">
           <WorkflowGraph />
