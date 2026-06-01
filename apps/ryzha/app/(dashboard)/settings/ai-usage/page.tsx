@@ -1,7 +1,5 @@
-export const dynamic = "force-dynamic"
+import { redirect } from "next/navigation"
 
-import { AIUsagePage } from "./ai-usage-client"
-
-export default function AIUsagePageWrapper() {
-  return <AIUsagePage />
+export default function Page() {
+  redirect("/settings?tab=ai-usage")
 }
