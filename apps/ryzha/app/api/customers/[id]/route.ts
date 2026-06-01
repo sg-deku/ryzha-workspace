@@ -1,7 +1,8 @@
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { NextResponse } from "next/server"
+import { NextResponse, after } from "next/server"
+import { writeAudit, getClientIp } from "@/lib/audit"
 
 export const dynamic = "force-dynamic"
 
@@ -13,6 +14,11 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   try {
     const data = await req.json()
     const { name, email, phone, taxId, creditLimit, paymentTerms, status, notes, address } = data
+
+    const existing = await prisma.customer.findUnique({
+      where: { id, organizationId: session.user.organizationId },
+    })
+    if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 })
 
     const updated = await prisma.customer.update({
       where: {
@@ -31,6 +37,21 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         address: address ?? undefined,
       }
     })
+
+    after(
+      writeAudit({
+        action: "UPDATE",
+        entityType: "Customer",
+        entityId: id,
+        actorId: session.user.id,
+        actorEmail: session.user.email,
+        organizationId: session.user.organizationId,
+        before: { name: existing.name, email: existing.email, status: existing.status, creditLimit: existing.creditLimit },
+        after: { name, email, status, creditLimit: Number(creditLimit) },
+        details: { customerNumber: existing.customerNumber, name },
+        ipAddress: getClientIp(req),
+      }).catch(console.error)
+    )
 
     return NextResponse.json(updated)
   } catch (error) {

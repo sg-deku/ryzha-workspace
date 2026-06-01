@@ -39,6 +39,7 @@ import {
   BarChart2,
   DollarSign,
   Layers,
+  ShieldCheck,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -273,6 +274,12 @@ export function Sidebar() {
             href="/reports"
             icon={BarChart}
             label="Reports"
+            collapsed={collapsed}
+          />
+          <SidebarItem
+            href="/audit-log"
+            icon={ShieldCheck}
+            label="Audit Log"
             collapsed={collapsed}
           />
           <SidebarItem

@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { after } from "next/server"
 import { startCashApplicationWorkflow } from "@/lib/agents/orchestrator"
+import { writeAudit, getClientIp } from "@/lib/audit"
 
 export const dynamic = "force-dynamic"
 
@@ -65,7 +66,22 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     },
   })
 
-  after(startCashApplicationWorkflow(payment.id, session.user.organizationId).catch(console.error))
+  after(
+    Promise.all([
+      startCashApplicationWorkflow(payment.id, session.user.organizationId),
+      writeAudit({
+        action: "PAYMENT_RECORDED",
+        entityType: "Payment",
+        entityId: payment.id,
+        actorId: session.user.id,
+        actorEmail: session.user.email,
+        organizationId: session.user.organizationId,
+        after: { invoiceId: id, amount, method, paymentDate, referenceNumber },
+        details: { invoiceNumber: invoice.invoiceNumber, amount, outstanding },
+        ipAddress: getClientIp(req),
+      }),
+    ]).catch(console.error)
+  )
 
   return NextResponse.json(payment, { status: 201 })
 }

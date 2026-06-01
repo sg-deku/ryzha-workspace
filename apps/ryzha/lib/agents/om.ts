@@ -3,6 +3,7 @@ import { callLLM } from "@/lib/ai/llm"
 import { parseAIJson } from "@/lib/ai/client"
 import { appendAgentLog } from "./utils"
 import { createSystemJournalEntry } from "@/lib/reports/general-ledger/je-factory"
+import { prisma } from "@/lib/prisma"
 import { createNotification } from "@/lib/notifications"
 import { addMonths, startOfMonth } from "date-fns"
 

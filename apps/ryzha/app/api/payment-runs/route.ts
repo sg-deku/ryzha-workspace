@@ -1,8 +1,9 @@
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { NextResponse } from "next/server"
+import { NextResponse, after } from "next/server"
 import { getNextEntityNumber } from "@/lib/sequences"
+import { writeAudit, getClientIp } from "@/lib/audit"
 
 export const dynamic = "force-dynamic"
 
@@ -49,6 +50,20 @@ export async function POST(req: Request) {
         organizationId: session.user.organizationId,
       },
     })
+
+    after(
+      writeAudit({
+        action: "CREATE",
+        entityType: "PaymentRun",
+        entityId: run.id,
+        actorId: session.user.id,
+        actorEmail: session.user.email,
+        organizationId: session.user.organizationId,
+        after: { runNumber, name, paymentDate: run.paymentDate, currency: run.currency, format: run.format },
+        details: { runNumber, name },
+        ipAddress: getClientIp(req),
+      }).catch(console.error)
+    )
 
     return NextResponse.json(run, { status: 201 })
   } catch (err: any) {

@@ -7,6 +7,7 @@ import { after } from "next/server"
 import { createSystemJournalEntry } from "@/lib/reports/general-ledger/je-factory"
 import { mapInvoiceToAccount } from "@/lib/reports/general-ledger/account-mapping"
 import { convertAmount } from "@/lib/fx/fx-engine"
+import { writeAudit, getClientIp } from "@/lib/audit"
 
 export const dynamic = "force-dynamic";
 
@@ -129,15 +130,28 @@ export async function POST(req: Request) {
     }
 
     after(
-      createSystemJournalEntry({
-        organizationId: orgId,
-        sourceType: "Invoice",
-        sourceId: invoice.id,
-        reference: invoiceNumber,
-        description: `Invoice issued – ${clientName}`,
-        entryDate: new Date(issueDate),
-        lines: jeLines,
-      }).catch(console.error)
+      Promise.all([
+        createSystemJournalEntry({
+          organizationId: orgId,
+          sourceType: "Invoice",
+          sourceId: invoice.id,
+          reference: invoiceNumber,
+          description: `Invoice issued – ${clientName}`,
+          entryDate: new Date(issueDate),
+          lines: jeLines,
+        }),
+        writeAudit({
+          action: "CREATE",
+          entityType: "Invoice",
+          entityId: invoice.id,
+          actorId: session.user.id,
+          actorEmail: session.user.email,
+          organizationId: orgId,
+          after: { invoiceNumber, clientName, clientEmail, total, status: "DRAFT", currency: invoiceCurrency },
+          details: { invoiceNumber, clientName, total },
+          ipAddress: getClientIp(req),
+        }),
+      ]).catch(console.error)
     )
 
     return NextResponse.json(invoice)

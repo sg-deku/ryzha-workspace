@@ -1,7 +1,8 @@
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { NextRequest, NextResponse } from "next/server"
+import { NextRequest, NextResponse, after } from "next/server"
+import { writeAudit, getClientIp } from "@/lib/audit"
 
 export const dynamic = "force-dynamic"
 
@@ -52,6 +53,21 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         bankCountry: bankCountry ?? undefined,
       },
     })
+
+    after(
+      writeAudit({
+        action: "UPDATE",
+        entityType: "Vendor",
+        entityId: id,
+        actorId: session.user.id,
+        actorEmail: session.user.email,
+        organizationId: session.user.organizationId,
+        before: { name: existing.name, email: existing.email, status: existing.status, paymentTerms: existing.paymentTerms },
+        after: { name, email, status, paymentTerms },
+        details: { vendorNumber: existing.vendorNumber, name },
+        ipAddress: getClientIp(req),
+      }).catch(console.error)
+    )
 
     return NextResponse.json(updated)
   } catch (error) {

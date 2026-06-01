@@ -5,6 +5,7 @@ import { NextResponse } from "next/server"
 import { syncGLForOrganization } from "@/lib/reports/general-ledger/sync"
 import { after } from "next/server"
 import { getNextEntityNumber } from "@/lib/sequences"
+import { writeAudit, getClientIp } from "@/lib/audit"
 
 export const dynamic = "force-dynamic"
 
@@ -77,6 +78,20 @@ export async function POST(req: Request) {
       const orgId = session.user.organizationId
       after(syncGLForOrganization(orgId).catch(console.error))
     }
+
+    after(
+      writeAudit({
+        action: "CREATE",
+        entityType: "JournalEntry",
+        entityId: entry.id,
+        actorId: session.user.id,
+        actorEmail: session.user.email,
+        organizationId: session.user.organizationId,
+        after: { reference: entry.reference, description: entry.description, status: entry.status, type: entry.type },
+        details: { reference: entry.reference, lineCount: entry.lines.length, totalDebit },
+        ipAddress: getClientIp(req),
+      }).catch(console.error)
+    )
 
     return NextResponse.json(entry)
   } catch (err: any) {

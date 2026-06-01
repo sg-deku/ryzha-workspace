@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { NextResponse, after } from "next/server"
 import { startO2CWorkflow } from "@/lib/agents/orchestrator"
 import { getNextEntityNumber } from "@/lib/sequences"
+import { writeAudit, getClientIp } from "@/lib/audit"
 
 export const dynamic = "force-dynamic";
 
@@ -46,8 +47,20 @@ export async function POST(req: Request) {
       },
     })
 
-    // Trigger the O2C workflow in the background
     after(startO2CWorkflow(salesOrder.id).catch(console.error))
+    after(
+      writeAudit({
+        action: "CREATE",
+        entityType: "SalesOrder",
+        entityId: salesOrder.id,
+        actorId: session.user.id,
+        actorEmail: session.user.email,
+        organizationId: session.user.organizationId,
+        after: { orderNumber, customerId, totalAmount, status: salesOrder.status },
+        details: { orderNumber, lineCount: lineItems.length },
+        ipAddress: getClientIp(req),
+      }).catch(console.error)
+    )
 
     return NextResponse.json(salesOrder)
   } catch (error) {

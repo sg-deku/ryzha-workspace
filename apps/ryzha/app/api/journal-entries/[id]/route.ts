@@ -5,6 +5,7 @@ import { NextResponse } from "next/server"
 import { syncGLForOrganization, deleteGLEntriesForJournalEntry } from "@/lib/reports/general-ledger/sync"
 import { after } from "next/server"
 import { getNextEntityNumber } from "@/lib/sequences"
+import { writeAudit, getClientIp } from "@/lib/audit"
 
 export const dynamic = "force-dynamic"
 
@@ -52,6 +53,20 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     })
     const orgId = session.user.organizationId
     after(syncGLForOrganization(orgId).catch(console.error))
+    after(
+      writeAudit({
+        action: "POST",
+        entityType: "JournalEntry",
+        entityId: id,
+        actorId: session.user.id,
+        actorEmail: session.user.email,
+        organizationId: session.user.organizationId,
+        before: { status: "DRAFT" },
+        after: { status: "POSTED" },
+        details: { reference: entry.reference, description: entry.description },
+        ipAddress: getClientIp(req),
+      }).catch(console.error)
+    )
     return NextResponse.json(posted)
   }
 
@@ -97,6 +112,20 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     await deleteGLEntriesForJournalEntry(id, session.user.organizationId)
     const orgId = session.user.organizationId
     after(syncGLForOrganization(orgId).catch(console.error))
+    after(
+      writeAudit({
+        action: "REVERSE",
+        entityType: "JournalEntry",
+        entityId: id,
+        actorId: session.user.id,
+        actorEmail: session.user.email,
+        organizationId: session.user.organizationId,
+        before: { status: "POSTED" },
+        after: { status: "REVERSED", reversalId: reversal.id },
+        details: { reference: entry.reference, reversalReference: reversal.reference, reversalDate: reversalDate },
+        ipAddress: getClientIp(req),
+      }).catch(console.error)
+    )
 
     return NextResponse.json(reversal)
   }
@@ -104,7 +133,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   return NextResponse.json({ error: "Unknown action" }, { status: 400 })
 }
 
-export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(delReq: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions)
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
@@ -119,5 +148,20 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
 
   await prisma.journalEntryLine.deleteMany({ where: { journalEntryId: id } })
   await prisma.journalEntry.delete({ where: { id } })
+
+  after(
+    writeAudit({
+      action: "DELETE",
+      entityType: "JournalEntry",
+      entityId: id,
+      actorId: session.user.id,
+      actorEmail: session.user.email,
+      organizationId: session.user.organizationId,
+      before: { reference: entry.reference, description: entry.description, status: entry.status },
+      details: { reference: entry.reference },
+      ipAddress: getClientIp(delReq),
+    }).catch(console.error)
+  )
+
   return NextResponse.json({ success: true })
 }

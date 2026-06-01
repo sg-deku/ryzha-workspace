@@ -1,7 +1,8 @@
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { NextResponse } from "next/server"
+import { NextResponse, after } from "next/server"
+import { writeAudit, getClientIp } from "@/lib/audit"
 
 export const dynamic = "force-dynamic"
 
@@ -35,6 +36,21 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         parentId: parentId === "" ? null : (parentId ?? existing.parentId),
       },
     })
+
+    after(
+      writeAudit({
+        action: "UPDATE",
+        entityType: "ChartOfAccounts",
+        entityId: id,
+        actorId: session.user.id,
+        actorEmail: session.user.email,
+        organizationId: session.user.organizationId,
+        before: { accountName: existing.accountName, categoryMatch: existing.categoryMatch, parentId: existing.parentId },
+        after: { accountName: account.accountName, categoryMatch: account.categoryMatch, parentId: account.parentId },
+        details: { accountCode: existing.accountCode, accountType: existing.accountType },
+        ipAddress: getClientIp(req),
+      }).catch(console.error)
+    )
 
     return NextResponse.json(account)
   } catch (err: any) {
@@ -72,5 +88,20 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
   }
 
   await prisma.chartOfAccounts.delete({ where: { id } })
+
+  after(
+    writeAudit({
+      action: "DELETE",
+      entityType: "ChartOfAccounts",
+      entityId: id,
+      actorId: session.user.id,
+      actorEmail: session.user.email,
+      organizationId: session.user.organizationId,
+      before: { accountCode: existing.accountCode, accountName: existing.accountName, accountType: existing.accountType },
+      details: { accountCode: existing.accountCode, accountName: existing.accountName },
+      ipAddress: getClientIp(_req),
+    }).catch(console.error)
+  )
+
   return NextResponse.json({ success: true })
 }

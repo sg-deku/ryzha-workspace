@@ -19,19 +19,6 @@ export async function runFPAgent(transactionId: string) {
 
   const snapshot = await prisma.financialSnapshot.findUnique({ where: { organizationId: tx.organizationId } })
 
-  const cashAccounts = await prisma.generalLedgerEntry.aggregate({
-    where: {
-      organizationId: tx.organizationId,
-      accountType: "Assets",
-      accountName: { in: ["Cash", "Stripe Clearing Account", "Bank Account", "Undeposited Funds"] },
-    },
-    _sum: { debit: true, credit: true },
-  })
-  const glCashBalance = (cashAccounts._sum.debit ?? 0) - (cashAccounts._sum.credit ?? 0)
-  const bankBalance = glCashBalance > 0
-    ? glCashBalance
-    : (snapshot?.bankBalance ?? settings?.bankBalance ?? 0)
-
   const monthStart = new Date()
   monthStart.setDate(1)
   monthStart.setHours(0, 0, 0, 0)
@@ -39,30 +26,49 @@ export async function runFPAgent(transactionId: string) {
   const threeMonthsAgo = new Date()
   threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3)
 
-  const [glRevenue, currentMonthGLRevenue, recentExpenses] = await Promise.all([
+  const [cashGLEntries, bankAccounts, glRevenue, currentMonthGLRevenue, recentGLBurn] = await Promise.all([
+    prisma.generalLedgerEntry.aggregate({
+      where: {
+        organizationId: tx.organizationId,
+        accountType: "Assets",
+        OR: [
+          { accountName: { contains: "cash", mode: "insensitive" } },
+          { accountName: { contains: "bank", mode: "insensitive" } },
+          { accountName: { contains: "stripe", mode: "insensitive" } },
+          { accountName: { contains: "checking", mode: "insensitive" } },
+          { accountName: { contains: "savings", mode: "insensitive" } },
+        ],
+      },
+      _sum: { debit: true, credit: true },
+    }),
+    prisma.bankAccount.aggregate({
+      where: { organizationId: tx.organizationId, isActive: true },
+      _sum: { currentBalance: true },
+    }),
     prisma.generalLedgerEntry.aggregate({
       where: { organizationId: tx.organizationId, accountType: "Revenue" },
-      _sum: { credit: true }
+      _sum: { credit: true },
+    }),
+    prisma.generalLedgerEntry.aggregate({
+      where: { organizationId: tx.organizationId, accountType: "Revenue", date: { gte: monthStart } },
+      _sum: { credit: true },
     }),
     prisma.generalLedgerEntry.aggregate({
       where: {
         organizationId: tx.organizationId,
-        accountType: "Revenue",
-        date: { gte: monthStart }
+        accountType: { in: ["Expenses", "COGS"] },
+        date: { gte: threeMonthsAgo },
       },
-      _sum: { credit: true }
+      _sum: { debit: true },
     }),
-    prisma.expense.aggregate({
-      where: { 
-        organizationId: tx.organizationId, 
-        date: { gte: threeMonthsAgo } 
-      },
-      _sum: { amount: true }
-    })
   ])
 
+  const glCashBalance = (cashGLEntries._sum.debit ?? 0) - (cashGLEntries._sum.credit ?? 0)
+  const bankAccountBalance = bankAccounts._sum.currentBalance ?? 0
+  const bankBalance = glCashBalance > 0 ? glCashBalance : bankAccountBalance > 0 ? bankAccountBalance : 0
+
   const currentRevenue = glRevenue._sum.credit ?? 0
-  const avgMonthlyExpenses = (recentExpenses._sum.amount || 0) / 3
+  const avgMonthlyExpenses = (recentGLBurn._sum.debit ?? 0) / 3
 
   const runwayMonths = avgMonthlyExpenses > 0 ? bankBalance / avgMonthlyExpenses : 999
   const zeroCashDate = new Date()

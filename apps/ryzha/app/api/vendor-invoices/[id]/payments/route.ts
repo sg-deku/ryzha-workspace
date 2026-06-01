@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma"
 import { after } from "next/server"
 import { startVendorPaymentWorkflow } from "@/lib/agents/orchestrator"
 import { createSystemJournalEntry } from "@/lib/reports/general-ledger/je-factory"
+import { writeAudit, getClientIp } from "@/lib/audit"
 
 export const dynamic = "force-dynamic"
 
@@ -62,6 +63,20 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       organizationId: session.user.organizationId,
     },
   })
+
+  after(
+    writeAudit({
+      action: "PAYMENT_RECORDED",
+      entityType: "VendorInvoice",
+      entityId: id,
+      actorId: session.user.id,
+      actorEmail: session.user.email,
+      organizationId: session.user.organizationId,
+      after: { paymentId: vendorPayment.id, amount: vendorPayment.amount, paymentDate: vendorPayment.paymentDate, method: vendorPayment.method },
+      details: { invoiceNumber: invoice.invoiceNumber, vendorName: invoice.vendor.name, referenceNumber },
+      ipAddress: getClientIp(req),
+    }).catch(console.error)
+  )
 
   after(
     Promise.all([

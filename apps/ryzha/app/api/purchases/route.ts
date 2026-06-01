@@ -1,10 +1,11 @@
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { NextResponse } from "next/server"
+import { NextResponse, after } from "next/server"
 import { createApprovalRequest } from "@/lib/approvals/approval-engine"
 import { runApprovalAgent } from "@/lib/agents/p2p/approval"
 import { getNextEntityNumber } from "@/lib/sequences"
+import { writeAudit, getClientIp } from "@/lib/audit"
 
 export const dynamic = "force-dynamic";
 
@@ -104,6 +105,20 @@ export async function POST(req: Request) {
         },
       })
     }
+
+    after(
+      writeAudit({
+        action: "CREATE",
+        entityType: "PurchaseOrder",
+        entityId: purchaseOrder.id,
+        actorId: session.user.id,
+        actorEmail: session.user.email,
+        organizationId: session.user.organizationId,
+        after: { poNumber, vendorId, totalAmount, status: purchaseOrder.status },
+        details: { poNumber, vendorName: purchaseOrder.vendor.name, lineCount: lineItems.length },
+        ipAddress: getClientIp(req),
+      }).catch(console.error)
+    )
 
     return NextResponse.json(purchaseOrder)
   } catch (error) {

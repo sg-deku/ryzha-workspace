@@ -1077,17 +1077,24 @@ model ChatMessage {
 
 model AuditLog {
   id             String   @id @default(cuid())
-  action         String // e.g. "CREATE_USER", "UPDATE_ORGANIZATION", "SUSPEND_USER"
-  entityType     String // e.g. "USER", "ORGANIZATION"
+  action         String // CREATE | UPDATE | DELETE | STATUS_CHANGE | POST | REVERSE | APPROVE | PERIOD_CLOSE | PERIOD_REOPEN | PAYMENT_RECORDED
+  entityType     String // Invoice | VendorInvoice | JournalEntry | PurchaseOrder | SalesOrder | Payment | Customer | Vendor | ChartOfAccounts | AccountingPeriod | PaymentRun | Expense | FixedAsset
   entityId       String
-  details        Json? // Stores what changed, etc.
-  actorId        String? // User ID who performed the action (if known)
-  organizationId String? // If it relates to a specific org
+  before         Json? // snapshot of record before mutation
+  after          Json? // snapshot of record after mutation
+  changedFields  String[] // field names that changed
+  details        Json? // additional context (e.g. reason, reference)
+  actorId        String? // User ID who performed the action
+  actorEmail     String? // denormalized for readability without join
+  ipAddress      String? // client IP for SOC 2
+  organizationId String?
   createdAt      DateTime @default(now())
 
   @@index([action, createdAt])
   @@index([entityType, entityId])
   @@index([organizationId, createdAt])
+  @@index([organizationId, entityType])
+  @@index([actorId, createdAt])
 }
 
 model BankAccount {

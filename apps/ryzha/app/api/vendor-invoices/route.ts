@@ -7,6 +7,7 @@ import { createSystemJournalEntry } from "@/lib/reports/general-ledger/je-factor
 import { mapVendorInvoiceToAccount } from "@/lib/reports/general-ledger/account-mapping"
 import { startP2PWorkflow } from "@/lib/agents/orchestrator"
 import { getNextEntityNumber } from "@/lib/sequences"
+import { writeAudit, getClientIp } from "@/lib/audit"
 
 export const dynamic = "force-dynamic";
 
@@ -132,6 +133,17 @@ export async function POST(req: Request) {
           lines: jeLines,
         }),
         startP2PWorkflow(vendorInvoice.id),
+        writeAudit({
+          action: "CREATE",
+          entityType: "VendorInvoice",
+          entityId: vendorInvoice.id,
+          actorId: session.user.id,
+          actorEmail: session.user.email,
+          organizationId: orgId,
+          after: { invoiceNumber, vendorId, totalAmount, status: "RECEIVED" },
+          details: { invoiceNumber, vendorName, totalAmount },
+          ipAddress: getClientIp(req),
+        }),
       ]).catch(console.error)
     )
 

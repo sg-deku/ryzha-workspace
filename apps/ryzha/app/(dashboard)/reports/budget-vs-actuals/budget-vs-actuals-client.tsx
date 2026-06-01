@@ -272,7 +272,7 @@ export function BudgetVsActualsClient({ budgets }: { budgets: Budget[] }) {
                     <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                     <XAxis dataKey="period" tick={{ fontSize: 11 }} />
                     <YAxis tick={{ fontSize: 11 }} tickFormatter={v => `$${(v / 1000).toFixed(0)}k`} />
-                    <Tooltip formatter={(v: number) => [`$${v.toLocaleString()}`, ""]} />
+                    <Tooltip formatter={(v: unknown) => [`$${Number(v).toLocaleString()}`, ""]} />
                     <Legend />
                     <Bar dataKey="Budgeted" fill="#94a3b8" radius={[3, 3, 0, 0]} />
                     <Bar dataKey="Actual" fill="#3b82f6" radius={[3, 3, 0, 0]} />

@@ -2,6 +2,8 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { NextResponse } from "next/server"
+import { after } from "next/server"
+import { writeAudit, getClientIp } from "@/lib/audit"
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -20,20 +22,14 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     }
 
     const existing = await prisma.invoice.findUnique({
-      where: {
-        id,
-        organizationId: session.user.organizationId
-      }
+      where: { id, organizationId: session.user.organizationId },
     })
 
     if (!existing) {
       return NextResponse.json({ error: "Invoice not found" }, { status: 404 })
     }
 
-    const updated = await prisma.invoice.update({
-      where: { id },
-      data: { status }
-    })
+    const updated = await prisma.invoice.update({ where: { id }, data: { status } })
 
     if (status === "VOID" && existing.status !== "VOID") {
       await prisma.generalLedgerEntry.createMany({
@@ -49,7 +45,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
             amount: existing.subtotal,
             description: `Reversal for voided invoice ${existing.invoiceNumber}`,
             sourceType: "invoice_void",
-            sourceId: existing.id
+            sourceId: existing.id,
           },
           {
             organizationId: session.user.organizationId,
@@ -61,9 +57,9 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
             amount: -existing.total,
             description: `Reversal for voided invoice ${existing.invoiceNumber}`,
             sourceType: "invoice_void",
-            sourceId: existing.id
-          }
-        ]
+            sourceId: existing.id,
+          },
+        ],
       })
       if (existing.totalTax > 0) {
         await prisma.generalLedgerEntry.create({
@@ -77,8 +73,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
             amount: existing.totalTax,
             description: `Reversal for voided invoice ${existing.invoiceNumber}`,
             sourceType: "invoice_void",
-            sourceId: existing.id
-          }
+            sourceId: existing.id,
+          },
         })
       }
     }
@@ -92,10 +88,25 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
           type: "WARNING",
           title: "Invoice Paid Without Payment Record",
           message: `Invoice #${existing.invoiceNumber} was manually marked as PAID, but no payment record exists.`,
-          link: `/invoices/${existing.id}`
+          link: `/invoices/${existing.id}`,
         }).catch(() => {})
       }
     }
+
+    after(
+      writeAudit({
+        action: "STATUS_CHANGE",
+        entityType: "Invoice",
+        entityId: id,
+        actorId: session.user.id,
+        actorEmail: session.user.email,
+        organizationId: session.user.organizationId,
+        before: { status: existing.status },
+        after: { status },
+        details: { invoiceNumber: existing.invoiceNumber, from: existing.status, to: status },
+        ipAddress: getClientIp(req),
+      }).catch(console.error)
+    )
 
     return NextResponse.json(updated)
   } catch (error) {
@@ -111,64 +122,53 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
     const {
-      invoiceNumber,
-      issueDate,
-      dueDate,
-      clientName,
-      clientEmail,
-      clientAddress,
-      lineItems,
-      subtotal,
-      totalTax,
-      total
+      invoiceNumber, issueDate, dueDate, clientName,
+      clientEmail, clientAddress, lineItems, subtotal, totalTax, total,
     } = await req.json()
 
     const existing = await prisma.invoice.findUnique({
-      where: {
-        id,
-        organizationId: session.user.organizationId
-      }
+      where: { id, organizationId: session.user.organizationId },
     })
-
-    if (!existing) {
-      return NextResponse.json({ error: "Invoice not found" }, { status: 404 })
-    }
-
+    if (!existing) return NextResponse.json({ error: "Invoice not found" }, { status: 404 })
     if (existing.status !== "DRAFT") {
       return NextResponse.json({ error: "Only draft invoices can be edited" }, { status: 400 })
     }
 
     const updated = await prisma.$transaction([
-      prisma.invoiceLineItem.deleteMany({
-        where: { invoiceId: id }
-      }),
+      prisma.invoiceLineItem.deleteMany({ where: { invoiceId: id } }),
       prisma.invoice.update({
         where: { id },
         data: {
-          invoiceNumber,
-          issueDate: new Date(issueDate),
-          dueDate: new Date(dueDate),
-          clientName,
-          clientEmail,
-          clientAddress,
-          subtotal,
-          totalTax,
-          total,
+          invoiceNumber, issueDate: new Date(issueDate), dueDate: new Date(dueDate),
+          clientName, clientEmail, clientAddress, subtotal, totalTax, total,
           lineItems: {
             create: lineItems.map((item: any) => ({
               description: item.description,
               quantity: item.quantity,
               unitPrice: item.unitPrice,
               taxRate: item.taxRate,
-              amount: item.amount
-            }))
-          }
+              amount: item.amount,
+            })),
+          },
         },
-        include: {
-          lineItems: true
-        }
-      })
+        include: { lineItems: true },
+      }),
     ])
+
+    after(
+      writeAudit({
+        action: "UPDATE",
+        entityType: "Invoice",
+        entityId: id,
+        actorId: session.user.id,
+        actorEmail: session.user.email,
+        organizationId: session.user.organizationId,
+        before: { invoiceNumber: existing.invoiceNumber, clientName: existing.clientName, total: existing.total, dueDate: existing.dueDate },
+        after: { invoiceNumber, clientName, total, dueDate },
+        details: { invoiceNumber },
+        ipAddress: getClientIp(req),
+      }).catch(console.error)
+    )
 
     return NextResponse.json(updated[1])
   } catch (error) {

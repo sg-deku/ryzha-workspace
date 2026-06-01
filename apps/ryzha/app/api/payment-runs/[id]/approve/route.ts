@@ -1,7 +1,8 @@
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { NextRequest, NextResponse } from "next/server"
+import { NextRequest, NextResponse, after } from "next/server"
+import { writeAudit, getClientIp } from "@/lib/audit"
 
 export const dynamic = "force-dynamic"
 
@@ -26,6 +27,21 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       approvedAt: new Date(),
     },
   })
+
+  after(
+    writeAudit({
+      action: "APPROVE",
+      entityType: "PaymentRun",
+      entityId: id,
+      actorId: session.user.id,
+      actorEmail: session.user.email,
+      organizationId: session.user.organizationId,
+      before: { status: "DRAFT" },
+      after: { status: "APPROVED", approvedBy: updated.approvedBy, approvedAt: updated.approvedAt },
+      details: { runNumber: run.runNumber, name: run.name, itemCount: run.items.length },
+      ipAddress: getClientIp(req),
+    }).catch(console.error)
+  )
 
   return NextResponse.json(updated)
 }

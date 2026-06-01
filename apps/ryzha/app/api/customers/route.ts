@@ -1,9 +1,10 @@
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { NextResponse } from "next/server"
+import { NextResponse, after } from "next/server"
 import { z } from "zod"
 import { getNextEntityNumber } from "@/lib/sequences"
+import { writeAudit, getClientIp } from "@/lib/audit"
 
 const customerSchema = z.object({
   name: z.string().min(1),
@@ -60,6 +61,20 @@ export async function POST(req: Request) {
         organizationId: session.user.organizationId,
       }
     })
+
+    after(
+      writeAudit({
+        action: "CREATE",
+        entityType: "Customer",
+        entityId: customer.id,
+        actorId: session.user.id,
+        actorEmail: session.user.email,
+        organizationId: session.user.organizationId,
+        after: { customerNumber, name: data.name, email: data.email, status: data.status },
+        details: { customerNumber, name: data.name },
+        ipAddress: getClientIp(req),
+      }).catch(console.error)
+    )
 
     return NextResponse.json(customer)
   } catch (error: any) {
