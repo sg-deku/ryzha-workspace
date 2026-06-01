@@ -1,6 +1,14 @@
 import { prisma } from "@/lib/prisma"
 
-export type AccountType = "Revenue" | "Expenses" | "Assets" | "Liabilities" | "Equity"
+export type AccountType =
+  | "Revenue"
+  | "COGS"
+  | "Expenses"
+  | "Assets"
+  | "Liabilities"
+  | "Equity"
+  | "Other Income"
+  | "Other Expense"
 
 export interface AccountMapping {
   accountName: string
@@ -12,6 +20,10 @@ export const DEFAULT_CHART_OF_ACCOUNTS: AccountMapping[] = [
   { accountName: "Service Revenue", accountType: "Revenue" },
   { accountName: "Product Revenue", accountType: "Revenue" },
   { accountName: "Other Revenue", accountType: "Revenue" },
+  { accountName: "Cost of Goods Sold", accountType: "COGS" },
+  { accountName: "Cost of Revenue", accountType: "COGS" },
+  { accountName: "Direct Labor", accountType: "COGS" },
+  { accountName: "Cloud Infrastructure (COGS)", accountType: "COGS" },
   { accountName: "Cloud & Hosting", accountType: "Expenses" },
   { accountName: "Software & SaaS", accountType: "Expenses" },
   { accountName: "Marketing & Advertising", accountType: "Expenses" },
@@ -25,13 +37,23 @@ export const DEFAULT_CHART_OF_ACCOUNTS: AccountMapping[] = [
   { accountName: "Accounts Receivable", accountType: "Assets" },
   { accountName: "Stripe Clearing Account", accountType: "Assets" },
   { accountName: "Prepaid Expenses", accountType: "Assets" },
+  { accountName: "Fixed Assets", accountType: "Assets" },
+  { accountName: "Accumulated Depreciation", accountType: "Assets" },
   { accountName: "Accounts Payable", accountType: "Liabilities" },
   { accountName: "Deferred Revenue", accountType: "Liabilities" },
   { accountName: "Tax Payable", accountType: "Liabilities" },
+  { accountName: "Sales Tax Payable", accountType: "Liabilities" },
+  { accountName: "Revenue Suspense", accountType: "Liabilities" },
   { accountName: "Retained Earnings", accountType: "Equity" },
+  { accountName: "Owner's Equity", accountType: "Equity" },
   { accountName: "Merchant Processing Fees", accountType: "Expenses" },
-  { accountName: "Foreign Exchange Expense", accountType: "Expenses" },
+  { accountName: "Depreciation Expense", accountType: "Expenses" },
+  { accountName: "Foreign Exchange Expense", accountType: "Other Expense" },
+  { accountName: "FX Loss", accountType: "Other Expense" },
+  { accountName: "Interest Expense", accountType: "Other Expense" },
   { accountName: "Stripe Reconciliation Difference", accountType: "Expenses" },
+  { accountName: "FX Gain", accountType: "Other Income" },
+  { accountName: "Interest Income", accountType: "Other Income" },
 ]
 
 const EXPENSE_CATEGORY_MAP: Record<string, string> = {

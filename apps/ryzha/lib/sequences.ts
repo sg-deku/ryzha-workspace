@@ -51,27 +51,22 @@ export async function getNextEntityNumber(
   organizationId: string,
   entityType: EntityType
 ): Promise<string> {
-  const [seq, settings] = await Promise.all([
-    prisma.$transaction(async (tx) => {
-      await tx.entitySequence.upsert({
-        where: { organizationId_entityType: { organizationId, entityType } },
-        create: { organizationId, entityType, lastValue: 1 },
-        update: { lastValue: { increment: 1 } },
-      })
-      return tx.entitySequence.findUnique({
-        where: { organizationId_entityType: { organizationId, entityType } },
-        select: { lastValue: true },
-      })
-    }),
-    prisma.numberingSettings.findUnique({
-      where: { organizationId },
-    }),
+  const [rows, settings] = await Promise.all([
+    prisma.$queryRaw<{ last_value: number }[]>`
+      INSERT INTO "EntitySequence" ("id", "organizationId", "entityType", "lastValue")
+      VALUES (gen_random_uuid()::text, ${organizationId}, ${entityType}, 1)
+      ON CONFLICT ("organizationId", "entityType")
+      DO UPDATE SET "lastValue" = "EntitySequence"."lastValue" + 1
+      RETURNING "lastValue" AS last_value
+    `,
+    prisma.numberingSettings.findUnique({ where: { organizationId } }),
   ])
 
+  const lastValue = rows[0]?.last_value ?? 1
   const padding = settings?.padding ?? 5
   const prefixField = PREFIX_FIELD[entityType]
   const prefix = settings ? (settings[prefixField] as string) : DEFAULT_PREFIX[entityType]
-  const num = String(seq?.lastValue ?? 1).padStart(padding, "0")
+  const num = String(lastValue).padStart(padding, "0")
 
   return `${prefix}-${num}`
 }

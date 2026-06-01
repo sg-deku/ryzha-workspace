@@ -104,7 +104,7 @@ export async function runPreCloseChecklist(organizationId: string, periodId: str
     prisma.vendorInvoice.count({
       where: {
         organizationId,
-        status: { in: ["PENDING", "PARTIAL"] },
+        status: { in: ["RECEIVED", "MATCHED", "APPROVED", "DISPUTED"] },
         dueDate: { lte: period.endDate },
       },
     }),

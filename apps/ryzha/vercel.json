@@ -3,5 +3,15 @@
   "framework": "nextjs",
   "installCommand": "cd ../.. && npm install",
   "buildCommand": "cd ../.. && npx turbo run build --filter=ryzha",
-  "outputDirectory": ".next"
+  "outputDirectory": ".next",
+  "crons": [
+    {
+      "path": "/api/cron/mark-overdue-invoices",
+      "schedule": "0 1 * * *"
+    },
+    {
+      "path": "/api/cron/release-deferred-revenue",
+      "schedule": "0 2 1 * *"
+    }
+  ]
 }

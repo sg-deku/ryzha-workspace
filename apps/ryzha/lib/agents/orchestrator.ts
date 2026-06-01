@@ -90,7 +90,8 @@ export async function startAgentWorkflow(transactionId: string) {
     }
     const recognized = (afterOM as any).recognizedRevenue ?? transaction.amount
     const deferred = (afterOM as any).deferredRevenue ?? 0
-    await logAndPublish("O&M", `Policy applied. Recognized: $${recognized}${deferred > 0 ? ` | Deferred: $${deferred} over contract period` : " (immediate)"}.`)
+    const recType = (afterOM as any).revenueRecognitionType ?? "immediate"
+    await logAndPublish("O&M", `Policy applied. Recognized: $${recognized}${deferred > 0 ? ` | Deferred: $${deferred} over contract period` : ` (${recType})`}.`)
 
     // Step 3: Auditor
     await logAndPublish("Orchestrator", `[3/4] Starting Auditor Agent — verifying contract for Payment Intent ${transaction.stripePaymentIntentId}...`)

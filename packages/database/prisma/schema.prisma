@@ -100,6 +100,9 @@ model Organization {
   // Budgets
   budgets Budget[]
 
+  // Dimensions
+  dimensions Dimension[]
+
   // Payment Runs
   paymentRuns PaymentRun[]
 
@@ -1006,16 +1009,19 @@ model GeneralLedgerEntry {
   sourceType     String
   sourceId       String
   organizationId String
+  dimensionId    String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
   organization      Organization              @relation(fields: [organizationId], references: [id])
   deferredSchedules DeferredRevenueSchedule[]
+  dimension         Dimension?                @relation("GLEntryDimension", fields: [dimensionId], references: [id])
 
   @@index([organizationId, date])
   @@index([organizationId, accountType])
   @@index([organizationId, sourceType])
   @@index([sourceId, sourceType])
+  @@index([dimensionId])
 }
 
 model ChartOfAccounts {
@@ -1163,10 +1169,13 @@ model JournalEntryLine {
   debit          Float        @default(0)
   credit         Float        @default(0)
   description    String?
+  dimensionId    String?
 
   journalEntry JournalEntry @relation(fields: [journalEntryId], references: [id])
+  dimension    Dimension?   @relation("JELineDimension", fields: [dimensionId], references: [id])
 
   @@index([journalEntryId])
+  @@index([dimensionId])
 }
 
 model GoodsReceipt {
@@ -1503,4 +1512,23 @@ model VendorPOAcknowledgment {
 
   @@unique([vendorId, purchaseOrderId])
   @@index([vendorId])
+}
+
+model Dimension {
+  id             String   @id @default(cuid())
+  organizationId String
+  type           String   // DEPARTMENT | CLASS | LOCATION | PROJECT
+  code           String
+  name           String
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization    Organization         @relation(fields: [organizationId], references: [id])
+  glEntries       GeneralLedgerEntry[] @relation("GLEntryDimension")
+  journalEntryLines JournalEntryLine[] @relation("JELineDimension")
+
+  @@unique([organizationId, type, code])
+  @@index([organizationId, type])
+  @@index([organizationId, isActive])
 }

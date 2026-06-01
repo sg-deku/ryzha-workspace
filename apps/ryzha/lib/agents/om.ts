@@ -1,56 +1,119 @@
-import { prisma } from "@/lib/prisma"
 import { getFinancialContext } from "@/lib/ai/rag"
 import { callLLM } from "@/lib/ai/llm"
 import { parseAIJson } from "@/lib/ai/client"
 import { appendAgentLog } from "./utils"
 import { createSystemJournalEntry } from "@/lib/reports/general-ledger/je-factory"
+import { createNotification } from "@/lib/notifications"
 import { addMonths, startOfMonth } from "date-fns"
 
+const DEFERRED_KEYWORDS = [
+  "annual", "yearly", "subscription", "prepaid", "upfront", "12-month",
+  "24-month", "multi-year", "retainer", "advance", "license", "maintenance",
+]
+
+const IMMEDIATE_KEYWORDS = [
+  "one-time", "single", "consulting", "project", "milestone", "delivery",
+  "professional services", "setup", "onboarding", "training",
+]
+
+function deterministicDeferralCheck(
+  description: string | null | undefined,
+  deferredRevenueRules: string[]
+): "deferred" | "immediate" | "inconclusive" {
+  if (!description) return "immediate"
+  const lower = description.toLowerCase()
+
+  const allDeferredRules = [...DEFERRED_KEYWORDS, ...deferredRevenueRules.map(r => r.toLowerCase())]
+
+  const matchesDeferred = allDeferredRules.some(kw => lower.includes(kw))
+  const matchesImmediate = IMMEDIATE_KEYWORDS.some(kw => lower.includes(kw))
+
+  if (matchesDeferred && !matchesImmediate) return "deferred"
+  if (matchesImmediate && !matchesDeferred) return "immediate"
+  return "inconclusive"
+}
+
 export async function runOMAgent(transactionId: string) {
-  const tx = await prisma.transaction.findUnique({ 
+  const tx = await prisma.transaction.findUnique({
     where: { id: transactionId },
-    include: { 
-      organization: { 
-        include: { financialSettings: true } 
-      } 
-    } 
+    include: {
+      organization: {
+        include: { financialSettings: true },
+      },
+    },
   })
-  
+
   if (!tx) return null
 
   const settings = tx.organization.financialSettings
   const deferralMonths = settings?.deferralPeriodMonths || 12
-  const deferredRules = (settings?.deferredRevenueRules as string[]) || ["annual", "yearly", "subscription"]
+  const deferredRevenueRules = (settings?.deferredRevenueRules as string[]) || []
 
-  let isDeferred = deferredRules.some(rule => tx.description?.toLowerCase().includes(rule.toLowerCase()))
+  const deterministicResult = deterministicDeferralCheck(tx.description, deferredRevenueRules)
+
+  let isDeferred: boolean
   let aiReasoning = ""
+  let requiresReview = false
 
-  if (tx.description) {
-    try {
-      const context = await getFinancialContext(`How should we recognize revenue for: ${tx.description}?`, tx.organizationId)
-      
-      const response = await callLLM(tx.organizationId, [
-        {
-          role: "system",
-          content: `You are an expert accountant (O&M Agent). Decide if revenue should be recognized immediately or deferred based on ASC 606 rules. 
-          Context: ${context}
-          Respond with JSON: { "deferred": boolean, "reason": string, "period": number }`
-        },
-        {
-          role: "user",
-          content: `Transaction: ${tx.description}, Amount: ${tx.amount}`
-        }
-      ], "agent_om", { temperature: 0 })
+  if (deterministicResult === "deferred") {
+    isDeferred = true
+    aiReasoning = `Deterministic ASC 606: description matches deferral keyword pattern.`
+  } else if (deterministicResult === "immediate") {
+    isDeferred = false
+    aiReasoning = `Deterministic ASC 606: description matches immediate recognition pattern.`
+  } else {
+    isDeferred = false
+    requiresReview = true
 
+    if (tx.description) {
       try {
-        const result = parseAIJson(response.content as string) as any
-        isDeferred = result.deferred
-        aiReasoning = result.reason
-      } catch (e) {
-        console.error("AI reasoning failed", e)
+        const context = await getFinancialContext(
+          `How should we recognize revenue for: ${tx.description}?`,
+          tx.organizationId
+        )
+
+        const response = await callLLM(
+          tx.organizationId,
+          [
+            {
+              role: "system",
+              content: `You are an expert accountant (O&M Agent). Advise whether revenue should be deferred based on ASC 606. Deterministic rules could not classify this transaction.
+Context: ${context}
+Respond with JSON: { "deferred": boolean, "reason": string, "confidence": "high" | "medium" | "low" }`,
+            },
+            {
+              role: "user",
+              content: `Transaction: ${tx.description}, Amount: ${tx.amount}`,
+            },
+          ],
+          "agent_om",
+          { temperature: 0 }
+        )
+
+        try {
+          const result = parseAIJson(response.content as string) as {
+            deferred: boolean
+            reason: string
+            confidence: string
+          }
+
+          if (result.confidence === "high") {
+            isDeferred = result.deferred
+            requiresReview = false
+            aiReasoning = `AI Advisory (high confidence): ${result.reason}`
+          } else {
+            isDeferred = false
+            requiresReview = true
+            aiReasoning = `AI Advisory (${result.confidence} confidence): ${result.reason}. Defaulting to immediate recognition — flagged for manual review.`
+          }
+        } catch {
+          aiReasoning = `AI classification failed. Defaulting to immediate recognition — flagged for manual review.`
+          requiresReview = true
+        }
+      } catch {
+        aiReasoning = `AI call failed. Defaulting to immediate recognition — flagged for manual review.`
+        requiresReview = true
       }
-    } catch (error) {
-      console.error("O&M AI failed", error)
     }
   }
 
@@ -58,14 +121,39 @@ export async function runOMAgent(transactionId: string) {
   const effectiveAmount = tx.amount * paymentFraction
 
   let updated
-  if (isDeferred) {
+
+  if (requiresReview) {
+    await appendAgentLog(
+      transactionId,
+      "O&M",
+      `INCONCLUSIVE — ${aiReasoning} Transaction flagged for manual ASC 606 review.`
+    )
+
+    await createNotification({
+      organizationId: tx.organizationId,
+      type: "WARNING",
+      title: "ASC 606 Classification Needs Review",
+      message: `Transaction $${tx.amount} from ${tx.customerEmail ?? "unknown"}: "${tx.description}" could not be deterministically classified. Revenue recognized as immediate — please review.`,
+      link: `/transactions/${transactionId}`,
+    })
+
+    updated = await prisma.transaction.update({
+      where: { id: transactionId },
+      data: {
+        recognizedRevenue: effectiveAmount,
+        deferredRevenue: 0,
+        revenueRecognitionType: "immediate",
+      },
+    })
+  } else if (isDeferred) {
     const monthlyPortion = effectiveAmount / deferralMonths
     const deferred = effectiveAmount - monthlyPortion
-    const logMessage = aiReasoning 
-      ? `O&M: ${aiReasoning} (ASC 606). Recognized $${monthlyPortion.toFixed(2)}, deferred $${deferred.toFixed(2)} over ${deferralMonths} months.`
-      : `STOP! According to ASC 606, this transaction should be deferred. Recognized $${monthlyPortion.toFixed(2)}, deferred $${deferred.toFixed(2)}.`
 
-    await appendAgentLog(transactionId, "O&M", logMessage)
+    await appendAgentLog(
+      transactionId,
+      "O&M",
+      `${aiReasoning} Recognized $${monthlyPortion.toFixed(2)}, deferred $${deferred.toFixed(2)} over ${deferralMonths} months.`
+    )
 
     updated = await prisma.transaction.update({
       where: { id: transactionId },
@@ -77,7 +165,7 @@ export async function runOMAgent(transactionId: string) {
     })
 
     const existingScheduleCount = await prisma.deferredRevenueSchedule.count({
-      where: { transactionId }
+      where: { transactionId },
     })
 
     if (existingScheduleCount === 0) {
@@ -86,7 +174,7 @@ export async function runOMAgent(transactionId: string) {
         period: addMonths(startOfMonth(new Date()), i + 1),
         amount: monthlyPortion,
         recognized: false,
-        organizationId: tx.organizationId
+        organizationId: tx.organizationId,
       }))
       await prisma.deferredRevenueSchedule.createMany({ data: scheduleRows })
     }
@@ -116,10 +204,9 @@ export async function runOMAgent(transactionId: string) {
       ],
     })
   } else {
-    const logMessage = aiReasoning || "Approved: immediate revenue recognition."
-    await appendAgentLog(transactionId, "O&M", logMessage)
-
+    await appendAgentLog(transactionId, "O&M", `${aiReasoning} Immediate revenue recognition applied.`)
     updated = await prisma.transaction.findUnique({ where: { id: transactionId } })
   }
+
   return updated
 }

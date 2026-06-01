@@ -23,9 +23,9 @@ export async function GET(req: Request) {
     const monthly = await getMonthlyPL(orgId, monthsBack)
 
     if (format === "csv") {
-      const header = "Month,Revenue,Expenses,Net Income,Gross Margin %\n"
+      const header = "Month,Revenue,COGS,Gross Profit,Gross Margin %,OPEX,Net Income\n"
       const rows = monthly
-        .map((r) => `"${r.month}",${r.revenue},${r.expenses},${r.netIncome},${r.grossMargin}`)
+        .map((r) => `"${r.month}",${r.revenue},${r.cogs},${r.grossProfit},${r.grossMargin},${r.operatingExpenses},${r.netIncome}`)
         .join("\n")
       return new Response(header + rows, {
         headers: {
@@ -43,16 +43,25 @@ export async function GET(req: Request) {
   if (format === "csv") {
     const lines = [
       "Category,Amount",
-      `Total Revenue,${pl.revenue}`,
-      `Total Expenses,${pl.totalExpenses}`,
-      `Net Income,${pl.netIncome}`,
+      `Revenue,${pl.revenue}`,
+      `Cost of Goods Sold,${pl.cogs}`,
+      `Gross Profit,${pl.grossProfit}`,
       `Gross Margin %,${pl.grossMargin.toFixed(1)}`,
+      `Operating Expenses,${pl.operatingExpenses}`,
+      `Operating Income (EBIT),${pl.operatingIncome}`,
+      `Other Income,${pl.otherIncome}`,
+      `Other Expense,${pl.otherExpense}`,
+      `Net Income,${pl.netIncome}`,
+      `Net Margin %,${pl.netMargin.toFixed(1)}`,
       "",
       "Revenue Breakdown,Amount",
       ...pl.revenueBreakdown.map((r) => `"${r.name}",${r.amount}`),
       "",
-      "Expense Breakdown,Amount",
-      ...pl.expenseBreakdown.map((e) => `"${e.name}",${e.amount}`),
+      "COGS Breakdown,Amount",
+      ...pl.cogsBreakdown.map((e) => `"${e.name}",${e.amount}`),
+      "",
+      "OPEX Breakdown,Amount",
+      ...pl.opexBreakdown.map((e) => `"${e.name}",${e.amount}`),
     ]
     return new Response(lines.join("\n"), {
       headers: {

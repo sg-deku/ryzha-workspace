@@ -1,21 +1,37 @@
-import { getSession } from "@/lib/session"
 import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Download } from "lucide-react"
 import Link from "next/link"
+import { BalanceSheetDatePicker } from "./balance-sheet-date-picker"
 
 export const dynamic = "force-dynamic"
 
-export default async function BalanceSheetPage() {
+export default async function BalanceSheetPage({
+  searchParams,
+}: {
+  searchParams: { asOf?: string }
+}) {
   const session = await getSession()
   if (!session?.user) redirect("/login")
 
   const organizationId = session.user.organizationId
 
+  const asOfDate = searchParams.asOf ? new Date(searchParams.asOf + "T23:59:59.999Z") : new Date()
+  const asOfLabel = asOfDate.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
+
   const glEntries = await prisma.generalLedgerEntry.findMany({
-    where: { organizationId },
+    where: {
+      organizationId,
+      date: { lte: asOfDate },
+    },
+    select: {
+      accountType: true,
+      accountName: true,
+      debit: true,
+      credit: true,
+    },
   })
 
   const buckets: Record<string, { debit: number; credit: number }> = {}
@@ -42,10 +58,17 @@ export default async function BalanceSheetPage() {
     }
   }
 
+  assets.sort((a, b) => b.balance - a.balance)
+  liabilities.sort((a, b) => b.balance - a.balance)
+  equity.sort((a, b) => b.balance - a.balance)
+
   const totalAssets = assets.reduce((s, a) => s + a.balance, 0)
   const totalLiabilities = liabilities.reduce((s, a) => s + a.balance, 0)
   const totalEquity = equity.reduce((s, a) => s + a.balance, 0)
   const retainedEarnings = totalAssets - totalLiabilities - totalEquity
+  const totalLiabilitiesAndEquity = totalLiabilities + totalEquity + retainedEarnings
+
+  const isBalanced = Math.abs(totalLiabilitiesAndEquity - totalAssets) < 0.01
 
   const formatCurrency = (n: number) =>
     new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(n)
@@ -61,14 +84,20 @@ export default async function BalanceSheetPage() {
           </Button>
           <div>
             <h2 className="text-3xl font-bold tracking-tight">Balance Sheet</h2>
-            <p className="text-muted-foreground">As of {new Date().toLocaleDateString()}</p>
+            <p className="text-muted-foreground">As of {asOfLabel}</p>
           </div>
         </div>
-        <Button variant="outline" asChild>
-          <a href="/api/reports/export?type=balance-sheet" download>
-            <Download className="mr-2 h-4 w-4" /> Export CSV
-          </a>
-        </Button>
+        <div className="flex items-center gap-3">
+          <BalanceSheetDatePicker currentAsOf={searchParams.asOf} />
+          <Button variant="outline" asChild>
+            <a
+              href={`/api/reports/export?type=balance-sheet${searchParams.asOf ? `&asOf=${searchParams.asOf}` : ""}`}
+              download
+            >
+              <Download className="mr-2 h-4 w-4" /> Export CSV
+            </a>
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-6 md:grid-cols-3">
@@ -147,14 +176,14 @@ export default async function BalanceSheetPage() {
         <CardContent className="pt-6">
           <div className="flex justify-between items-center text-lg font-bold">
             <span>Total Liabilities + Equity</span>
-            <span className={totalLiabilities + totalEquity + retainedEarnings === totalAssets ? "text-green-600" : "text-red-600"}>
-              {formatCurrency(totalLiabilities + totalEquity + retainedEarnings)}
+            <span className={isBalanced ? "text-green-600" : "text-red-600"}>
+              {formatCurrency(totalLiabilitiesAndEquity)}
             </span>
           </div>
           <p className="text-sm text-muted-foreground mt-1">
-            {totalLiabilities + totalEquity + retainedEarnings === totalAssets
+            {isBalanced
               ? "Balance sheet is balanced."
-              : "Balance sheet is not balanced — check GL entries for missing accounts."}
+              : `Balance sheet is out of balance by ${formatCurrency(Math.abs(totalLiabilitiesAndEquity - totalAssets))} — check GL entries for missing accounts.`}
           </p>
         </CardContent>
       </Card>

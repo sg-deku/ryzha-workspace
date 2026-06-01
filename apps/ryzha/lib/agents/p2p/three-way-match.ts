@@ -5,7 +5,10 @@ export interface ThreeWayMatchResult {
   invoiceStatus: string
   hasPO: boolean
   poMatched: boolean
+  hasGR: boolean
+  grMatched: boolean
   amountDiff: number
+  grQuantityShortfall: number
   lineVariances: { description: string; invoiceAmt: number; poAmt: number; diff: number }[]
   message: string
 }
@@ -33,7 +36,17 @@ export async function runThreeWayMatchAgent(vendorPaymentId: string): Promise<Th
         include: {
           purchaseOrder: {
             include: {
-              lineItems: { select: { productId: true, description: true, quantity: true, unitPrice: true, amount: true } },
+              lineItems: {
+                select: { productId: true, description: true, quantity: true, unitPrice: true, amount: true },
+              },
+              goodsReceipts: {
+                where: { status: { not: "CANCELLED" } },
+                include: {
+                  lines: {
+                    select: { description: true, quantityOrdered: true, quantityReceived: true, unitPrice: true, amount: true },
+                  },
+                },
+              },
             },
           },
           vendor: { select: { name: true } },
@@ -45,7 +58,18 @@ export async function runThreeWayMatchAgent(vendorPaymentId: string): Promise<Th
   })
 
   if (!payment) {
-    return { status: "FAIL", invoiceStatus: "unknown", hasPO: false, poMatched: false, amountDiff: 0, lineVariances: [], message: "Vendor payment record not found." }
+    return {
+      status: "FAIL",
+      invoiceStatus: "unknown",
+      hasPO: false,
+      poMatched: false,
+      hasGR: false,
+      grMatched: false,
+      amountDiff: 0,
+      grQuantityShortfall: 0,
+      lineVariances: [],
+      message: "Vendor payment record not found.",
+    }
   }
 
   const invoice = payment.vendorInvoice
@@ -58,7 +82,10 @@ export async function runThreeWayMatchAgent(vendorPaymentId: string): Promise<Th
       invoiceStatus,
       hasPO: !!invoice.purchaseOrderId,
       poMatched: false,
+      hasGR: false,
+      grMatched: false,
       amountDiff: 0,
+      grQuantityShortfall: 0,
       lineVariances: [],
       message: `Invoice ${invoice.invoiceNumber} is not in a payable state (status: ${invoiceStatus}). Expected: RECEIVED, MATCHED, APPROVED, or PARTIALLY_PAID.`,
     }
@@ -75,7 +102,10 @@ export async function runThreeWayMatchAgent(vendorPaymentId: string): Promise<Th
       invoiceStatus,
       hasPO: !!invoice.purchaseOrderId,
       poMatched: false,
+      hasGR: false,
+      grMatched: false,
       amountDiff: payment.amount - outstanding,
+      grQuantityShortfall: 0,
       lineVariances: [],
       message: `Over-payment detected. Payment $${payment.amount} exceeds outstanding balance $${outstanding.toFixed(2)} on invoice ${invoice.invoiceNumber}.`,
     }
@@ -87,7 +117,10 @@ export async function runThreeWayMatchAgent(vendorPaymentId: string): Promise<Th
       invoiceStatus,
       hasPO: false,
       poMatched: false,
+      hasGR: false,
+      grMatched: false,
       amountDiff: 0,
+      grQuantityShortfall: 0,
       lineVariances: [],
       message: `No PO linked to invoice ${invoice.invoiceNumber}. Two-way match only. Payment amount $${payment.amount} within outstanding balance $${outstanding.toFixed(2)}.`,
     }
@@ -116,12 +149,52 @@ export async function runThreeWayMatchAgent(vendorPaymentId: string): Promise<Th
     }
   }
 
+  const goodsReceipts = po.goodsReceipts ?? []
+  const hasGR = goodsReceipts.length > 0
+
+  let grMatched = true
+  let totalGRShortfall = 0
+
+  if (hasGR) {
+    const receivedQtyMap: Record<string, number> = {}
+    for (const gr of goodsReceipts) {
+      for (const line of gr.lines) {
+        const key = normalise(line.description)
+        receivedQtyMap[key] = (receivedQtyMap[key] ?? 0) + line.quantityReceived
+      }
+    }
+
+    for (const invLine of invoiceLines) {
+      const key = normalise(invLine.description)
+      const received = receivedQtyMap[key] ?? 0
+      const invoicedQty = invLine.quantity
+      if (invoicedQty > received + 0.001) {
+        const shortfall = invoicedQty - received
+        totalGRShortfall += shortfall * invLine.unitPrice
+        grMatched = false
+      }
+    }
+  }
+
   const hasLineVariances = lineVariances.length > 0
-  const overallStatus = !headerMatched || hasLineVariances ? "WARN" : "PASS"
+  const hasGRShortfall = !grMatched
+
+  let overallStatus: "PASS" | "WARN"
+  if (!headerMatched || hasLineVariances || hasGRShortfall) {
+    overallStatus = "WARN"
+  } else {
+    overallStatus = "PASS"
+  }
 
   const varianceSummary = hasLineVariances
     ? ` Line variances: ${lineVariances.map(v => `${v.description} (invoice $${v.invoiceAmt.toFixed(2)} vs PO $${v.poAmt.toFixed(2)})`).join("; ")}.`
     : ""
+
+  const grSummary = hasGRShortfall
+    ? ` GR shortfall: $${totalGRShortfall.toFixed(2)} worth of goods invoiced but not yet received.`
+    : hasGR
+    ? ` GR verified — all invoiced quantities received.`
+    : " No Goods Receipt on record (2-way match only)."
 
   if (overallStatus === "WARN") {
     return {
@@ -129,9 +202,12 @@ export async function runThreeWayMatchAgent(vendorPaymentId: string): Promise<Th
       invoiceStatus,
       hasPO: true,
       poMatched: headerMatched,
+      hasGR,
+      grMatched,
       amountDiff: headerDiff,
+      grQuantityShortfall: totalGRShortfall,
       lineVariances,
-      message: `Three-way match: header ${headerMatched ? "OK" : `differs by $${headerDiff.toFixed(2)}`}. Invoice ${invoice.invoiceNumber} ↔ PO ${po.poNumber}.${varianceSummary} Payment within outstanding. Flagged for review.`,
+      message: `Three-way match: header ${headerMatched ? "OK" : `differs by $${headerDiff.toFixed(2)}`}. Invoice ${invoice.invoiceNumber} ↔ PO ${po.poNumber}.${varianceSummary}${grSummary} Payment within outstanding. Flagged for review.`,
     }
   }
 
@@ -140,8 +216,11 @@ export async function runThreeWayMatchAgent(vendorPaymentId: string): Promise<Th
     invoiceStatus,
     hasPO: true,
     poMatched: true,
+    hasGR,
+    grMatched: true,
     amountDiff: 0,
+    grQuantityShortfall: 0,
     lineVariances: [],
-    message: `Three-way match passed. Invoice ${invoice.invoiceNumber} ↔ PO ${po.poNumber}. Invoice $${invoice.amount} = PO $${po.totalAmount}. All line items matched. Payment $${payment.amount} within outstanding balance $${outstanding.toFixed(2)}.`,
+    message: `Three-way match passed. Invoice ${invoice.invoiceNumber} ↔ PO ${po.poNumber}. Invoice $${invoice.amount} = PO $${po.totalAmount}.${grSummary} Payment $${payment.amount} within outstanding balance $${outstanding.toFixed(2)}.`,
   }
 }
