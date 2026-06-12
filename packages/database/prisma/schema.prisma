@@ -108,6 +108,18 @@ model Organization {
 
   // Vendor Portal
   vendorProfileChanges VendorProfileChange[]
+
+  // Workflow Studio v2
+  wsConnections WsConnection[]
+  wsWorkflows   WsWorkflow[]
+
+  // Ryzha Connect
+  financialEvents        FinancialEvent[]
+  integrationConnections IntegrationConnection[]
+  coaMappings            COAMapping[]
+  aiDecisionLogs         AIDecisionLog[]
+  policyRules            PolicyRule[]
+  financialArchitecture  FinancialArchitecture?
 }
 
 model P2PSettings {
@@ -465,6 +477,10 @@ model FinancialSettings {
   // Stripe Integration
   stripeSecretKey     String?
   stripeWebhookSecret String?
+
+  // Agent Configuration
+  agentConfig   Json?  // toggles per agent: { glCodingEnabled: true, revenueEnabled: true, ... }
+  monthlyBudget Float  @default(0)
 
   updatedAt DateTime @updatedAt
 
@@ -1538,4 +1554,445 @@ model Dimension {
   @@unique([organizationId, type, code])
   @@index([organizationId, type])
   @@index([organizationId, isActive])
+}
+
+// ─── Workflow Studio v2 ───────────────────────────────────────────────────────
+
+model WsConnector {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  name        String
+  description String
+  category    String
+  iconUrl     String?
+  color       String   @default("#6366f1")
+  authType    String   @default("none") // none | apikey | oauth2 | basic
+  isActive    Boolean  @default(true)
+  isPremium   Boolean  @default(false)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  triggers    WsConnectorTrigger[]
+  actions     WsConnectorAction[]
+  connections WsConnection[]
+
+  @@index([category])
+  @@index([isActive])
+}
+
+model WsConnectorTrigger {
+  id           String   @id @default(cuid())
+  connectorId  String
+  slug         String
+  name         String
+  description  String
+  inputSchema  Json     @default("{}")
+  outputSchema Json     @default("{}")
+  sampleOutput Json     @default("{}")
+  sortOrder    Int      @default(0)
+
+  connector    WsConnector    @relation(fields: [connectorId], references: [id])
+  nodes        WsWorkflowNode[]
+
+  @@unique([connectorId, slug])
+}
+
+model WsConnectorAction {
+  id           String   @id @default(cuid())
+  connectorId  String
+  slug         String
+  name         String
+  description  String
+  inputSchema  Json     @default("{}")
+  outputSchema Json     @default("{}")
+  sampleOutput Json     @default("{}")
+  sortOrder    Int      @default(0)
+
+  connector    WsConnector    @relation(fields: [connectorId], references: [id])
+  nodes        WsWorkflowNode[]
+
+  @@unique([connectorId, slug])
+}
+
+model WsConnection {
+  id              String   @id @default(cuid())
+  organizationId  String
+  connectorId     String
+  name            String
+  status          String   @default("ACTIVE") // ACTIVE | ERROR | PENDING
+  encryptedConfig String   @default("{}")
+  lastTestedAt    DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  organization    Organization   @relation(fields: [organizationId], references: [id])
+  connector       WsConnector    @relation(fields: [connectorId], references: [id])
+  nodes           WsWorkflowNode[]
+
+  @@index([organizationId])
+  @@index([organizationId, connectorId])
+}
+
+model WsWorkflow {
+  id             String   @id @default(cuid())
+  organizationId String
+  name           String
+  description    String   @default("")
+  status         String   @default("DRAFT") // DRAFT | ACTIVE | PAUSED
+  version        Int      @default(1)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization   Organization      @relation(fields: [organizationId], references: [id])
+  nodes          WsWorkflowNode[]
+  edges          WsWorkflowEdge[]
+  executions     WsWorkflowExecution[]
+
+  @@index([organizationId])
+  @@index([organizationId, status])
+}
+
+model WsWorkflowNode {
+  id           String   @id @default(cuid())
+  workflowId   String
+  triggerId    String?
+  actionId     String?
+  connectionId String?
+  nodeType     String   // TRIGGER | ACTION | LOGIC
+  label        String
+  config       Json     @default("{}")
+  positionX    Float    @default(0)
+  positionY    Float    @default(0)
+  createdAt    DateTime @default(now())
+
+  workflow     WsWorkflow          @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  trigger      WsConnectorTrigger? @relation(fields: [triggerId], references: [id])
+  action       WsConnectorAction?  @relation(fields: [actionId], references: [id])
+  connection   WsConnection?       @relation(fields: [connectionId], references: [id])
+  sourcedEdges WsWorkflowEdge[]    @relation("EdgeSource")
+  targetEdges  WsWorkflowEdge[]    @relation("EdgeTarget")
+  nodeLogs     WsWorkflowNodeLog[]
+
+  @@index([workflowId])
+}
+
+model WsWorkflowEdge {
+  id           String   @id @default(cuid())
+  workflowId   String
+  sourceNodeId String
+  targetNodeId String
+  sourceHandle String   @default("default")
+  targetHandle String   @default("default")
+  label        String?
+
+  workflow     WsWorkflow     @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  sourceNode   WsWorkflowNode @relation("EdgeSource", fields: [sourceNodeId], references: [id], onDelete: Cascade)
+  targetNode   WsWorkflowNode @relation("EdgeTarget", fields: [targetNodeId], references: [id], onDelete: Cascade)
+
+  @@unique([workflowId, sourceNodeId, targetNodeId, sourceHandle])
+  @@index([workflowId])
+}
+
+model WsWorkflowExecution {
+  id             String   @id @default(cuid())
+  workflowId     String
+  status         String   @default("RUNNING") // RUNNING | COMPLETED | FAILED | CANCELLED
+  triggeredBy    String   @default("MANUAL_TEST") // EVENT | WEBHOOK | SCHEDULE | MANUAL_TEST
+  triggerPayload Json     @default("{}")
+  errorMessage   String?
+  startedAt      DateTime @default(now())
+  finishedAt     DateTime?
+  durationMs     Int?
+
+  workflow       WsWorkflow          @relation(fields: [workflowId], references: [id])
+  nodeLogs       WsWorkflowNodeLog[]
+
+  @@index([workflowId])
+  @@index([workflowId, status])
+  @@index([startedAt])
+}
+
+model WsWorkflowNodeLog {
+  id          String   @id @default(cuid())
+  executionId String
+  nodeId      String
+  status      String   @default("RUNNING") // SKIPPED | RUNNING | COMPLETED | FAILED | RETRYING
+  input       Json     @default("{}")
+  output      Json     @default("{}")
+  error       String?
+  attempt     Int      @default(1)
+  startedAt   DateTime @default(now())
+  durationMs  Int?
+
+  execution   WsWorkflowExecution @relation(fields: [executionId], references: [id], onDelete: Cascade)
+  node        WsWorkflowNode      @relation(fields: [nodeId], references: [id])
+
+  @@index([executionId])
+  @@index([nodeId])
+}
+
+// ─── Ryzha Connect Models ─────────────────────────────────────────────────────
+
+model FinancialEvent {
+  id             String               @id @default(cuid())
+  organizationId String
+  source         String               // "stripe" | "gusto" | "ramp" | "mercury" | "chargebee"
+  externalId     String               // Source platform ID — used for deduplication
+  eventType      FinancialEventType
+  status         FinancialEventStatus @default(INGESTED)
+  amount         Float?
+  currency       String               @default("USD")
+  rawPayload     Json                 // Immutable original platform payload
+  normalisedData Json                 // Extracted structured fields
+  processedAt    DateTime?
+  pushedAt       DateTime?
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+
+  organization     Organization         @relation(fields: [organizationId], references: [id])
+  aiDecisionLogs   AIDecisionLog[]
+  approvalRequests FinancialEventApproval[]
+  externalRefs     ExternalReference[]
+  syncLogs         IntegrationSyncLog[]
+
+  @@unique([organizationId, source, externalId])
+  @@index([organizationId, status])
+  @@index([organizationId, source, eventType])
+  @@index([organizationId, createdAt])
+}
+
+enum FinancialEventType {
+  PAYMENT_RECEIVED
+  INVOICE_PAID
+  SUBSCRIPTION_CREATED
+  SUBSCRIPTION_CANCELLED
+  SUBSCRIPTION_UPDATED
+  EXPENSE_CREATED
+  PAYROLL_PROCESSED
+  HEADCOUNT_CHANGE
+  BANK_TRANSACTION
+  BILL_CREATED
+  REFUND_ISSUED
+}
+
+enum FinancialEventStatus {
+  INGESTED
+  PROCESSING
+  PENDING_APPROVAL
+  APPROVED
+  PUSHING
+  POSTED
+  FAILED
+  SKIPPED
+}
+
+model IntegrationConnection {
+  id             String              @id @default(cuid())
+  organizationId String
+  provider       IntegrationProvider
+  displayName    String?             // e.g. "Acme Corp QuickBooks"
+  accessToken    String              // AES-256 encrypted
+  refreshToken   String?             // AES-256 encrypted
+  realmId        String?             // QuickBooks company ID
+  tenantId       String?             // Xero tenant ID
+  scope          String?
+  expiresAt      DateTime?
+  syncCursor     String?             // cursor-based pagination state
+  lastSyncAt     DateTime?
+  status         ConnectionStatus    @default(ACTIVE)
+  errorMessage   String?
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  organization Organization         @relation(fields: [organizationId], references: [id])
+  syncLogs     IntegrationSyncLog[]
+  coaMappings  COAMapping[]
+
+  @@unique([organizationId, provider])
+  @@index([organizationId])
+}
+
+enum IntegrationProvider {
+  QUICKBOOKS
+  XERO
+  SAGE_INTACCT
+  NETSUITE
+  GUSTO
+  RIPPLING
+  RAMP
+  MERCURY
+  CHARGEBEE
+  STRIPE_CONNECT
+  SALESFORCE
+  HUBSPOT
+}
+
+enum ConnectionStatus {
+  ACTIVE
+  EXPIRED
+  DISCONNECTED
+  ERROR
+}
+
+model COAMapping {
+  id                      String                @id @default(cuid())
+  organizationId          String
+  integrationConnectionId String
+  externalCode            String                // QB account number e.g. "5400"
+  externalName            String                // QB account name e.g. "Office Supplies"
+  accountType             String                // QB account type e.g. "Expense"
+  accountSubType          String?
+  ryzhaCategoryHint       String?               // Internal label for AI coding agent matching
+  isActive                Boolean               @default(true)
+  usageCount              Int                   @default(0)
+  lastUsedAt              DateTime?
+  syncedAt                DateTime              @default(now())
+
+  organization          Organization          @relation(fields: [organizationId], references: [id])
+  integrationConnection IntegrationConnection @relation(fields: [integrationConnectionId], references: [id])
+
+  @@unique([organizationId, integrationConnectionId, externalCode])
+  @@index([organizationId])
+  @@index([organizationId, accountType])
+}
+
+model ExternalReference {
+  id               String              @id @default(cuid())
+  financialEventId String
+  provider         IntegrationProvider
+  externalId       String              // QB Bill ID / Xero Invoice ID etc.
+  entityType       String              // "BILL" | "EXPENSE" | "JOURNAL_ENTRY" | "VENDOR"
+  externalUrl      String?
+  pushedAt         DateTime            @default(now())
+
+  financialEvent FinancialEvent @relation(fields: [financialEventId], references: [id])
+
+  @@unique([financialEventId, provider, entityType])
+  @@index([financialEventId])
+}
+
+model AIDecisionLog {
+  id               String          @id @default(cuid())
+  organizationId   String
+  financialEventId String?
+  agentName        String          // "Revenue" | "GLCoding" | "Anomaly" | "APPolicy"
+  decisionType     String          // "GL_CODE" | "ANOMALY_CHECK" | "POLICY_PASS" | "REV_REC"
+  inputSummary     Json
+  output           Json
+  confidence       Float?
+  reasoning        String?         // LLM explanation of the decision
+  wasOverridden    Boolean         @default(false)
+  overriddenBy     String?
+  overrideReason   String?
+  createdAt        DateTime        @default(now())
+
+  organization   Organization    @relation(fields: [organizationId], references: [id])
+  financialEvent FinancialEvent? @relation(fields: [financialEventId], references: [id])
+
+  @@index([organizationId, agentName])
+  @@index([financialEventId])
+}
+
+model FinancialEventApproval {
+  id               String          @id @default(cuid())
+  financialEventId String
+  organizationId   String
+  status           String          @default("PENDING") // PENDING | APPROVED | REJECTED | DELEGATED
+  approverId       String
+  approverEmail    String?
+  requestedBy      String
+  requestedAt      DateTime        @default(now())
+  decidedAt        DateTime?
+  decisionNote     String?
+  dueDate          DateTime?
+
+  financialEvent FinancialEvent @relation(fields: [financialEventId], references: [id])
+
+  @@index([financialEventId])
+  @@index([approverId, status])
+}
+
+model IntegrationSyncLog {
+  id                      String                @id @default(cuid())
+  integrationConnectionId String
+  financialEventId        String?
+  direction               SyncDirection
+  entityType              String
+  externalId              String?
+  status                  SyncLogStatus
+  requestPayload          Json?
+  responsePayload         Json?
+  errorMessage            String?
+  retryCount              Int                   @default(0)
+  durationMs              Int?
+  createdAt               DateTime              @default(now())
+
+  integrationConnection IntegrationConnection @relation(fields: [integrationConnectionId], references: [id])
+  financialEvent        FinancialEvent?       @relation(fields: [financialEventId], references: [id])
+
+  @@index([integrationConnectionId])
+  @@index([financialEventId])
+}
+
+enum SyncDirection {
+  PUSH
+  PULL
+}
+
+enum SyncLogStatus {
+  SUCCESS
+  FAILED
+  RETRYING
+  PENDING
+}
+
+model PolicyRule {
+  id             String       @id @default(cuid())
+  organizationId String
+  name           String
+  description    String?
+  type           PolicyType
+  conditions     Json         // { amountLt: 500, department: "engineering", vendor: "AWS" }
+  action         PolicyAction
+  approverUserId String?
+  isActive       Boolean      @default(true)
+  priority       Int          @default(0)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId, isActive])
+}
+
+enum PolicyType {
+  AMOUNT_THRESHOLD
+  VENDOR
+  DEPARTMENT
+  CATEGORY
+  EXCEPTION
+}
+
+enum PolicyAction {
+  AUTO_APPROVE
+  REQUIRE_APPROVAL
+  BLOCK
+  FLAG_FOR_REVIEW
+}
+
+model FinancialArchitecture {
+  id                  String   @id @default(cuid())
+  organizationId      String   @unique
+  businessModel       String   // "saas" | "marketplace" | "services" | "usage_based" | "hybrid"
+  billingModel        String   // "annual" | "monthly" | "usage" | "milestone" | "blended"
+  revenueRecognition  Json     // ASC 606 / IFRS 15 policy per contract type
+  departmentStructure Json     // Cost centre and department definitions
+  metricsDefinitions  Json     // ARR formula, churn definition, LTV etc. specific to this org
+  dataFlowMap         Json     // Which tool owns which data type
+  entities            Json     // Legal entities with currencies
+  lastReviewedAt      DateTime?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
 }
