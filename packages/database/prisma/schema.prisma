@@ -27,6 +27,9 @@ model Organization {
   currency            String  @default("USD")
   onboardingCompleted Boolean @default(false)
 
+  stripeCustomerId     String?
+  stripeSubscriptionId String?
+
   users             UserOrganization[]
   taxRules          TaxRule[]
   expenses          Expense[]

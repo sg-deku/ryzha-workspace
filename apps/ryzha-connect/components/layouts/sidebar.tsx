@@ -27,6 +27,7 @@ import {
   ListTree,
   Building2,
   Clock,
+  CreditCard,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -86,11 +87,12 @@ const navSections: NavSection[] = [
   {
     label: "Settings",
     items: [
-      { href: "/settings/architect", icon: Cpu,      label: "Architecture"       },
-      { href: "/settings/policies",  icon: Shield,   label: "Policies"           },
-      { href: "/coa-mapping",        icon: ListTree, label: "Chart of Accounts"  },
-      { href: "/settings",           icon: Settings, label: "Settings"           },
-      { href: "/docs",               icon: BookOpen, label: "Documentation"      },
+      { href: "/settings/architect", icon: Cpu,        label: "Architecture"       },
+      { href: "/settings/policies",  icon: Shield,     label: "Policies"           },
+      { href: "/coa-mapping",        icon: ListTree,   label: "Chart of Accounts"  },
+      { href: "/settings/billing",   icon: CreditCard, label: "Billing"            },
+      { href: "/settings",           icon: Settings,   label: "Settings"           },
+      { href: "/docs",               icon: BookOpen,   label: "Documentation"      },
     ],
   },
 ]

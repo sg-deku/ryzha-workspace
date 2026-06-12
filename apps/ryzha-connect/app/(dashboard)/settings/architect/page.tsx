@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { CheckCircle2, Loader2, AlertCircle, Cpu, ChevronRight, ChevronLeft, Plus, Trash2 } from "lucide-react"
+import { CheckCircle2, Loader2, AlertCircle, Cpu, ChevronRight, ChevronLeft, Plus, Trash2, Sparkles, Send, Bot, User, ArrowLeft } from "lucide-react"
 
 interface FormState {
   businessModel: string
@@ -86,7 +86,194 @@ const CURRENCIES = ["USD", "EUR", "GBP", "CAD", "AUD", "SGD", "JPY", "INR"]
 
 const DEFAULT_DEPARTMENTS = ["Engineering", "Sales", "Marketing", "Customer Success", "G&A", "Finance", "HR", "Operations"]
 
+interface ChatMessage {
+  role: "user" | "assistant"
+  content: string
+}
+
+function AIInterviewPanel({
+  onComplete,
+  onBack,
+}: {
+  onComplete: (formData: FormState) => void
+  onBack: () => void
+}) {
+  const [messages, setMessages] = React.useState<ChatMessage[]>([])
+  const [input, setInput] = React.useState("")
+  const [loading, setLoading] = React.useState(false)
+  const [error, setError] = React.useState<string | null>(null)
+  const [started, setStarted] = React.useState(false)
+  const bottomRef = React.useRef<HTMLDivElement>(null)
+
+  React.useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" })
+  }, [messages, loading])
+
+  async function sendMessage(userMsg?: string) {
+    const content = userMsg ?? input.trim()
+    if (!content && started) return
+
+    const newMessages: ChatMessage[] = started
+      ? [...messages, { role: "user" as const, content }]
+      : messages
+
+    setMessages(newMessages)
+    setInput("")
+    setLoading(true)
+    setError(null)
+
+    try {
+      const res = await fetch("/api/agents/architect/interview", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: newMessages }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error ?? "Interview failed")
+
+      if (json.done && json.formData) {
+        setMessages((prev) => [
+          ...prev,
+          { role: "assistant", content: "Your financial architecture has been configured. Review the settings below and click Save Architecture to apply them." },
+        ])
+        setTimeout(() => onComplete(json.formData), 800)
+      } else {
+        setMessages((prev) => [...prev, { role: "assistant", content: json.message }])
+      }
+    } catch (err: any) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+      setStarted(true)
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          onClick={onBack}
+          className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <ArrowLeft className="h-4 w-4" /> Manual setup
+        </button>
+      </div>
+
+      <div className="rounded-xl border bg-card overflow-hidden flex flex-col" style={{ height: "480px" }}>
+        <div className="flex items-center gap-2 border-b px-4 py-3">
+          <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center">
+            <Bot className="h-4 w-4 text-primary" />
+          </div>
+          <div>
+            <p className="text-sm font-semibold">Ryzha AI Architect</p>
+            <p className="text-[11px] text-muted-foreground">Interviews you to build your financial architecture</p>
+          </div>
+          <div className="ml-auto flex items-center gap-1.5">
+            <span className="status-dot-green" />
+            <span className="text-[11px] text-muted-foreground">Online</span>
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+          {!started && (
+            <div className="flex gap-3">
+              <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+                <Bot className="h-3.5 w-3.5 text-primary" />
+              </div>
+              <div className="flex-1 bg-muted/40 rounded-2xl rounded-tl-sm px-4 py-3 max-w-[85%]">
+                <p className="text-sm leading-relaxed">
+                  Hi! I'm Ryzha's AI Architect. I'll ask you a few questions about your business to configure your financial architecture — chart of accounts, revenue recognition policy, and data flow map.
+                </p>
+                <p className="text-sm leading-relaxed mt-2">
+                  This usually takes about 2 minutes. Let's start — <strong>what type of business do you run?</strong> (e.g. SaaS, marketplace, professional services, usage-based, or a mix)
+                </p>
+              </div>
+            </div>
+          )}
+
+          {messages.map((msg, i) => (
+            <div key={i} className={`flex gap-3 ${msg.role === "user" ? "flex-row-reverse" : ""}`}>
+              <div className={`h-7 w-7 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${msg.role === "user" ? "bg-primary" : "bg-primary/10"}`}>
+                {msg.role === "user"
+                  ? <User className="h-3.5 w-3.5 text-primary-foreground" />
+                  : <Bot className="h-3.5 w-3.5 text-primary" />}
+              </div>
+              <div className={`max-w-[85%] px-4 py-3 rounded-2xl text-sm leading-relaxed ${
+                msg.role === "user"
+                  ? "bg-primary text-primary-foreground rounded-tr-sm"
+                  : "bg-muted/40 rounded-tl-sm"
+              }`}>
+                {msg.content}
+              </div>
+            </div>
+          ))}
+
+          {loading && (
+            <div className="flex gap-3">
+              <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                <Bot className="h-3.5 w-3.5 text-primary" />
+              </div>
+              <div className="bg-muted/40 rounded-2xl rounded-tl-sm px-4 py-3">
+                <div className="flex gap-1 items-center h-4">
+                  <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/40 animate-bounce" style={{ animationDelay: "0ms" }} />
+                  <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/40 animate-bounce" style={{ animationDelay: "150ms" }} />
+                  <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/40 animate-bounce" style={{ animationDelay: "300ms" }} />
+                </div>
+              </div>
+            </div>
+          )}
+          <div ref={bottomRef} />
+        </div>
+
+        {error && (
+          <div className="mx-4 mb-2 flex items-center gap-2 text-xs text-red-600 bg-red-50 dark:bg-red-950/20 rounded-lg px-3 py-2">
+            <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+            {error} — check your AI provider is configured in Settings → AI.
+          </div>
+        )}
+
+        <div className="border-t p-3 flex gap-2">
+          {!started ? (
+            <button
+              type="button"
+              onClick={() => sendMessage("Start the interview")}
+              disabled={loading}
+              className="flex-1 flex items-center justify-center gap-2 bg-primary text-primary-foreground text-sm font-medium rounded-lg py-2.5 hover:bg-primary/90 transition-colors disabled:opacity-60"
+            >
+              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+              Start AI Interview
+            </button>
+          ) : (
+            <>
+              <input
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage() } }}
+                placeholder="Your answer…"
+                disabled={loading}
+                className="flex-1 rounded-lg border bg-background px-3 py-2 text-sm disabled:opacity-60 focus:outline-none focus:ring-1 focus:ring-primary/40"
+              />
+              <button
+                type="button"
+                onClick={() => sendMessage()}
+                disabled={loading || !input.trim()}
+                className="h-10 w-10 rounded-lg bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-colors disabled:opacity-60 shrink-0"
+              >
+                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function ArchitectPage() {
+  const [mode, setMode] = React.useState<"manual" | "ai">("manual")
+  const [aiCompleted, setAICompleted] = React.useState(false)
   const [step, setStep] = React.useState(0)
   const [saving, setSaving] = React.useState(false)
   const [saved, setSaved] = React.useState(false)
@@ -170,19 +357,60 @@ export default function ArchitectPage() {
     )
   }
 
+  function handleAIComplete(formData: FormState) {
+    setForm((f) => ({
+      ...f,
+      ...formData,
+      defaultTermMonths: String(formData.defaultTermMonths ?? f.defaultTermMonths),
+    }))
+    setAICompleted(true)
+    setMode("manual")
+    setStep(0)
+  }
+
   return (
     <div className="space-y-8 max-w-3xl">
-      <div className="flex items-start gap-4">
-        <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-          <Cpu className="h-5 w-5 text-primary" />
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex items-start gap-4">
+          <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+            <Cpu className="h-5 w-5 text-primary" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold">Financial Architecture</h2>
+            <p className="text-muted-foreground text-sm mt-1">
+              Ryzha's Architect Agent uses this configuration to apply the correct revenue recognition policy, GL coding rules, and metrics definitions to every financial event.
+            </p>
+          </div>
         </div>
-        <div>
-          <h2 className="text-2xl font-bold">Financial Architecture</h2>
-          <p className="text-muted-foreground text-sm mt-1">
-            Ryzha's Architect Agent uses this configuration to apply the correct revenue recognition policy, GL coding rules, and metrics definitions to every financial event.
-          </p>
-        </div>
+        {mode === "manual" && (
+          <button
+            type="button"
+            onClick={() => { setMode("ai"); setAICompleted(false) }}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium hover:bg-muted/60 transition-colors shrink-0"
+          >
+            <Sparkles className="h-4 w-4 text-primary" />
+            AI Interview
+          </button>
+        )}
       </div>
+
+      {aiCompleted && (
+        <div className="flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 dark:bg-emerald-950/20 dark:border-emerald-900/40 p-4">
+          <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm text-emerald-700 dark:text-emerald-400 font-medium">Architecture configured by AI</p>
+            <p className="text-xs text-emerald-600/80 dark:text-emerald-500 mt-0.5">Review each section below and click Save Architecture when ready.</p>
+          </div>
+        </div>
+      )}
+
+      {mode === "ai" ? (
+        <AIInterviewPanel
+          onComplete={handleAIComplete}
+          onBack={() => setMode("manual")}
+        />
+      ) : (
+      <>
 
       <div className="flex items-center gap-2 overflow-x-auto pb-1">
         {STEPS.map((s, i) => (
@@ -489,6 +717,8 @@ export default function ArchitectPage() {
           )}
         </div>
       </div>
+      </>
+      )}
     </div>
   )
 }
