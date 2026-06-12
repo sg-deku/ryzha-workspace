@@ -17,14 +17,14 @@ const HANDLED_EVENTS = new Set([
 async function getStripeConfig(organizationId: string) {
   const conn = await prisma.integrationConnection.findUnique({
     where: { organizationId_provider: { organizationId, provider: "STRIPE_CONNECT" } },
-    select: { scope: true },
+    select: { accessToken: true, scope: true },
   })
-  if (!conn?.scope) return null
+  if (!conn?.accessToken) return null
+  let webhookSecret: string | undefined
   try {
-    return JSON.parse(conn.scope) as { apiKey: string; webhookSecret?: string }
-  } catch {
-    return null
-  }
+    webhookSecret = conn.scope ? JSON.parse(conn.scope).webhookSecret : undefined
+  } catch {}
+  return { apiKey: conn.accessToken, webhookSecret }
 }
 
 export async function POST(req: NextRequest) {
