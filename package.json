@@ -12,6 +12,7 @@
     "dev:app": "npm run dev --workspace=apps/ryzha",
     "dev:admin": "npm run dev --workspace=apps/admin",
     "dev:mobile": "npm run dev --workspace=apps/mobile",
+    "dev:connect": "npm run dev --workspace=apps/ryzha-connect",
     "build": "turbo run build",
     "lint": "turbo run lint",
     "db:generate": "npm run generate --workspace=packages/database",

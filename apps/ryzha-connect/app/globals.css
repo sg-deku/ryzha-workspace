@@ -1,0 +1,154 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
+    --radius: 0.5rem;
+    --surface-raised: 0 0% 99%;
+    --border-strong: 214.3 31.8% 84%;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 224.3 76.3% 48%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --surface-raised: 222.2 84% 6%;
+    --border-strong: 217.2 32.6% 24%;
+  }
+}
+
+@layer base {
+  * { @apply border-border; }
+  body {
+    @apply bg-muted/20 text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+@layer components {
+  /* ── Layout shells ─────────────────────────────────────── */
+  .card-default  { @apply rounded-xl border bg-card text-card-foreground shadow-sm; }
+  .card-elevated { @apply rounded-xl border bg-card text-card-foreground shadow-md; }
+  .card-inset    { @apply rounded-xl bg-muted/40 border border-border/60; }
+
+  /* ── Semantic status badges ─────────────────────────────── */
+  .badge {
+    @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ring-1;
+  }
+  .badge-success  { @apply badge bg-emerald-50  text-emerald-700  ring-emerald-200  dark:bg-emerald-950/30 dark:text-emerald-400 dark:ring-emerald-900; }
+  .badge-warning  { @apply badge bg-amber-50    text-amber-700    ring-amber-200    dark:bg-amber-950/30  dark:text-amber-400  dark:ring-amber-900;  }
+  .badge-error    { @apply badge bg-red-50      text-red-600      ring-red-200      dark:bg-red-950/30    dark:text-red-400    dark:ring-red-900;    }
+  .badge-info     { @apply badge bg-blue-50     text-blue-700     ring-blue-200     dark:bg-blue-950/30   dark:text-blue-400   dark:ring-blue-900;   }
+  .badge-active   { @apply badge bg-primary/10  text-primary      ring-primary/20; }
+  .badge-neutral  { @apply badge bg-muted       text-muted-foreground ring-border; }
+  .badge-purple   { @apply badge bg-violet-50   text-violet-700   ring-violet-200   dark:bg-violet-950/30 dark:text-violet-400 dark:ring-violet-900; }
+  .badge-sky      { @apply badge bg-sky-50      text-sky-700      ring-sky-200      dark:bg-sky-950/30    dark:text-sky-400    dark:ring-sky-900;    }
+
+  /* ── Status dot indicators ──────────────────────────────── */
+  .status-dot-green { @apply h-2 w-2 rounded-full bg-emerald-500 animate-pulse; }
+  .status-dot-amber { @apply h-2 w-2 rounded-full bg-amber-400; }
+  .status-dot-red   { @apply h-2 w-2 rounded-full bg-red-500; }
+  .status-dot-gray  { @apply h-2 w-2 rounded-full bg-muted-foreground/40; }
+
+  /* ── Interactive elements ───────────────────────────────── */
+  .btn-primary {
+    @apply inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground
+           shadow-sm shadow-primary/20 transition-all hover:bg-primary/90 hover:-translate-y-px active:translate-y-0;
+  }
+  .btn-secondary {
+    @apply inline-flex items-center gap-2 rounded-lg border bg-background px-4 py-2 text-sm font-medium
+           transition-all hover:bg-muted/60 hover:-translate-y-px active:translate-y-0;
+  }
+  .btn-ghost {
+    @apply inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground
+           transition-colors hover:bg-muted hover:text-foreground;
+  }
+
+  /* ── Table primitives ───────────────────────────────────── */
+  .table-row-hover {
+    @apply hover:bg-muted/40 transition-colors cursor-pointer;
+  }
+
+  /* ── Finance number styling ─────────────────────────────── */
+  .num { @apply tabular-nums font-medium; }
+  .num-pos { @apply tabular-nums font-medium text-emerald-600 dark:text-emerald-400; }
+  .num-neg { @apply tabular-nums font-medium text-red-500 dark:text-red-400; }
+}
+
+@layer utilities {
+  .text-balance { text-wrap: balance; }
+
+  .bg-dot-grid {
+    background-image: radial-gradient(circle, #d1d5db 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+  .bg-dot-grid-dark {
+    background-image: radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+  .bg-noise {
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  }
+
+  .animate-fade-in  { animation: fade-in  0.4s ease-out forwards; }
+  .animate-fade-up  { animation: fade-up  0.4s ease-out forwards; }
+  .animate-slide-right { animation: slide-right 0.25s ease-out forwards; }
+
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+  @keyframes fade-up {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes slide-right {
+    from { transform: translateX(-6px); opacity: 0; }
+    to   { transform: translateX(0);     opacity: 1; }
+  }
+  @keyframes shimmer {
+    from { background-position: -200% 0; }
+    to   { background-position: 200% 0; }
+  }
+  .animate-shimmer {
+    background: linear-gradient(90deg, hsl(var(--muted)) 25%, hsl(var(--muted)/0.6) 50%, hsl(var(--muted)) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.6s ease-in-out infinite;
+  }
+}
