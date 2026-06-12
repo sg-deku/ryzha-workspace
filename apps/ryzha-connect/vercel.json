@@ -1,4 +1,9 @@
 {
+  "version": 2,
+  "framework": "nextjs",
+  "installCommand": "cd ../.. && npm install",
+  "buildCommand": "cd ../.. && npx turbo run build --filter=ryzha-connect",
+  "outputDirectory": ".next",
   "crons": [
     {
       "path": "/api/cron/daily",
