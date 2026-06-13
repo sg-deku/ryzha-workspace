@@ -903,7 +903,17 @@ function AgentsTab() {
       })
       const json = await res.json()
       if (res.ok) {
-        setRunResult((prev) => ({ ...prev, [groupKey]: `Completed at ${new Date(json.ranAt).toLocaleTimeString()}` }))
+        const agentResults = json.result as Record<string, Record<string, unknown>> | undefined
+        const agentErrors = agentResults
+          ? Object.entries(agentResults)
+              .filter(([, v]) => v && typeof v === "object" && "error" in v)
+              .map(([k, v]) => `${k}: ${(v as any).error}`)
+          : []
+        const time = new Date(json.ranAt).toLocaleTimeString()
+        const summary = agentErrors.length > 0
+          ? `Completed at ${time} · ${agentErrors.length} agent error(s): ${agentErrors.join("; ")}`
+          : `Completed at ${time}`
+        setRunResult((prev) => ({ ...prev, [groupKey]: summary }))
       } else {
         setRunResult((prev) => ({ ...prev, [groupKey]: json.error ?? "Failed" }))
       }
@@ -955,8 +965,8 @@ function AgentsTab() {
                   <span className="text-[10px] text-muted-foreground">cron expression</span>
                 </div>
                 {result && (
-                  <p className={`text-xs flex items-center gap-1 ${result.startsWith("Completed") ? "text-emerald-600 dark:text-emerald-400" : "text-red-500"}`}>
-                    {result.startsWith("Completed") ? <CheckCircle2 className="h-3 w-3" /> : null}
+                  <p className={`text-xs flex items-center gap-1 ${result.includes("error") ? "text-amber-600 dark:text-amber-400" : result.startsWith("Completed") ? "text-emerald-600 dark:text-emerald-400" : "text-red-500"}`}>
+                    {result.startsWith("Completed") && !result.includes("error") ? <CheckCircle2 className="h-3 w-3" /> : null}
                     {result}
                   </p>
                 )}
