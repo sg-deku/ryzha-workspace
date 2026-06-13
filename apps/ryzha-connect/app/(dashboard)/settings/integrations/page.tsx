@@ -7,10 +7,9 @@ import {
   AlertCircle,
   Clock,
   XCircle,
-  RefreshCw,
-  Trash2,
   BookOpen,
 } from "lucide-react"
+import { IntegrationActions } from "@/components/settings/integration-actions"
 
 async function getData(organizationId: string) {
   const connections = await prisma.integrationConnection.findMany({
@@ -101,23 +100,7 @@ export default async function SettingsIntegrationsPage() {
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-2 shrink-0">
-                    <a
-                      href={`/api/connect/resync?provider=${conn.provider}`}
-                      className="flex items-center gap-1.5 text-xs border rounded-md px-3 py-1.5 hover:bg-muted transition-colors"
-                    >
-                      <RefreshCw className="h-3 w-3" /> Sync now
-                    </a>
-                    <form action="/api/connect/disconnect" method="POST">
-                      <input type="hidden" name="provider" value={conn.provider} />
-                      <button
-                        type="submit"
-                        className="flex items-center gap-1.5 text-xs text-red-500 border border-red-200 rounded-md px-3 py-1.5 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors"
-                      >
-                        <Trash2 className="h-3 w-3" /> Disconnect
-                      </button>
-                    </form>
-                  </div>
+                  <IntegrationActions provider={conn.provider} />
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-2 border-t">
