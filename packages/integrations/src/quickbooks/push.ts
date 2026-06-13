@@ -1,4 +1,4 @@
-import { createQBClient } from "./client"
+import { createQBClient, isSandboxToken } from "./client"
 import type { PushJournalEntryInput, PushResult } from "../types"
 
 export async function pushQBBill(

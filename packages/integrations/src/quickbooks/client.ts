@@ -3,7 +3,7 @@ import axios, { AxiosInstance } from "axios"
 const QB_API_PROD    = "https://quickbooks.api.intuit.com/v3/company"
 const QB_API_SANDBOX = "https://sandbox-quickbooks.api.intuit.com/v3/company"
 
-function isSandboxToken(accessToken: string): boolean {
+export function isSandboxToken(accessToken: string): boolean {
   try {
     const header = JSON.parse(Buffer.from(accessToken.split(".")[0], "base64url").toString())
     return header["x.org"] === "H0"
