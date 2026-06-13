@@ -1,6 +1,16 @@
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getSession } from "@/lib/session"
+
+export async function GET(req: NextRequest) {
+  const provider = req.nextUrl.searchParams.get("provider")
+  if (!provider) return NextResponse.json({ error: "Missing provider" }, { status: 400 })
+  return POST(new Request(req.url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ provider }),
+  }))
+}
 
 export async function POST(req: Request) {
   const session = await getSession()

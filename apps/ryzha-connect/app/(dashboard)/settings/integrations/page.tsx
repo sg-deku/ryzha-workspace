@@ -102,17 +102,14 @@ export default async function SettingsIntegrationsPage() {
                   </div>
 
                   <div className="flex items-center gap-2 shrink-0">
-                    <form action={`/api/connect/${conn.provider.toLowerCase()}/sync`} method="POST">
-                      <input type="hidden" name="connectionId" value={conn.id} />
-                      <button
-                        type="submit"
-                        className="flex items-center gap-1.5 text-xs border rounded-md px-3 py-1.5 hover:bg-muted transition-colors"
-                      >
-                        <RefreshCw className="h-3 w-3" /> Sync now
-                      </button>
-                    </form>
-                    <form action={`/api/connect/${conn.provider.toLowerCase()}/disconnect`} method="POST">
-                      <input type="hidden" name="connectionId" value={conn.id} />
+                    <a
+                      href={`/api/connect/resync?provider=${conn.provider}`}
+                      className="flex items-center gap-1.5 text-xs border rounded-md px-3 py-1.5 hover:bg-muted transition-colors"
+                    >
+                      <RefreshCw className="h-3 w-3" /> Sync now
+                    </a>
+                    <form action="/api/connect/disconnect" method="POST">
+                      <input type="hidden" name="provider" value={conn.provider} />
                       <button
                         type="submit"
                         className="flex items-center gap-1.5 text-xs text-red-500 border border-red-200 rounded-md px-3 py-1.5 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors"
@@ -159,18 +156,20 @@ export default async function SettingsIntegrationsPage() {
                     <p className="text-sm font-medium mt-0.5">
                       {coaCount > 0 ? (
                         <a
-                          href={`/settings/coa?connectionId=${conn.id}`}
+                          href="/coa-mapping"
                           className="text-primary hover:underline"
                         >
                           {coaCount} accounts
                         </a>
-                      ) : (
+                      ) : conn.provider === "QUICKBOOKS" ? (
                         <a
-                          href={`/api/connect/${conn.provider.toLowerCase()}/sync-coa?connectionId=${conn.id}`}
+                          href="/api/connect/quickbooks/sync-coa"
                           className="text-muted-foreground hover:text-foreground text-xs border rounded px-2 py-0.5 transition-colors"
                         >
                           Sync COA
                         </a>
+                      ) : (
+                        <span className="text-muted-foreground text-xs">-</span>
                       )}
                     </p>
                   </div>
