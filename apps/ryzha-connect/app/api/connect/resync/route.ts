@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getSession } from "@/lib/session"
+import { runStripeSync } from "@/app/api/connect/stripe/sync/route"
 
 export async function GET(req: NextRequest) {
   const provider = req.nextUrl.searchParams.get("provider")
@@ -35,11 +36,7 @@ export async function POST(req: Request) {
     let result: unknown = { skipped: true }
 
     if (provider === "STRIPE_CONNECT" && conn.accessToken) {
-      const res = await fetch(`${process.env.NEXTAUTH_URL ?? "http://localhost:3001"}/api/connect/stripe/sync`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "x-internal-cron": "1" },
-      })
-      result = res.ok ? { synced: true } : { error: "Stripe sync failed" }
+      result = await runStripeSync(organizationId, 90)
     } else if (provider === "MERCURY" && conn.accessToken) {
       const { pullMercuryTransactions } = await import("@ryzha/integrations")
       const events = await pullMercuryTransactions(conn.accessToken)

@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { getSession } from "@/lib/session"
 import { pullStripeHistorical } from "@ryzha/integrations"
 
-async function runStripeSync(organizationId: string, daysSince: number) {
+export async function runStripeSync(organizationId: string, daysSince: number) {
   const conn = await prisma.integrationConnection.findUnique({
     where: { organizationId_provider: { organizationId, provider: "STRIPE_CONNECT" } },
     select: { accessToken: true, status: true },
