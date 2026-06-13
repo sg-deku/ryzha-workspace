@@ -345,11 +345,11 @@ export function ProviderGrid({ connections, qbConfigured }: Props) {
     return () => document.removeEventListener("keydown", handler)
   }, [])
 
-  const showDetail = !!selectedProvider && !!selectedConn && isSelectedConnected
+  const showPanel = !!selectedProvider
 
   return (
     <div className="flex gap-0 h-full">
-      <div className={cn("flex flex-col gap-4 transition-all duration-200 min-w-0", showDetail ? "flex-1" : "w-full")}>
+      <div className={cn("flex flex-col gap-4 transition-all duration-200 min-w-0", showPanel ? "flex-1" : "w-full")}>
         <div className="flex items-center gap-1 overflow-x-auto pb-0.5">
           {ALL_CATEGORIES.map((cat) => {
             const count = connectedCount(cat)
@@ -391,24 +391,25 @@ export function ProviderGrid({ connections, qbConfigured }: Props) {
         </div>
       </div>
 
-      {showDetail && selectedProvider && selectedConn && (
+      {showPanel && selectedProvider && (
         <div className="w-[360px] shrink-0 ml-4 flex flex-col rounded-xl border overflow-hidden">
-          <ConnectionDetail
-            provider={selectedProvider}
-            conn={selectedConn}
-            onClose={() => setSelected(null)}
-            onDisconnected={() => handleDisconnected(selectedProvider.id)}
-          />
+          {selectedConn && isSelectedConnected ? (
+            <ConnectionDetail
+              provider={selectedProvider}
+              conn={selectedConn}
+              onClose={() => setSelected(null)}
+              onDisconnected={() => handleDisconnected(selectedProvider.id)}
+            />
+          ) : (
+            <ConnectModal
+              provider={selectedProvider}
+              connection={selectedConn ? { status: selectedConn.status, lastSyncAt: selectedConn.lastSyncAt } : null}
+              qbConfigured={qbConfigured}
+              onClose={() => setSelected(null)}
+              panel
+            />
+          )}
         </div>
-      )}
-
-      {selectedProvider && (!selectedConn || !isSelectedConnected) && (
-        <ConnectModal
-          provider={selectedProvider}
-          connection={selectedConn ? { status: selectedConn.status, lastSyncAt: selectedConn.lastSyncAt } : null}
-          qbConfigured={qbConfigured}
-          onClose={() => setSelected(null)}
-        />
       )}
     </div>
   )
