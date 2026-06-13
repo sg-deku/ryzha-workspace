@@ -10,108 +10,122 @@ import {
   Clock,
   AlertCircle,
   Bot,
-  ArrowRight,
-  FileText,
+  ExternalLink,
+  Zap,
+  BookOpen,
+  CreditCard,
+  ArrowUpRight,
+  Circle,
+  Minus,
 } from "lucide-react"
 
-interface EventDetail {
-  id: string
-  organizationId: string
-  source: string
-  eventType: string
-  externalId: string
-  status: string
-  amount: number | null
-  currency: string
-  normalisedData: unknown
-  rawPayload: unknown
-  createdAt: Date
-  updatedAt: Date
-  aiDecisionLogs: {
-    id: string
-    agentName: string
-    decisionType: string
-    confidence: number | null
-    reasoning: string | null
-    output: unknown
-    createdAt: Date
-  }[]
-  approvalRequests: {
-    id: string
-    status: string
-    requestedBy: string
-    requestedAt: Date
-    decidedAt: Date | null
-  }[]
-  syncLogs: {
-    id: string
-    direction: string
-    entityType: string
-    status: string
-    durationMs: number | null
-    errorMessage: string | null
-    createdAt: Date
-    integrationConnection: { provider: string }
-  }[]
-}
-
-async function getEventDetail(id: string, organizationId: string): Promise<EventDetail | null> {
+async function getEventDetail(id: string, organizationId: string) {
   const event = await (prisma.financialEvent as any).findFirst({
     where: { id, organizationId },
     include: {
-      aiDecisionLogs: { orderBy: { createdAt: "desc" } },
+      aiDecisionLogs: { orderBy: { createdAt: "asc" } },
+      externalReferences: true,
       syncLogs: {
         orderBy: { createdAt: "desc" },
         take: 10,
         include: { integrationConnection: { select: { provider: true } } },
       },
-      approvalRequests: { orderBy: { requestedAt: "desc" }, take: 5 },
+      approvalRequests: {
+        orderBy: { requestedAt: "desc" },
+        take: 5,
+      },
     },
   })
-  return event as EventDetail | null
+  return event
 }
 
-function StatusBadge({ status }: { status: string }) {
-  const map: Record<string, string> = {
-    INGESTED: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-    PROCESSING: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400",
-    PENDING_APPROVAL: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400",
-    APPROVED: "bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400",
-    PUSHING: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
-    POSTED: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
-    FAILED: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
-    SKIPPED: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400",
-  }
+const STATUS_META: Record<string, { label: string; color: string; dot: string }> = {
+  INGESTED:         { label: "Ingested",          color: "text-blue-600",    dot: "bg-blue-500" },
+  PROCESSING:       { label: "Processing",         color: "text-amber-600",   dot: "bg-amber-500" },
+  PENDING_APPROVAL: { label: "Pending Approval",   color: "text-orange-600",  dot: "bg-orange-500" },
+  APPROVED:         { label: "Approved",           color: "text-sky-600",     dot: "bg-sky-500" },
+  PUSHING:          { label: "Pushing to ERP",     color: "text-violet-600",  dot: "bg-violet-500" },
+  POSTED:           { label: "Posted",             color: "text-emerald-600", dot: "bg-emerald-500" },
+  FAILED:           { label: "Failed",             color: "text-red-600",     dot: "bg-red-500" },
+  SKIPPED:          { label: "Skipped",            color: "text-muted-foreground", dot: "bg-muted-foreground/40" },
+}
+
+const PIPELINE_STAGES = [
+  {
+    key: "ingest",
+    label: "Ingested from source",
+    agentNames: [] as string[],
+    decisionTypes: [] as string[],
+    icon: Zap,
+    description: (ev: any) => `${ev.source} → Ryzha event stream`,
+  },
+  {
+    key: "gl_coding",
+    label: "GL Code assigned",
+    agentNames: ["GLCoding", "GL Coding"],
+    decisionTypes: ["GL_CODE"],
+    icon: BookOpen,
+    description: () => "Revenue account mapped by AI",
+  },
+  {
+    key: "rev_rec",
+    label: "Revenue recognised",
+    agentNames: ["Revenue"],
+    decisionTypes: ["REV_REC"],
+    icon: CheckCircle2,
+    description: () => "ASC 606 / IFRS 15 policy applied",
+  },
+  {
+    key: "erp_push",
+    label: "Journal entry forwarded to ERP",
+    agentNames: [] as string[],
+    decisionTypes: [] as string[],
+    icon: ArrowUpRight,
+    description: () => "Double-entry pushed to QuickBooks",
+  },
+]
+
+function getStripeUrl(externalId: string, isSandbox = true): string {
+  const base = isSandbox
+    ? "https://dashboard.stripe.com/test"
+    : "https://dashboard.stripe.com"
+  if (externalId.startsWith("pi_")) return `${base}/payments/${externalId}`
+  if (externalId.startsWith("in_")) return `${base}/invoices/${externalId}`
+  if (externalId.startsWith("ch_")) return `${base}/payments/${externalId}`
+  return `${base}/search?query=${externalId}`
+}
+
+function getQBUrl(externalId: string, isSandbox = true): string {
+  if (isSandbox) return `https://sandbox.qbo.intuit.com/app/journalentry?txnId=${externalId}`
+  return `https://app.qbo.intuit.com/app/journalentry?txnId=${externalId}`
+}
+
+function StatusPill({ status }: { status: string }) {
+  const meta = STATUS_META[status] ?? { label: status, color: "text-muted-foreground", dot: "bg-muted-foreground/40" }
   return (
-    <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${map[status] ?? ""}`}>
-      {status.replace(/_/g, " ")}
+    <span className={`inline-flex items-center gap-1.5 text-sm font-semibold ${meta.color}`}>
+      <span className={`h-2 w-2 rounded-full ${meta.dot}`} />
+      {meta.label}
     </span>
   )
 }
 
-function SectionCard({ title, icon: Icon, children }: {
-  title: string
-  icon: React.ElementType
-  children: React.ReactNode
-}) {
+function Field({ label, value, mono = false }: { label: string; value: React.ReactNode; mono?: boolean }) {
   return (
-    <div className="rounded-xl border bg-card">
-      <div className="flex items-center gap-2 p-5 border-b">
-        <Icon className="h-4 w-4 text-muted-foreground" />
-        <h3 className="font-semibold">{title}</h3>
+    <div className="py-2.5 flex items-start justify-between gap-4 border-b last:border-0">
+      <p className="text-xs text-muted-foreground shrink-0 pt-0.5">{label}</p>
+      <div className={`text-sm font-medium text-right break-all ${mono ? "font-mono text-xs" : ""}`}>
+        {value ?? <span className="text-muted-foreground/40">—</span>}
       </div>
-      {children}
     </div>
   )
 }
 
-function Field({ label, value }: { label: string; value: React.ReactNode }) {
-  return (
-    <div className="flex flex-col gap-0.5 py-3 border-b last:border-0 px-5">
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <div className="text-sm font-medium break-all">{value ?? <span className="text-muted-foreground/50">-</span>}</div>
-    </div>
-  )
+function StageDot({ state }: { state: "done" | "active" | "skipped" | "pending" }) {
+  if (state === "done")    return <div className="h-8 w-8 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center shrink-0"><CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" /></div>
+  if (state === "skipped") return <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center shrink-0"><Minus className="h-4 w-4 text-muted-foreground" /></div>
+  if (state === "active")  return <div className="h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center shrink-0"><Clock className="h-4 w-4 text-blue-600 dark:text-blue-400" /></div>
+  return <div className="h-8 w-8 rounded-full border-2 border-dashed border-border flex items-center justify-center shrink-0"><Circle className="h-3.5 w-3.5 text-muted-foreground/30" /></div>
 }
 
 export default async function EventDetailPage({
@@ -124,172 +138,321 @@ export default async function EventDetailPage({
 
   const { id } = await params
   const event = await getEventDetail(id, session.user.organizationId)
-
   if (!event) notFound()
 
   const normalised = (event.normalisedData ?? {}) as Record<string, unknown>
-  const rawPayload = (event.rawPayload ?? {}) as Record<string, unknown>
+  const rawPayload  = (event.rawPayload ?? {}) as Record<string, unknown>
+
+  const isStripe   = event.source?.toLowerCase() === "stripe"
+  const isSandbox  = true
+
+  const qbRef = (event.externalReferences ?? []).find(
+    (r: any) => r.provider === "QUICKBOOKS" && r.entityType === "JOURNAL_ENTRY"
+  )
+
+  const decisionLogs: any[] = event.aiDecisionLogs ?? []
+
+  function findLog(stage: typeof PIPELINE_STAGES[number]) {
+    return decisionLogs.find(
+      (l: any) =>
+        stage.agentNames.includes(l.agentName) ||
+        stage.decisionTypes.includes(l.decisionType)
+    ) ?? null
+  }
+
+  function stageState(stage: typeof PIPELINE_STAGES[number]): "done" | "active" | "skipped" | "pending" {
+    if (stage.key === "ingest") return "done"
+    if (stage.key === "erp_push") {
+      if (qbRef) return "done"
+      if (event.status === "POSTED") return "skipped"
+      return "pending"
+    }
+    const log = findLog(stage)
+    if (log) return "done"
+    if (event.status === "POSTED" || event.status === "FAILED") return "skipped"
+    return "pending"
+  }
+
+  const revLog   = decisionLogs.find((l: any) => l.decisionType === "REV_REC")
+  const glLog    = decisionLogs.find((l: any) => l.decisionType === "GL_CODE")
+
+  const revOutput = (revLog?.output ?? {}) as Record<string, unknown>
+  const glOutput  = (glLog?.output ?? {}) as Record<string, unknown>
 
   return (
     <div className="space-y-6 max-w-4xl">
-      <div className="flex items-center gap-3">
-        <Link
-          href="/staging"
-          className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to Staging Queue
-        </Link>
+      <Link
+        href="/staging"
+        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        Back to Staging Queue
+      </Link>
+
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <div className="flex items-center gap-3">
+            <h2 className="text-2xl font-bold">
+              {event.eventType.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, (c: string) => c.toUpperCase())}
+            </h2>
+            <StatusPill status={event.status} />
+          </div>
+          <p className="text-muted-foreground text-sm mt-1">
+            {event.amount != null && (
+              <span className="font-semibold text-foreground text-lg tabular-nums mr-2">
+                {formatCurrency(event.amount, event.currency)}
+              </span>
+            )}
+            <span className="font-mono text-xs">{event.id}</span>
+          </p>
+        </div>
+        <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
+          <span>Ingested {new Date(event.createdAt).toLocaleString()}</span>
+          {event.updatedAt && event.updatedAt !== event.createdAt && (
+            <><span>·</span><span>Updated {new Date(event.updatedAt).toLocaleString()}</span></>
+          )}
+        </div>
       </div>
 
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold">{event.eventType.replace(/_/g, " ")}</h2>
-          <p className="text-muted-foreground text-sm mt-1 font-mono">{event.id}</p>
+      <div className="rounded-xl border bg-card overflow-hidden">
+        <div className="px-5 py-3.5 border-b bg-muted/20 flex items-center gap-2">
+          <Bot className="h-4 w-4 text-primary" />
+          <p className="text-sm font-semibold">Agentic Processing Pipeline</p>
+          <span className="ml-auto text-xs text-muted-foreground">{decisionLogs.length} agent decision{decisionLogs.length !== 1 ? "s" : ""} recorded</span>
         </div>
-        <StatusBadge status={event.status} />
+        <div className="p-5 space-y-0">
+          {PIPELINE_STAGES.map((stage, i) => {
+            const state   = stageState(stage)
+            const log     = findLog(stage)
+            const isLast  = i === PIPELINE_STAGES.length - 1
+            const Icon    = stage.icon
+
+            let detail: React.ReactNode = null
+            if (stage.key === "ingest") {
+              detail = (
+                <div className="grid grid-cols-2 gap-x-8 gap-y-1 text-xs">
+                  <span className="text-muted-foreground">Source</span>
+                  <span className="font-mono font-medium">{event.source}</span>
+                  <span className="text-muted-foreground">External ID</span>
+                  <span className="font-mono">{event.externalId}</span>
+                  <span className="text-muted-foreground">Ingested</span>
+                  <span>{new Date(event.createdAt).toLocaleString()}</span>
+                </div>
+              )
+            } else if (stage.key === "gl_coding" && glLog) {
+              detail = (
+                <div className="grid grid-cols-2 gap-x-8 gap-y-1 text-xs">
+                  <span className="text-muted-foreground">GL Account</span>
+                  <span className="font-mono font-medium">{String(glOutput.glAccount ?? glOutput.accountCode ?? "—")}</span>
+                  <span className="text-muted-foreground">Confidence</span>
+                  <span>{glLog.confidence != null ? `${Math.round(glLog.confidence * 100)}%` : "—"}</span>
+                  <span className="text-muted-foreground">Reasoning</span>
+                  <span className="text-foreground/70 col-span-2 leading-relaxed pt-0.5">{glLog.reasoning}</span>
+                </div>
+              )
+            } else if (stage.key === "rev_rec" && revLog) {
+              detail = (
+                <div className="grid grid-cols-2 gap-x-8 gap-y-1 text-xs">
+                  <span className="text-muted-foreground">Policy</span>
+                  <span className="font-medium capitalize">{String(revOutput.revenuePolicy ?? revOutput.policy ?? "ratable")}</span>
+                  <span className="text-muted-foreground">Recognised</span>
+                  <span className="font-semibold text-emerald-600">{revOutput.recognised != null ? formatCurrency(revOutput.recognised as number, event.currency) : "—"}</span>
+                  <span className="text-muted-foreground">Deferred</span>
+                  <span>{revOutput.deferred != null ? formatCurrency(revOutput.deferred as number, event.currency) : "—"}</span>
+                  <span className="text-muted-foreground">Reasoning</span>
+                  <span className="text-foreground/70 col-span-2 leading-relaxed pt-0.5">{revLog.reasoning}</span>
+                </div>
+              )
+            } else if (stage.key === "erp_push" && qbRef) {
+              detail = (
+                <div className="grid grid-cols-2 gap-x-8 gap-y-1 text-xs">
+                  <span className="text-muted-foreground">ERP</span>
+                  <span className="font-medium">QuickBooks Online</span>
+                  <span className="text-muted-foreground">Journal Entry ID</span>
+                  <span className="font-mono">{qbRef.externalId}</span>
+                  <span className="text-muted-foreground">Pushed at</span>
+                  <span>{new Date(qbRef.pushedAt).toLocaleString()}</span>
+                </div>
+              )
+            }
+
+            return (
+              <div key={stage.key} className="flex gap-4">
+                <div className="flex flex-col items-center">
+                  <StageDot state={state} />
+                  {!isLast && <div className="w-px flex-1 bg-border my-1 min-h-[16px]" />}
+                </div>
+                <div className={`flex-1 pb-5 ${isLast ? "" : ""}`}>
+                  <div className="flex items-center gap-2 mb-1 min-h-8">
+                    <Icon className={`h-3.5 w-3.5 shrink-0 ${state === "done" ? "text-emerald-600" : state === "skipped" ? "text-muted-foreground" : "text-muted-foreground/40"}`} />
+                    <p className={`text-sm font-semibold ${state === "pending" ? "text-muted-foreground/50" : ""}`}>
+                      {stage.label}
+                    </p>
+                    {state === "skipped" && <span className="text-[10px] text-muted-foreground bg-muted rounded px-1.5 py-0.5">skipped</span>}
+                    {log?.createdAt && (
+                      <span className="ml-auto text-[11px] text-muted-foreground shrink-0">
+                        {new Date(log.createdAt).toLocaleTimeString()}
+                      </span>
+                    )}
+                  </div>
+                  {detail && (
+                    <div className="ml-0 mt-2 rounded-lg bg-muted/30 border border-border/50 px-4 py-3">
+                      {detail}
+                    </div>
+                  )}
+                  {!detail && state === "pending" && (
+                    <p className="text-xs text-muted-foreground/50 italic">{stage.description(event)}</p>
+                  )}
+                  {!detail && state === "done" && stage.key !== "ingest" && (
+                    <p className="text-xs text-muted-foreground">{stage.description(event)}</p>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <SectionCard title="Event Details" icon={FileText}>
-          <Field label="Source" value={<code className="text-xs bg-muted px-2 py-0.5 rounded">{event.source}</code>} />
-          <Field label="Event Type" value={event.eventType} />
-          <Field label="External ID" value={<code className="text-xs bg-muted px-1.5 py-0.5 rounded">{event.externalId}</code>} />
-          <Field
-            label="Amount"
-            value={event.amount != null ? (
-              <span className="text-lg font-bold tabular-nums">
-                {formatCurrency(event.amount, event.currency)}
-              </span>
-            ) : null}
-          />
-          <Field label="Currency" value={event.currency} />
-          <Field label="Created" value={new Date(event.createdAt).toLocaleString()} />
-          <Field label="Updated" value={new Date(event.updatedAt).toLocaleString()} />
-        </SectionCard>
+        <div className="rounded-xl border bg-card overflow-hidden">
+          <div className="flex items-center justify-between gap-2 px-5 py-3.5 border-b bg-muted/20">
+            <div className="flex items-center gap-2">
+              <CreditCard className="h-4 w-4 text-muted-foreground" />
+              <p className="text-sm font-semibold">Source Payment</p>
+            </div>
+            {isStripe && (
+              <a
+                href={getStripeUrl(event.externalId, isSandbox)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 text-xs text-primary hover:underline"
+              >
+                View in Stripe <ExternalLink className="h-3 w-3" />
+              </a>
+            )}
+          </div>
+          <div className="px-5 divide-y">
+            <Field label="Platform"    value={<span className="uppercase font-mono text-xs">{event.source}</span>} />
+            <Field label="External ID" value={<code className="text-xs bg-muted px-1.5 py-0.5 rounded">{event.externalId}</code>} mono />
+            <Field label="Amount"      value={<span className="font-semibold tabular-nums">{event.amount != null ? formatCurrency(event.amount, event.currency) : "—"}</span>} />
+            <Field label="Currency"    value={event.currency} />
+            {normalised.customerEmail && <Field label="Customer" value={String(normalised.customerEmail)} />}
+            {normalised.customerId    && <Field label="Customer ID" value={<code className="text-xs bg-muted px-1.5 py-0.5 rounded">{String(normalised.customerId)}</code>} mono />}
+            {normalised.invoiceNumber && <Field label="Invoice #" value={String(normalised.invoiceNumber)} />}
+            {normalised.description   && <Field label="Description" value={String(normalised.description)} />}
+            <Field label="Ingested"    value={new Date(event.createdAt).toLocaleString()} />
+          </div>
+        </div>
 
-        <SectionCard title="Normalised Data" icon={CheckCircle2}>
-          {Object.keys(normalised).length === 0 ? (
-            <p className="p-5 text-sm text-muted-foreground">No normalised data</p>
-          ) : (
-            Object.entries(normalised).map(([k, v]) => (
-              <Field key={k} label={k} value={String(v ?? "-")} />
-            ))
-          )}
-        </SectionCard>
+        <div className="rounded-xl border bg-card overflow-hidden">
+          <div className="flex items-center justify-between gap-2 px-5 py-3.5 border-b bg-muted/20">
+            <div className="flex items-center gap-2">
+              <BookOpen className="h-4 w-4 text-muted-foreground" />
+              <p className="text-sm font-semibold">ERP Journal Entry</p>
+            </div>
+            {qbRef && (
+              <a
+                href={getQBUrl(qbRef.externalId, isSandbox)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 text-xs text-primary hover:underline"
+              >
+                View in QuickBooks <ExternalLink className="h-3 w-3" />
+              </a>
+            )}
+          </div>
+          <div className="px-5 divide-y">
+            {qbRef ? (
+              <>
+                <Field label="Provider"         value="QuickBooks Online" />
+                <Field label="Journal Entry ID" value={<code className="text-xs bg-muted px-1.5 py-0.5 rounded">{qbRef.externalId}</code>} mono />
+                <Field label="Entity Type"      value={qbRef.entityType} />
+                <Field label="Pushed at"        value={new Date(qbRef.pushedAt).toLocaleString()} />
+                {revOutput.recognised != null && (
+                  <>
+                    <Field
+                      label="DR  Cash / Bank"
+                      value={<span className="tabular-nums font-semibold">{formatCurrency(event.amount, event.currency)}</span>}
+                    />
+                    <Field
+                      label="CR  Revenue (recognised)"
+                      value={<span className="tabular-nums text-emerald-600">{formatCurrency(revOutput.recognised as number, event.currency)}</span>}
+                    />
+                    {(revOutput.deferred as number) > 0 && (
+                      <Field
+                        label="CR  Deferred Revenue"
+                        value={<span className="tabular-nums text-amber-600">{formatCurrency(revOutput.deferred as number, event.currency)}</span>}
+                      />
+                    )}
+                  </>
+                )}
+              </>
+            ) : (
+              <div className="py-10 flex flex-col items-center justify-center gap-2 text-center">
+                <div className="h-9 w-9 rounded-full bg-muted flex items-center justify-center">
+                  <Clock className="h-4 w-4 text-muted-foreground" />
+                </div>
+                <p className="text-sm text-muted-foreground font-medium">
+                  {event.status === "POSTED"
+                    ? "Posted without accounting system connected"
+                    : event.status === "FAILED"
+                    ? "Push to ERP failed"
+                    : "Pending Revenue Agent run"}
+                </p>
+                <p className="text-xs text-muted-foreground/60">
+                  {event.status === "INGESTED"
+                    ? "Run the Revenue Agent from Settings → Agents"
+                    : "Connect QuickBooks to enable journal entry push"}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
-      {event.aiDecisionLogs.length > 0 && (
-        <SectionCard title="AI Agent Decisions" icon={Bot}>
-          <div className="divide-y">
-            {event.aiDecisionLogs.map((log) => (
-              <div key={log.id} className="px-5 py-4 space-y-2">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-semibold bg-primary/10 text-primary px-2 py-0.5 rounded">
-                      {log.agentName}
-                    </span>
-                    <span className="text-xs text-muted-foreground">{log.decisionType}</span>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    {log.confidence != null && (
-                      <span className="text-xs text-muted-foreground">
-                        {Math.round(log.confidence * 100)}% confidence
-                      </span>
-                    )}
-                    <span className="text-xs text-muted-foreground">
-                      {new Date(log.createdAt).toLocaleString()}
-                    </span>
-                  </div>
-                </div>
-                {log.reasoning && (
-                  <p className="text-sm text-foreground/80">{log.reasoning}</p>
-                )}
-                {log.output != null && (
-                  <pre className="text-xs bg-muted rounded-lg p-3 overflow-x-auto max-h-40">
-                    {JSON.stringify(log.output as Record<string, unknown>, null, 2)}
-                  </pre>
-                )}
-              </div>
-            ))}
+      {event.approvalRequests?.length > 0 && (
+        <div className="rounded-xl border bg-card overflow-hidden">
+          <div className="flex items-center gap-2 px-5 py-3.5 border-b bg-muted/20">
+            <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
+            <p className="text-sm font-semibold">Approval History</p>
           </div>
-        </SectionCard>
-      )}
-
-      {event.approvalRequests.length > 0 && (
-        <SectionCard title="Approval History" icon={CheckCircle2}>
           <div className="divide-y">
-            {event.approvalRequests.map((approval) => (
+            {event.approvalRequests.map((approval: any) => (
               <div key={approval.id} className="px-5 py-3.5 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2 min-w-0">
-                  {approval.status === "APPROVED" ? (
-                    <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
-                  ) : approval.status === "REJECTED" ? (
-                    <XCircle className="h-4 w-4 text-red-500 shrink-0" />
-                  ) : (
-                    <Clock className="h-4 w-4 text-yellow-500 shrink-0" />
-                  )}
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium">{approval.status}</p>
+                <div className="flex items-center gap-3">
+                  {approval.status === "APPROVED"
+                    ? <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
+                    : approval.status === "REJECTED"
+                    ? <XCircle className="h-4 w-4 text-red-500 shrink-0" />
+                    : <Clock className="h-4 w-4 text-amber-500 shrink-0" />}
+                  <div>
+                    <p className="text-sm font-medium">{approval.status.replace(/_/g, " ")}</p>
                     <p className="text-xs text-muted-foreground">
                       Requested by {approval.requestedBy}
-                      {approval.decidedAt ? ` · Decided ${new Date(approval.decidedAt).toLocaleDateString()}` : ""}
+                      {approval.decidedAt ? ` · Decided ${new Date(approval.decidedAt).toLocaleString()}` : " · Pending"}
                     </p>
                   </div>
                 </div>
-                <span className="text-xs text-muted-foreground shrink-0">
-                  {new Date(approval.requestedAt).toLocaleDateString()}
-                </span>
+                <span className="text-xs text-muted-foreground">{new Date(approval.requestedAt).toLocaleString()}</span>
               </div>
             ))}
           </div>
-        </SectionCard>
+        </div>
       )}
 
-      {event.syncLogs.length > 0 && (
-        <SectionCard title="Sync Activity" icon={ArrowRight}>
-          <div className="divide-y">
-            {event.syncLogs.map((log) => (
-              <div key={log.id} className="px-5 py-3 flex items-start gap-3">
-                <div className="shrink-0 mt-0.5">
-                  <ArrowRight
-                    className={`h-3.5 w-3.5 ${log.direction === "PUSH" ? "text-primary" : "text-muted-foreground rotate-180"}`}
-                  />
-                </div>
-                <div className="flex-1 min-w-0 space-y-0.5">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-medium">{log.direction} {log.entityType}</span>
-                    <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${
-                      log.status === "SUCCESS"
-                        ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
-                        : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
-                    }`}>
-                      {log.status}
-                    </span>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {log.integrationConnection.provider} · {new Date(log.createdAt).toLocaleString()}
-                    {log.durationMs != null && ` · ${log.durationMs}ms`}
-                  </p>
-                  {log.errorMessage && (
-                    <p className="text-xs text-red-500">{log.errorMessage}</p>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </SectionCard>
-      )}
-
-      {Object.keys(rawPayload).length > 0 && (
-        <SectionCard title="Raw Payload" icon={AlertCircle}>
-          <div className="p-5">
-            <pre className="text-xs bg-muted rounded-lg p-4 overflow-x-auto max-h-80 text-foreground/70">
-              {JSON.stringify(rawPayload, null, 2)}
-            </pre>
-          </div>
-        </SectionCard>
-      )}
+      <details className="rounded-xl border bg-card overflow-hidden group">
+        <summary className="flex items-center gap-2 px-5 py-3.5 cursor-pointer select-none hover:bg-muted/20 transition-colors">
+          <AlertCircle className="h-4 w-4 text-muted-foreground" />
+          <p className="text-sm font-semibold">Raw Payload</p>
+          <span className="ml-auto text-xs text-muted-foreground group-open:hidden">Show</span>
+          <span className="ml-auto text-xs text-muted-foreground hidden group-open:inline">Hide</span>
+        </summary>
+        <div className="border-t p-5">
+          <pre className="text-xs bg-muted rounded-lg p-4 overflow-x-auto max-h-80 text-foreground/70 leading-relaxed">
+            {JSON.stringify(rawPayload, null, 2)}
+          </pre>
+        </div>
+      </details>
     </div>
   )
 }
