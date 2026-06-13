@@ -10,45 +10,165 @@ import { useRouter } from "next/navigation"
 function BrandLogo({ orgName }: { orgName?: string | null }) {
   return (
     <Link href="/overview" className="flex items-center gap-2 shrink-0 hover:opacity-80 transition-opacity">
-      <div className="h-7 w-7 rounded-lg bg-primary flex items-center justify-center shadow-sm shadow-primary/30">
-        <span className="font-display font-bold text-primary-foreground text-[12px] tracking-tight">R</span>
+      <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center shadow-sm shadow-primary/30">
+        <span className="font-display font-bold text-primary-foreground text-[13px] tracking-tight">R</span>
       </div>
-      <span className="font-display font-semibold text-[15px] tracking-tight">ryzha</span>
+      <span className="font-display font-bold text-[17px] tracking-tight">ryzha</span>
       {orgName && (
         <>
-          <span className="text-border mx-0.5">·</span>
-          <span className="text-sm text-muted-foreground font-normal truncate max-w-[160px]">{orgName}</span>
+          <span className="text-muted-foreground/40 mx-0.5 text-sm">·</span>
+          <span className="text-sm font-semibold truncate max-w-[180px]">{orgName}</span>
         </>
       )}
     </Link>
   )
 }
 
+interface SearchResult {
+  events: Array<{
+    id: string
+    eventType: string
+    source: string
+    amount: number
+    currency: string
+    status: string
+    externalId: string
+    createdAt: string
+    normalisedData: Record<string, unknown> | null
+  }>
+  connections: Array<{
+    id: string
+    provider: string
+    displayName: string | null
+    status: string
+  }>
+}
+
+const EVENT_TYPE_LABEL: Record<string, string> = {
+  PAYMENT_RECEIVED: "Payment",
+  INVOICE_PAID: "Invoice",
+  REFUND_ISSUED: "Refund",
+  SUBSCRIPTION_CREATED: "Subscription",
+  EXPENSE_CREATED: "Expense",
+  PAYROLL_PROCESSED: "Payroll",
+}
+
+function fmt(amount: number, currency: string) {
+  return new Intl.NumberFormat("en-US", { style: "currency", currency: currency || "USD", maximumFractionDigits: 2 }).format(amount / 100)
+}
+
 function SearchBar() {
   const [query, setQuery] = React.useState("")
+  const [results, setResults] = React.useState<SearchResult | null>(null)
+  const [loading, setLoading] = React.useState(false)
+  const [open, setOpen] = React.useState(false)
   const router = useRouter()
+  const ref = React.useRef<HTMLDivElement>(null)
+  const debounceRef = React.useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    if (query.trim()) {
-      router.push(`/staging?q=${encodeURIComponent(query.trim())}`)
-      setQuery("")
+  React.useEffect(() => {
+    function handler(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
     }
+    document.addEventListener("mousedown", handler)
+    return () => document.removeEventListener("mousedown", handler)
+  }, [])
+
+  React.useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    if (query.trim().length < 2) { setResults(null); setOpen(false); return }
+    debounceRef.current = setTimeout(async () => {
+      setLoading(true)
+      try {
+        const res = await fetch(`/api/search?q=${encodeURIComponent(query.trim())}`)
+        if (res.ok) {
+          const data = await res.json()
+          setResults(data)
+          setOpen(true)
+        }
+      } finally { setLoading(false) }
+    }, 250)
+  }, [query])
+
+  function go(href: string) {
+    router.push(href)
+    setQuery("")
+    setOpen(false)
+    setResults(null)
   }
 
+  const hasResults = results && (results.events.length > 0 || results.connections.length > 0)
+
   return (
-    <form onSubmit={handleSubmit} className="flex items-center">
+    <div ref={ref} className="relative w-full max-w-sm">
       <div className="relative">
-        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/50 pointer-events-none" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/50 pointer-events-none" />
+        {loading && (
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+        )}
         <input
           type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search events, amounts…"
-          className="h-8 w-52 rounded-lg border bg-muted/50 pl-8 pr-3 text-sm placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary/30 focus:bg-background transition-all focus:w-64"
+          onFocus={() => { if (results && hasResults) setOpen(true) }}
+          placeholder="Search events, amounts, sources…"
+          className="h-9 w-full rounded-lg border bg-background/60 pl-9 pr-4 text-sm placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:bg-background transition-all"
         />
       </div>
-    </form>
+
+      {open && (
+        <div className="absolute top-full mt-1.5 left-0 right-0 rounded-xl border bg-popover shadow-xl z-50 overflow-hidden">
+          {!hasResults ? (
+            <div className="px-4 py-6 text-center text-sm text-muted-foreground">No results for &ldquo;{query}&rdquo;</div>
+          ) : (
+            <>
+              {results!.events.length > 0 && (
+                <div>
+                  <p className="px-3 py-2 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50 border-b">Events</p>
+                  {results!.events.map((ev) => {
+                    const label = EVENT_TYPE_LABEL[ev.eventType] ?? ev.eventType
+                    const desc = (ev.normalisedData as any)?.description ?? (ev.normalisedData as any)?.customerEmail ?? ev.externalId
+                    return (
+                      <button
+                        key={ev.id}
+                        onClick={() => go(`/staging/${ev.id}`)}
+                        className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-muted/60 transition-colors text-left gap-4"
+                      >
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium truncate">{label}</p>
+                          <p className="text-xs text-muted-foreground truncate">{desc}</p>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className="text-sm font-semibold tabular-nums">{fmt(ev.amount, ev.currency)}</p>
+                          <p className="text-[10px] text-muted-foreground capitalize">{ev.source} · {ev.status.toLowerCase()}</p>
+                        </div>
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+              {results!.connections.length > 0 && (
+                <div className="border-t">
+                  <p className="px-3 py-2 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50 border-b">Connections</p>
+                  {results!.connections.map((c) => (
+                    <button
+                      key={c.id}
+                      onClick={() => go("/connect")}
+                      className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-muted/60 transition-colors text-left"
+                    >
+                      <p className="text-sm font-medium">{c.displayName ?? c.provider}</p>
+                      <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${c.status === "ACTIVE" ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400" : "bg-muted text-muted-foreground"}`}>
+                        {c.status.toLowerCase()}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -327,14 +447,16 @@ export function Header({ orgName }: { orgName?: string | null }) {
   const { data: session } = useSession()
 
   return (
-    <header className="h-14 border-b bg-muted/40 flex items-center justify-between px-5 shrink-0 gap-4">
-      <div className="flex items-center gap-4 min-w-0 flex-1">
+    <header className="h-14 border-b bg-muted/40 grid grid-cols-[1fr_auto_1fr] items-center px-5 shrink-0 gap-4">
+      <div className="flex items-center gap-3 min-w-0">
         <BrandLogo orgName={orgName} />
-        <div className="w-px h-4 bg-border shrink-0" />
+      </div>
+
+      <div className="flex justify-center w-80">
         <SearchBar />
       </div>
 
-      <div className="flex items-center gap-1.5">
+      <div className="flex items-center gap-1.5 justify-end">
         <LiveSyncChip />
 
         <button
