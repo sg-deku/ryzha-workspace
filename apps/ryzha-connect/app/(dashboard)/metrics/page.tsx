@@ -28,36 +28,36 @@ async function getSaaSMetrics(organizationId: string) {
     prevQuarterSM,
   ] = await Promise.all([
     prisma.financialEvent.aggregate({
-      where: { organizationId, eventType: { in: ["PAYMENT_RECEIVED", "INVOICE_PAID"] }, status: "POSTED", createdAt: { gte: startOfMonth } },
+      where: { organizationId, eventType: { in: ["PAYMENT_RECEIVED", "INVOICE_PAID"] }, status: { in: ["INGESTED", "POSTED"] }, createdAt: { gte: startOfMonth } },
       _sum: { amount: true },
     }),
     prisma.financialEvent.aggregate({
-      where: { organizationId, eventType: { in: ["PAYMENT_RECEIVED", "INVOICE_PAID"] }, status: "POSTED", createdAt: { gte: startOfLastMonth, lte: endOfLastMonth } },
+      where: { organizationId, eventType: { in: ["PAYMENT_RECEIVED", "INVOICE_PAID"] }, status: { in: ["INGESTED", "POSTED"] }, createdAt: { gte: startOfLastMonth, lte: endOfLastMonth } },
       _sum: { amount: true },
     }),
     prisma.financialEvent.aggregate({
-      where: { organizationId, eventType: { in: ["EXPENSE_CREATED", "PAYROLL_PROCESSED", "BILL_CREATED"] }, status: "POSTED", createdAt: { gte: startOfMonth } },
+      where: { organizationId, eventType: { in: ["EXPENSE_CREATED", "PAYROLL_PROCESSED", "BILL_CREATED"] }, status: { in: ["INGESTED", "POSTED"] }, createdAt: { gte: startOfMonth } },
       _sum: { amount: true },
     }),
     prisma.financialEvent.aggregate({
-      where: { organizationId, eventType: { in: ["EXPENSE_CREATED", "PAYROLL_PROCESSED", "BILL_CREATED"] }, status: "POSTED", createdAt: { gte: startOfLastMonth, lte: endOfLastMonth } },
+      where: { organizationId, eventType: { in: ["EXPENSE_CREATED", "PAYROLL_PROCESSED", "BILL_CREATED"] }, status: { in: ["INGESTED", "POSTED"] }, createdAt: { gte: startOfLastMonth, lte: endOfLastMonth } },
       _sum: { amount: true },
     }),
     prisma.financialEvent.count({ where: { organizationId, eventType: "SUBSCRIPTION_CREATED", createdAt: { gte: startOfMonth } } }),
     prisma.financialEvent.count({ where: { organizationId, eventType: "SUBSCRIPTION_CANCELLED", createdAt: { gte: startOfMonth } } }),
     prisma.financialEvent.count({ where: { organizationId, eventType: "SUBSCRIPTION_UPDATED", createdAt: { gte: startOfMonth } } }),
     prisma.financialEvent.aggregate({
-      where: { organizationId, eventType: { in: ["PAYMENT_RECEIVED", "INVOICE_PAID"] }, status: "POSTED" },
+      where: { organizationId, eventType: { in: ["PAYMENT_RECEIVED", "INVOICE_PAID"] }, status: { in: ["INGESTED", "POSTED"] } },
       _sum: { amount: true },
     }),
     prisma.financialEvent.groupBy({
       by: ["createdAt"],
-      where: { organizationId, eventType: { in: ["PAYMENT_RECEIVED", "INVOICE_PAID"] }, status: "POSTED", createdAt: { gte: start12MonthsAgo } },
+      where: { organizationId, eventType: { in: ["PAYMENT_RECEIVED", "INVOICE_PAID"] }, status: { in: ["INGESTED", "POSTED"] }, createdAt: { gte: start12MonthsAgo } },
       _sum: { amount: true },
       orderBy: { createdAt: "asc" },
     }),
     prisma.financialEvent.aggregate({
-      where: { organizationId, eventType: { in: ["EXPENSE_CREATED", "BILL_CREATED"] }, status: "POSTED", createdAt: { gte: startOfPrevQuarter, lte: endOfPrevQuarter } },
+      where: { organizationId, eventType: { in: ["EXPENSE_CREATED", "BILL_CREATED"] }, status: { in: ["INGESTED", "POSTED"] }, createdAt: { gte: startOfPrevQuarter, lte: endOfPrevQuarter } },
       _sum: { amount: true },
     }),
   ])
@@ -172,7 +172,7 @@ export default async function MetricsPage() {
           !hasData ? (
             <div className="flex items-center gap-1.5 text-xs text-amber-600 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg px-3 py-1.5">
               <AlertCircle className="h-3 w-3 shrink-0" />
-              Connect Stripe to populate
+              No revenue events ingested yet — connect Stripe or sync a billing platform
             </div>
           ) : undefined
         }

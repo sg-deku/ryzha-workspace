@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma"
+import { ensureFreshQBToken } from "@/lib/quickbooks-refresh"
 
 export type FinancialRole =
   | "banking"
@@ -50,7 +51,7 @@ export async function resolveProviderForRole(
       provider: { in: candidates as any[] },
       status: "ACTIVE",
     },
-    select: { id: true, provider: true, accessToken: true, realmId: true, scope: true },
+    select: { id: true, provider: true, accessToken: true, refreshToken: true, expiresAt: true, realmId: true, scope: true },
   })
 
   if (connections.length === 0) return null
@@ -62,10 +63,22 @@ export async function resolveProviderForRole(
   const chosen = ordered[0]
   if (!chosen) return null
 
+  let accessToken = chosen.accessToken
+
+  if (chosen.provider === "QUICKBOOKS") {
+    accessToken = await ensureFreshQBToken(
+      organizationId,
+      chosen.id,
+      chosen.accessToken,
+      chosen.refreshToken ?? null,
+      chosen.expiresAt ?? null
+    )
+  }
+
   return {
     provider: chosen.provider,
     connectionId: chosen.id,
-    accessToken: chosen.accessToken,
+    accessToken,
     realmId: chosen.realmId ?? null,
     scope: chosen.scope ?? null,
   }
