@@ -27,6 +27,7 @@ import {
   Clock,
   CreditCard,
   Database,
+  Bot,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -88,6 +89,7 @@ const navSections: NavSection[] = [
     label: "Intelligence",
     icon: BarChart2,
     items: [
+      { href: "/agents",    icon: Bot,           label: "Agents"           },
       { href: "/reports",   icon: BarChart2,     label: "Reports"          },
       { href: "/close",     icon: CalendarCheck, label: "Month-End Close"  },
       { href: "/workflows", icon: Workflow,      label: "Workflows"        },

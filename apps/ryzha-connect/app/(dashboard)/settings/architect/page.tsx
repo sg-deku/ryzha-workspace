@@ -1,7 +1,8 @@
 "use client"
 
 import * as React from "react"
-import { CheckCircle2, Loader2, AlertCircle, Cpu, ChevronRight, ChevronLeft, Plus, Trash2, Sparkles, Send, Bot, User, ArrowLeft } from "lucide-react"
+import { CheckCircle2, Loader2, AlertCircle, Cpu, ChevronRight, ChevronLeft, Plus, Trash2, Sparkles, Send, Bot, User, ArrowLeft, Zap, ExternalLink } from "lucide-react"
+import Link from "next/link"
 
 interface FormState {
   businessModel: string
@@ -279,6 +280,8 @@ export default function ArchitectPage() {
   const [saved, setSaved] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
   const [loading, setLoading] = React.useState(true)
+  const [alerts, setAlerts] = React.useState<Array<{ id: string; severity: string; title: string; description: string; action: string; actionHref: string }>>([])
+  const [dismissedAlerts, setDismissedAlerts] = React.useState<Set<string>>(new Set())
 
   const [form, setForm] = React.useState<FormState>({
     businessModel: "saas",
@@ -295,9 +298,10 @@ export default function ArchitectPage() {
   })
 
   React.useEffect(() => {
-    fetch("/api/settings/architect")
-      .then((r) => r.json())
-      .then((data) => {
+    Promise.all([
+      fetch("/api/settings/architect").then((r) => r.json()),
+      fetch("/api/settings/architect-alerts").then((r) => r.json()).catch(() => []),
+    ]).then(([data, alertData]) => {
         if (data?.businessModel) {
           const arch = data
           setForm((f) => ({
@@ -317,6 +321,7 @@ export default function ArchitectPage() {
             entities: (arch.entities as any)?.length > 0 ? (arch.entities as any) : f.entities,
           }))
         }
+        if (Array.isArray(alertData)) setAlerts(alertData)
       })
       .catch(() => {})
       .finally(() => setLoading(false))
@@ -403,6 +408,37 @@ export default function ArchitectPage() {
           </div>
         </div>
       )}
+
+      {alerts.filter((a) => !dismissedAlerts.has(a.id)).map((alert) => {
+        const severityStyle = alert.severity === "HIGH"
+          ? "border-red-200 bg-red-50 dark:border-red-900/40 dark:bg-red-950/20"
+          : alert.severity === "MEDIUM"
+          ? "border-amber-200 bg-amber-50 dark:border-amber-900/40 dark:bg-amber-950/20"
+          : "border-blue-200 bg-blue-50 dark:border-blue-900/40 dark:bg-blue-950/20"
+        const iconStyle = alert.severity === "HIGH"
+          ? "text-red-500"
+          : alert.severity === "MEDIUM"
+          ? "text-amber-500"
+          : "text-blue-500"
+        return (
+          <div key={alert.id} className={`flex items-start gap-3 rounded-xl border p-4 ${severityStyle}`}>
+            <Zap className={`h-4 w-4 shrink-0 mt-0.5 ${iconStyle}`} />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold">{alert.title}</p>
+              <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{alert.description}</p>
+              <Link href={alert.actionHref} className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline mt-2">
+                {alert.action} <ExternalLink className="h-3 w-3" />
+              </Link>
+            </div>
+            <button
+              onClick={() => setDismissedAlerts((s) => new Set([...s, alert.id]))}
+              className="text-muted-foreground hover:text-foreground text-xs shrink-0 px-2 py-0.5 rounded hover:bg-muted/50"
+            >
+              ✕
+            </button>
+          </div>
+        )
+      })}
 
       {mode === "ai" ? (
         <AIInterviewPanel

@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server"
+import { after } from "next/server"
 import Stripe from "stripe"
 import { prisma } from "@/lib/prisma"
 import { createStripeClient, normaliseStripeEvent } from "@ryzha/integrations"
+import { runGLCodingAgent } from "@/lib/agents/gl-coding-agent"
+import { runRevenueAgent } from "@/lib/agents/revenue-agent"
+import { runCommissionAgent } from "@/lib/agents/commission-agent"
 
 export const dynamic = "force-dynamic"
 
@@ -63,7 +67,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    await prisma.financialEvent.upsert({
+    const isNew = await prisma.financialEvent.upsert({
       where: {
         organizationId_source_externalId: {
           organizationId: orgId,
@@ -83,6 +87,16 @@ export async function POST(req: NextRequest) {
         normalisedData: normalised.normalisedData as any,
       },
       update: {},
+    })
+
+    after(async () => {
+      try {
+        await runGLCodingAgent(orgId)
+        await runRevenueAgent(orgId)
+        await runCommissionAgent(orgId)
+      } catch (err: any) {
+        console.error("[stripe webhook] agent pipeline error:", err?.message)
+      }
     })
 
     return NextResponse.json({ received: true })

@@ -2,7 +2,8 @@ import { prisma } from "@/lib/prisma"
 import { getSession } from "@/lib/session"
 import { redirect } from "next/navigation"
 import { formatRelative, formatCurrency } from "@/lib/utils"
-import { ShieldCheck, Bot, CheckCircle2, AlertCircle, Clock, Filter } from "lucide-react"
+import { ShieldCheck, Bot, CheckCircle2, AlertCircle, Clock, Filter, Lock, ExternalLink } from "lucide-react"
+import Link from "next/link"
 
 async function getAuditData(organizationId: string, filter?: string) {
   const where: any = { organizationId }
@@ -73,11 +74,21 @@ export default async function AuditTrailPage() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h2 className="text-2xl font-bold">Audit Trail</h2>
-        <p className="text-muted-foreground text-sm mt-1">
-          Immutable log of every AI decision · rationale attached to each automated entry
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold">Audit Trail</h2>
+          <p className="text-muted-foreground text-sm mt-1">
+            Immutable log of every AI decision · rationale attached to each automated entry
+          </p>
+        </div>
+        <Link
+          href="/audit/auditor"
+          className="inline-flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg border hover:bg-muted transition-colors shrink-0 font-medium"
+        >
+          <Lock className="h-3.5 w-3.5" />
+          Auditor View
+          <ExternalLink className="h-3 w-3 text-muted-foreground" />
+        </Link>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
