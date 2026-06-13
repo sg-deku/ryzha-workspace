@@ -18,6 +18,7 @@ import {
   Circle,
   Minus,
 } from "lucide-react"
+import { ReprocessButton } from "@/components/events/reprocess-button"
 
 async function getEventDetail(id: string, organizationId: string) {
   const event = await (prisma.financialEvent as any).findFirst({
@@ -390,7 +391,7 @@ export default async function EventDetailPage({
                 )}
               </>
             ) : (
-              <div className="py-10 flex flex-col items-center justify-center gap-2 text-center">
+              <div className="py-10 flex flex-col items-center justify-center gap-3 text-center">
                 <div className={`h-9 w-9 rounded-full flex items-center justify-center ${erpWasAttempted ? "bg-amber-50 dark:bg-amber-950/30" : "bg-muted"}`}>
                   {erpWasAttempted
                     ? <AlertCircle className="h-4 w-4 text-amber-500" />
@@ -409,12 +410,15 @@ export default async function EventDetailPage({
                 </p>
                 <p className="text-xs text-muted-foreground/60 max-w-xs">
                   {erpWasAttempted
-                    ? "Revenue Agent ran but couldn't match cash/revenue accounts from the Chart of Accounts. Sync your COA from the Connections page, then re-run the Revenue Agent."
+                    ? "Revenue Agent ran but couldn't match cash/revenue accounts from the Chart of Accounts. Click Reprocess to retry with the current COA."
                     : event.status === "INGESTED"
                     ? "Run the Revenue Agent from Settings → Agents"
                     : "Connect QuickBooks to enable automatic journal entry push"
                   }
                 </p>
+                {(erpWasAttempted || event.status === "POSTED" || event.status === "FAILED") && (
+                  <ReprocessButton eventId={event.id} />
+                )}
               </div>
             )}
           </div>

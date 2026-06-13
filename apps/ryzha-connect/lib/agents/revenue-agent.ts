@@ -123,9 +123,9 @@ export async function runRevenueAgent(organizationId: string): Promise<RevenueAg
       if (acctConn) {
         try {
           const [cashAccount, revenueAccount, deferredRevenueAccount] = await Promise.all([
-            findCOAAccount(organizationId, acctConn.connectionId, ["cash", "bank", "checking"]),
-            findCOAAccount(organizationId, acctConn.connectionId, ["saas revenue", "revenue", "income", "sales"]),
-            findCOAAccount(organizationId, acctConn.connectionId, ["deferred revenue", "unearned"]),
+            findCOAAccount(organizationId, acctConn.connectionId, ["checking", "cash", "bank"], ["Bank"]),
+            findCOAAccount(organizationId, acctConn.connectionId, ["income", "revenue", "sales"], ["Income", "Other Income"]),
+            findCOAAccount(organizationId, acctConn.connectionId, ["deferred revenue", "unearned", "deferred"], ["Other Current Liability", "Long Term Liability"]),
           ])
 
           if (!cashAccount || !revenueAccount) {

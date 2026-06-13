@@ -54,20 +54,37 @@ export async function dispatchJournalEntry(
 export async function findCOAAccount(
   organizationId: string,
   accountingConnectionId: string,
-  hints: string[]
+  hints: string[],
+  accountTypes?: string[]
 ): Promise<string | null> {
   const mappings = await prisma.cOAMapping.findMany({
     where: { organizationId, integrationConnectionId: accountingConnectionId, isActive: true },
     select: { externalCode: true, externalName: true, accountType: true, ryzhaCategoryHint: true },
   })
 
+  const candidates = accountTypes && accountTypes.length > 0
+    ? mappings.filter((m) => accountTypes.some((t) => m.accountType?.toLowerCase() === t.toLowerCase()))
+    : mappings
+
   for (const hint of hints) {
-    const match = mappings.find(
+    const match = candidates.find(
       (m) =>
         m.ryzhaCategoryHint?.toLowerCase().includes(hint.toLowerCase()) ||
         m.externalName.toLowerCase().includes(hint.toLowerCase())
     )
     if (match) return match.externalCode
   }
+
+  if (accountTypes && accountTypes.length > 0) {
+    for (const hint of hints) {
+      const match = mappings.find(
+        (m) =>
+          m.ryzhaCategoryHint?.toLowerCase().includes(hint.toLowerCase()) ||
+          m.externalName.toLowerCase().includes(hint.toLowerCase())
+      )
+      if (match) return match.externalCode
+    }
+  }
+
   return null
 }
