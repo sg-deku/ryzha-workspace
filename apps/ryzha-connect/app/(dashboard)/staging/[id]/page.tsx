@@ -24,7 +24,7 @@ async function getEventDetail(id: string, organizationId: string) {
     where: { id, organizationId },
     include: {
       aiDecisionLogs: { orderBy: { createdAt: "asc" } },
-      externalReferences: true,
+      externalRefs: true,
       syncLogs: {
         orderBy: { createdAt: "desc" },
         take: 10,
@@ -146,7 +146,7 @@ export default async function EventDetailPage({
   const isStripe   = event.source?.toLowerCase() === "stripe"
   const isSandbox  = true
 
-  const qbRef = (event.externalReferences ?? []).find(
+  const qbRef = (event.externalRefs ?? []).find(
     (r: any) => r.provider === "QUICKBOOKS" && r.entityType === "JOURNAL_ENTRY"
   )
 
