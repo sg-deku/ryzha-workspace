@@ -1,6 +1,9 @@
 import { getSession } from "@/lib/session"
 import { redirect } from "next/navigation"
 import Link from "next/link"
+
+export const dynamic = "force-dynamic"
+
 import { PillarsTabs } from "@/components/marketing/pillars-tabs"
 import {
   ArrowRight,

@@ -4,6 +4,8 @@ import { getSession } from "@/lib/session"
 import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
 
+export const dynamic = "force-dynamic"
+
 async function getOrgName(organizationId: string): Promise<string | null> {
   const org = await prisma.organization.findUnique({
     where: { id: organizationId },
