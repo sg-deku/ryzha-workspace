@@ -12,12 +12,12 @@ export type FinancialRole =
 
 export const ROLE_PROVIDERS: Record<FinancialRole, string[]> = {
   accounting: ["QUICKBOOKS", "XERO", "NETSUITE", "SAGE_INTACCT"],
-  banking:    ["MERCURY", "BREX", "SVB", "JP_MORGAN"],
-  billing:    ["STRIPE_CONNECT", "CHARGEBEE", "PADDLE", "ZUORA"],
-  payroll:    ["GUSTO", "RIPPLING", "DEEL", "ADP"],
-  expenses:   ["RAMP", "BREX", "DIVVY", "BILL"],
+  banking:    ["MERCURY"],
+  billing:    ["STRIPE_CONNECT", "CHARGEBEE"],
+  payroll:    ["GUSTO", "RIPPLING"],
+  expenses:   ["RAMP"],
   crm:        ["SALESFORCE", "HUBSPOT"],
-  headcount:  ["RIPPLING", "BAMBOOHR", "LATTICE"],
+  headcount:  ["RIPPLING"],
 }
 
 export interface ResolvedProvider {

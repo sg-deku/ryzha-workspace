@@ -47,6 +47,15 @@ export async function runRevenueAgent(organizationId: string): Promise<RevenueAg
   const contractTermMonths: number =
     (architecture?.revenueRecognition as any)?.defaultTermMonths ?? 12
 
+  await prisma.financialEvent.updateMany({
+    where: {
+      organizationId,
+      status: "FAILED",
+      eventType: { in: ["PAYMENT_RECEIVED", "INVOICE_PAID"] },
+    },
+    data: { status: "INGESTED" },
+  })
+
   const events = await prisma.financialEvent.findMany({
     where: {
       organizationId,
@@ -88,7 +97,7 @@ export async function runRevenueAgent(organizationId: string): Promise<RevenueAg
           ? `Invoice paid – ${normData?.invoiceNumber ?? event.externalId}`
           : `Payment received – ${normData?.customerEmail ?? event.externalId}`
 
-      const ops: Promise<unknown>[] = [
+      await Promise.all([
         prisma.financialEvent.update({
           where: { id: event.id },
           data: { status: "POSTED", pushedAt: new Date() },
@@ -102,41 +111,43 @@ export async function runRevenueAgent(organizationId: string): Promise<RevenueAg
             inputSummary: { amount: event.amount, policy: revenuePolicy, termMonths: contractTermMonths } as any,
             output: { recognised, deferred, accountingProvider: acctConn?.provider ?? null } as any,
             confidence: 0.95,
-            reasoning: `Applied ${revenuePolicy} recognition policy over ${contractTermMonths} months. Recognised $${recognised}, deferred $${deferred}.${acctConn ? ` Posting to ${acctConn.provider}.` : " No accounting system connected — journal entry skipped."}`,
+            reasoning: `Applied ${revenuePolicy} recognition policy over ${contractTermMonths} months. Recognised $${recognised}, deferred $${deferred}.${acctConn ? ` Forwarding to ${acctConn.provider}.` : " No accounting system connected — journal entry skipped."}`,
           },
         }),
-      ]
+      ])
+
+      result.posted++
 
       if (acctConn) {
-        const [cashAccount, revenueAccount, deferredRevenueAccount] = await Promise.all([
-          findCOAAccount(organizationId, acctConn.connectionId, ["cash", "bank", "checking"]),
-          findCOAAccount(organizationId, acctConn.connectionId, ["saas revenue", "revenue", "income"]),
-          findCOAAccount(organizationId, acctConn.connectionId, ["deferred revenue", "unearned"]),
-        ])
+        try {
+          const [cashAccount, revenueAccount, deferredRevenueAccount] = await Promise.all([
+            findCOAAccount(organizationId, acctConn.connectionId, ["cash", "bank", "checking"]),
+            findCOAAccount(organizationId, acctConn.connectionId, ["saas revenue", "revenue", "income"]),
+            findCOAAccount(organizationId, acctConn.connectionId, ["deferred revenue", "unearned"]),
+          ])
 
-        const lines = [
-          { externalAccountCode: cashAccount ?? "1000", debit: event.amount, credit: 0, description },
-        ]
+          const lines = [
+            { externalAccountCode: cashAccount ?? "1000", debit: event.amount, credit: 0, description },
+          ]
 
-        if (deferred > 0) {
-          lines.push({ externalAccountCode: deferredRevenueAccount ?? "2100", debit: 0, credit: deferred, description: "Deferred revenue" })
-          lines.push({ externalAccountCode: revenueAccount ?? "4000", debit: 0, credit: recognised, description: "Recognised revenue (ASC 606)" })
-        } else {
-          lines.push({ externalAccountCode: revenueAccount ?? "4000", debit: 0, credit: event.amount, description: "Revenue recognised" })
-        }
+          if (deferred > 0) {
+            lines.push({ externalAccountCode: deferredRevenueAccount ?? "2100", debit: 0, credit: deferred, description: "Deferred revenue" })
+            lines.push({ externalAccountCode: revenueAccount ?? "4000", debit: 0, credit: recognised, description: "Recognised revenue (ASC 606)" })
+          } else {
+            lines.push({ externalAccountCode: revenueAccount ?? "4000", debit: 0, credit: event.amount, description: "Revenue recognised" })
+          }
 
-        const pushResult = await dispatchJournalEntry(organizationId, {
-          agentName: "Revenue",
-          financialEventId: event.id,
-          organizationId,
-          date: event.createdAt,
-          description,
-          reference: `RYZ-${event.id.slice(-8).toUpperCase()}`,
-          lines,
-        })
+          const pushResult = await dispatchJournalEntry(organizationId, {
+            agentName: "Revenue",
+            financialEventId: event.id,
+            organizationId,
+            date: event.createdAt,
+            description,
+            reference: `RYZ-${event.id.slice(-8).toUpperCase()}`,
+            lines,
+          })
 
-        ops.push(
-          prisma.externalReference.upsert({
+          await prisma.externalReference.upsert({
             where: { financialEventId_provider_entityType: { financialEventId: event.id, provider: acctConn.provider as any, entityType: "JOURNAL_ENTRY" } },
             create: {
               financialEventId: event.id,
@@ -146,14 +157,13 @@ export async function runRevenueAgent(organizationId: string): Promise<RevenueAg
               externalUrl: pushResult.externalUrl ?? null,
             },
             update: { externalId: pushResult.externalId },
-          })
-        )
-        result.journalEntriesPosted++
+          }).catch(() => {})
+
+          result.journalEntriesPosted++
+        } catch (pushErr: any) {
+          result.errors.push({ eventId: event.id, error: `QB push failed: ${pushErr.message}` })
+        }
       }
-
-      await Promise.all(ops)
-
-      result.posted++
     } catch (err: any) {
       result.failed++
       result.errors.push({ eventId: event.id, error: err.message })
