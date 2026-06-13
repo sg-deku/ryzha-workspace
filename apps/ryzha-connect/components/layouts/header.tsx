@@ -1,52 +1,58 @@
 "use client"
 
 import * as React from "react"
-import { Bell, Moon, Sun, Settings, LogOut, CheckCheck, Info, AlertTriangle, XCircle, CheckCircle2 } from "lucide-react"
+import { Bell, Moon, Sun, Settings, LogOut, CheckCheck, Info, AlertTriangle, XCircle, CheckCircle2, Search } from "lucide-react"
 import { useTheme } from "next-themes"
 import { useSession, signOut } from "next-auth/react"
 import Link from "next/link"
-import { useRouter, usePathname } from "next/navigation"
+import { useRouter } from "next/navigation"
 
-function BrandLogo() {
+function BrandLogo({ orgName }: { orgName?: string | null }) {
   return (
-    <Link href="/overview" className="flex items-center gap-2 shrink-0 hover:opacity-80 transition-opacity mr-4">
+    <Link href="/overview" className="flex items-center gap-2 shrink-0 hover:opacity-80 transition-opacity">
       <div className="h-7 w-7 rounded-lg bg-primary flex items-center justify-center shadow-sm shadow-primary/30">
         <span className="font-display font-bold text-primary-foreground text-[12px] tracking-tight">R</span>
       </div>
       <span className="font-display font-semibold text-[15px] tracking-tight">ryzha</span>
+      {orgName && (
+        <>
+          <span className="text-border mx-0.5">·</span>
+          <span className="text-sm text-muted-foreground font-normal truncate max-w-[160px]">{orgName}</span>
+        </>
+      )}
     </Link>
   )
 }
 
-const ROUTE_LABELS: Record<string, string> = {
-  "/overview":           "Overview",
-  "/connect":            "Connections",
-  "/staging":            "Staging Queue",
-  "/reconcile":          "Reconcile",
-  "/approvals":          "Approvals",
-  "/collections":        "Collections",
-  "/metrics":            "SaaS Metrics",
-  "/department-pl":      "Department P&L",
-  "/deferred-revenue":   "Deferred Revenue",
-  "/cash-forecast":      "Cash Forecast",
-  "/budget":             "Budget",
-  "/reports":            "Reports",
-  "/close":              "Month-End Close",
-  "/workflows":          "Workflows",
-  "/audit":              "Audit Trail",
-  "/ai-usage":           "AI Monitoring",
-  "/settings/architect": "Architecture",
-  "/settings/policies":  "Policies",
-  "/coa-mapping":        "Chart of Accounts",
-  "/settings":           "Settings",
-  "/docs":               "Documentation",
+function SearchBar() {
+  const [query, setQuery] = React.useState("")
+  const router = useRouter()
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (query.trim()) {
+      router.push(`/staging?q=${encodeURIComponent(query.trim())}`)
+      setQuery("")
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="flex items-center">
+      <div className="relative">
+        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/50 pointer-events-none" />
+        <input
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search events, amounts…"
+          className="h-8 w-52 rounded-lg border bg-muted/50 pl-8 pr-3 text-sm placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary/30 focus:bg-background transition-all focus:w-64"
+        />
+      </div>
+    </form>
+  )
 }
 
-function getPageLabel(pathname: string): string {
-  if (ROUTE_LABELS[pathname]) return ROUTE_LABELS[pathname]
-  const base = "/" + pathname.split("/")[1]
-  return ROUTE_LABELS[base] ?? pathname.split("/").pop()?.replace(/-/g, " ") ?? "Dashboard"
-}
+
 
 function avatarGradient(name?: string | null): string {
   const colors = [
@@ -319,20 +325,13 @@ function LiveSyncChip() {
 export function Header({ orgName }: { orgName?: string | null }) {
   const { theme, setTheme } = useTheme()
   const { data: session } = useSession()
-  const pathname = usePathname()
-  const pageLabel = getPageLabel(pathname ?? "")
 
   return (
-    <header className="h-14 border-b bg-background/95 backdrop-blur-sm flex items-center justify-between px-5 shrink-0 gap-4">
-      <div className="flex items-center gap-3 min-w-0">
-        <BrandLogo />
+    <header className="h-14 border-b bg-muted/40 flex items-center justify-between px-5 shrink-0 gap-4">
+      <div className="flex items-center gap-4 min-w-0 flex-1">
+        <BrandLogo orgName={orgName} />
         <div className="w-px h-4 bg-border shrink-0" />
-        <h1 className="text-sm font-semibold truncate">{pageLabel}</h1>
-        {orgName && (
-          <span className="hidden lg:block text-xs text-muted-foreground/50 truncate">
-            · {orgName}
-          </span>
-        )}
+        <SearchBar />
       </div>
 
       <div className="flex items-center gap-1.5">
