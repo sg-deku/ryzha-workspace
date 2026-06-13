@@ -12,6 +12,7 @@ interface Props {
   connection: { status: ConnectionStatus; lastSyncAt: Date | null } | null
   qbConfigured: boolean
   onClose: () => void
+  panel?: boolean
 }
 
 function CopyButton({ value }: { value: string }) {
@@ -27,7 +28,23 @@ function CopyButton({ value }: { value: string }) {
   )
 }
 
-export function ConnectModal({ provider, connection, qbConfigured, onClose }: Props) {
+function ProviderLogo({ provider }: { provider: ProviderConfig }) {
+  const [imgError, setImgError] = React.useState(false)
+  if ((provider as any).logoUrl && !imgError) {
+    return (
+      <div className="h-10 w-10 rounded-xl bg-white dark:bg-zinc-900 border border-border/60 flex items-center justify-center shrink-0 overflow-hidden p-1.5">
+        <img src={(provider as any).logoUrl} alt={provider.name} className="h-full w-full object-contain" onError={() => setImgError(true)} />
+      </div>
+    )
+  }
+  return (
+    <div className={`h-10 w-10 rounded-xl ${provider.color} flex items-center justify-center shrink-0`}>
+      <span className="text-white font-bold text-xs">{provider.logo}</span>
+    </div>
+  )
+}
+
+export function ConnectModal({ provider, connection, qbConfigured, onClose, panel = false }: Props) {
   const [fields, setFields] = React.useState<Record<string, string>>({})
   const [loading, setLoading] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
@@ -140,35 +157,25 @@ export function ConnectModal({ provider, connection, qbConfigured, onClose }: Pr
     }
   }
 
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
-    >
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
-
-      <div className="relative z-10 w-full max-w-lg bg-background rounded-2xl border shadow-2xl overflow-hidden">
-        {/* Header */}
-        <div className="flex items-start justify-between p-6 border-b">
+  const inner = (
+    <div className={panel ? "flex flex-col h-full" : "relative z-10 w-full max-w-lg bg-background rounded-2xl border shadow-2xl overflow-hidden"}>
+        <div className="flex items-center justify-between px-5 py-4 border-b shrink-0">
           <div className="flex items-center gap-3">
-            <div className={`h-11 w-11 rounded-xl ${provider.color} flex items-center justify-center shrink-0`}>
-              <span className="text-white font-bold text-sm">{provider.logo}</span>
-            </div>
+            <ProviderLogo provider={provider} />
             <div>
-              <h2 className="font-semibold text-base">{provider.name}</h2>
-              <p className="text-xs text-muted-foreground">{provider.category}</p>
+              <h2 className="font-semibold text-sm leading-tight">{provider.name}</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">{provider.category}</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="h-8 w-8 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            className="h-7 w-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
 
-        {/* Body */}
-        <div className="p-6 space-y-5 max-h-[72vh] overflow-y-auto">
+        <div className={panel ? "flex-1 overflow-y-auto p-5 space-y-5" : "p-6 space-y-5 max-h-[72vh] overflow-y-auto"}>
           <p className="text-sm text-muted-foreground leading-relaxed">{provider.description}</p>
 
           <div>
@@ -408,8 +415,7 @@ export function ConnectModal({ provider, connection, qbConfigured, onClose }: Pr
           )}
         </div>
 
-        {/* Footer */}
-        <div className="border-t px-6 py-3 flex items-center justify-between bg-muted/20">
+        <div className="border-t px-5 py-3 flex items-center justify-between bg-muted/20 shrink-0">
           <a
             href={provider.docsUrl}
             target="_blank"
@@ -426,6 +432,17 @@ export function ConnectModal({ provider, connection, qbConfigured, onClose }: Pr
           </button>
         </div>
       </div>
+  )
+
+  if (panel) return inner
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
+    >
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+      {inner}
     </div>
   )
 }
