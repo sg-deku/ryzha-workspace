@@ -5,7 +5,7 @@ import { signOut } from "next-auth/react"
 import {
   Building2, Cpu, Users, Bell, ShieldCheck, LogOut, ExternalLink,
   CheckCircle2, Loader2, AlertCircle, Plug, Bot, Eye, EyeOff, Zap, Clock,
-  Play, Info
+  Play, Info, ChevronRight, Calendar, RefreshCw
 } from "lucide-react"
 import Link from "next/link"
 
@@ -802,58 +802,140 @@ function AITab() {
   )
 }
 
-const AGENT_GROUPS = [
+type AgentMode = "event" | "scheduled"
+
+interface AgentDef {
+  key:      string
+  label:    string
+  desc:     string
+  agentId:  string
+  mode:     AgentMode
+  triggers?: string[]
+  scheduleGroup?: "daily" | "monthly"
+  pipelineOrder?: number
+}
+
+const EVENT_AGENTS: AgentDef[] = [
   {
-    label: "Every 15 minutes",
-    schedule: "*/15 * * * *",
-    agents: [
-      { key: "connectorsEnabled",  label: "Connector Sync",        desc: "Pull new events from all connected platforms (Stripe, Mercury, Gusto, Ramp)" },
-      { key: "glCodingEnabled",    label: "GL Coding Agent",        desc: "Auto-assign GL account codes to ingested events using AI" },
-      { key: "revenueEnabled",     label: "Revenue Agent",          desc: "ASC 606 recognition validation and journal entry generation" },
-      { key: "cashEnabled",        label: "Cash Agent",             desc: "Bank feed vs QuickBooks cash account reconciliation" },
-      { key: "apEnabled",          label: "AP Agent",               desc: "3-way match on bills: Ramp/BILL vs QuickBooks vs purchase orders" },
-      { key: "anomalyEnabled",     label: "Anomaly Agent",          desc: "Cross-system pattern analysis to flag outliers" },
-    ],
+    key: "glCodingEnabled", label: "GL Coding", desc: "Assigns a GL account code to every new ingested event using AI or rule-based fallback.", agentId: "gl-coding", mode: "event",
+    triggers: ["Any new event ingested"], pipelineOrder: 1,
   },
   {
-    label: "Daily (overnight)",
-    schedule: "0 2 * * *",
-    agents: [
-      { key: "payrollEnabled",     label: "Payroll Agent",          desc: "Validate Gusto/Rippling payroll vs QuickBooks expense allocation" },
-      { key: "fxEnabled",          label: "FX Agent",               desc: "Revalue foreign currency positions at daily exchange rates" },
-      { key: "headcountEnabled",   label: "Headcount Agent",        desc: "Validate payroll amounts against headcount records" },
-      { key: "collectionsEnabled", label: "Collections Agent",      desc: "AI-drafted dunning emails for overdue AR" },
-    ],
+    key: "revenueEnabled", label: "Revenue Agent", desc: "Applies ASC 606 / IFRS 15 recognition policy and pushes a journal entry to the connected ERP.", agentId: "revenue", mode: "event",
+    triggers: ["PAYMENT_RECEIVED", "INVOICE_PAID"], pipelineOrder: 2,
   },
   {
-    label: "Monthly (1st of month)",
-    schedule: "0 6 1 * *",
-    agents: [
-      { key: "closeEnabled",       label: "Close Agent",            desc: "Execute automated month-end close checklist" },
-      { key: "boardReportEnabled", label: "Board Report Agent",     desc: "Generate AI financial narrative for board deck" },
-      { key: "complianceEnabled",  label: "Compliance Agent",       desc: "Validate rev rec policy, flag duplicates and unapproved expenses" },
-    ],
+    key: "apEnabled", label: "AP Agent", desc: "3-way match on bills: source platform vs QuickBooks accounts payable vs purchase orders.", agentId: "ap", mode: "event",
+    triggers: ["BILL_CREATED", "EXPENSE_CREATED"], pipelineOrder: 2,
+  },
+  {
+    key: "commissionEnabled", label: "Commission Agent", desc: "Calculates and accrues sales commission when a payment lands, per sales rep and cost centre.", agentId: "commission", mode: "event",
+    triggers: ["PAYMENT_RECEIVED"], pipelineOrder: 3,
+  },
+  {
+    key: "pipelineEnabled", label: "Pipeline Agent", desc: "Validates Salesforce ARR vs Chargebee subscriptions vs actual billed revenue.", agentId: "pipeline", mode: "event",
+    triggers: ["SUBSCRIPTION_CREATED", "SUBSCRIPTION_UPDATED", "SUBSCRIPTION_CANCELLED"], pipelineOrder: 3,
+  },
+  {
+    key: "anomalyEnabled", label: "Anomaly Agent", desc: "Cross-system pattern analysis — flags outliers, duplicates, and unusual transactions.", agentId: "anomaly", mode: "event",
+    triggers: ["Any new event ingested"], pipelineOrder: 4,
   },
 ]
 
-const CRON_GROUP_KEYS: Record<string, string> = {
-  "Every 15 minutes": "sync",
-  "Daily (overnight)": "daily",
-  "Monthly (1st of month)": "monthly",
+const DAILY_AGENTS: AgentDef[] = [
+  { key: "connectorsEnabled", label: "Connector Sync",   desc: "Pull new events from all connected platforms: Stripe, Mercury, Gusto, Ramp.", agentId: "connector-sync", mode: "scheduled", scheduleGroup: "daily" },
+  { key: "cashEnabled",       label: "Cash Agent",       desc: "Bank feed vs QuickBooks cash account reconciliation. Requires daily bank data.", agentId: "cash", mode: "scheduled", scheduleGroup: "daily" },
+  { key: "payrollEnabled",    label: "Payroll Agent",    desc: "Validate Gusto / Rippling payroll runs vs QuickBooks expense allocation.", agentId: "payroll", mode: "scheduled", scheduleGroup: "daily" },
+  { key: "fxEnabled",         label: "FX Agent",         desc: "Revalue all foreign currency positions at today's exchange rates.", agentId: "fx", mode: "scheduled", scheduleGroup: "daily" },
+  { key: "headcountEnabled",  label: "Headcount Agent",  desc: "Validate payroll cost against headcount records and department budgets.", agentId: "headcount", mode: "scheduled", scheduleGroup: "daily" },
+  { key: "collectionsEnabled",label: "Collections Agent",desc: "AI-scored AR aging — drafts dunning emails for overdue invoices.", agentId: "collections", mode: "scheduled", scheduleGroup: "daily" },
+]
+
+const MONTHLY_AGENTS: AgentDef[] = [
+  { key: "closeEnabled",       label: "Close Agent",        desc: "Executes the full month-end close checklist: amortisation, accruals, depreciation, flux analysis.", agentId: "close", mode: "scheduled", scheduleGroup: "monthly" },
+  { key: "boardReportEnabled", label: "Board Report Agent", desc: "Drafts the financial commentary section of the board deck from live data.", agentId: "board-report", mode: "scheduled", scheduleGroup: "monthly" },
+  { key: "complianceEnabled",  label: "Compliance Agent",   desc: "Validates rev rec policy adherence, flags duplicates and unapproved expenses.", agentId: "compliance", mode: "scheduled", scheduleGroup: "monthly" },
+]
+
+function AgentToggle({ enabled, onToggle }: { enabled: boolean; onToggle: () => void }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={enabled}
+      onClick={onToggle}
+      className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/40 ${enabled ? "bg-primary" : "bg-muted-foreground/25"}`}
+    >
+      <span className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow ring-0 transition-transform duration-200 ${enabled ? "translate-x-4" : "translate-x-0"}`} />
+    </button>
+  )
+}
+
+function AgentRow({
+  agent,
+  enabled,
+  onToggle,
+  running,
+  result,
+  onRun,
+}: {
+  agent: AgentDef
+  enabled: boolean
+  onToggle: () => void
+  running: boolean
+  result: { text: string; ok: boolean } | null
+  onRun: () => void
+}) {
+  return (
+    <div className={`flex items-start gap-4 px-5 py-4 border-b last:border-0 transition-opacity ${enabled ? "" : "opacity-50"}`}>
+      <div className="flex-1 min-w-0 space-y-1">
+        <div className="flex items-center gap-2 flex-wrap">
+          <p className="text-sm font-semibold">{agent.label}</p>
+          {agent.triggers && (
+            <div className="flex items-center gap-1 flex-wrap">
+              {agent.triggers.map((t) => (
+                <span key={t} className="text-[10px] font-mono bg-muted text-muted-foreground px-1.5 py-0.5 rounded border">
+                  {t}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+        <p className="text-xs text-muted-foreground leading-relaxed">{agent.desc}</p>
+        {result && (
+          <p className={`text-xs flex items-center gap-1 pt-0.5 ${result.ok ? "text-emerald-600 dark:text-emerald-400" : "text-red-500"}`}>
+            {result.ok ? <CheckCircle2 className="h-3 w-3 shrink-0" /> : <AlertCircle className="h-3 w-3 shrink-0" />}
+            {result.text}
+          </p>
+        )}
+      </div>
+      <div className="flex items-center gap-3 shrink-0 pt-0.5">
+        <button
+          type="button"
+          onClick={onRun}
+          disabled={running || !enabled}
+          className="flex items-center gap-1.5 text-xs font-medium border border-border rounded-md px-2.5 py-1.5 hover:bg-muted transition-colors disabled:opacity-40"
+        >
+          {running ? <Loader2 className="h-3 w-3 animate-spin" /> : <Play className="h-3 w-3" />}
+          {running ? "Running" : "Run"}
+        </button>
+        <AgentToggle enabled={enabled} onToggle={onToggle} />
+      </div>
+    </div>
+  )
 }
 
 function AgentsTab() {
   const [config, setConfig] = React.useState<Record<string, boolean>>({})
   const [schedules, setSchedules] = React.useState<Record<string, string>>({
-    sync: "*/15 * * * *",
     daily: "0 2 * * *",
     monthly: "1 0 1 * *",
   })
-  const [loading, setLoading] = React.useState(true)
-  const [saving, setSaving] = React.useState(false)
-  const [saved, setSaved] = React.useState(false)
-  const [running, setRunning] = React.useState<string | null>(null)
-  const [runResult, setRunResult] = React.useState<Record<string, string>>({})
+  const [loading, setLoading]   = React.useState(true)
+  const [saving, setSaving]     = React.useState(false)
+  const [saved, setSaved]       = React.useState(false)
+  const [running, setRunning]   = React.useState<Record<string, boolean>>({})
+  const [results, setResults]   = React.useState<Record<string, { text: string; ok: boolean }>>({})
 
   React.useEffect(() => {
     fetch("/api/settings/agents")
@@ -865,17 +947,8 @@ function AgentsTab() {
       .finally(() => setLoading(false))
   }, [])
 
-  function toggle(key: string) {
-    setConfig((prev) => ({ ...prev, [key]: prev[key] === false ? true : false }))
-  }
-
-  function isEnabled(key: string) {
-    return config[key] !== false
-  }
-
-  function updateSchedule(groupKey: string, value: string) {
-    setSchedules((prev) => ({ ...prev, [groupKey]: value }))
-  }
+  function isEnabled(key: string) { return config[key] !== false }
+  function toggle(key: string) { setConfig((prev) => ({ ...prev, [key]: !isEnabled(key) })) }
 
   async function save() {
     setSaving(true)
@@ -887,14 +960,40 @@ function AgentsTab() {
       })
       setSaved(true)
       setTimeout(() => setSaved(false), 2500)
+    } finally { setSaving(false) }
+  }
+
+  async function runAgent(agent: AgentDef) {
+    setRunning((prev) => ({ ...prev, [agent.agentId]: true }))
+    setResults((prev) => { const n = { ...prev }; delete n[agent.agentId]; return n })
+    try {
+      const res = await fetch("/api/agents/run", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ agent: agent.agentId }),
+      })
+      const json = await res.json()
+      if (!res.ok || json.error) {
+        setResults((prev) => ({ ...prev, [agent.agentId]: { text: json.error ?? "Failed", ok: false } }))
+      } else {
+        const r = json.result as any
+        const summary = r?.processed != null
+          ? `Processed ${r.processed} · Posted ${r.posted ?? r.coded ?? 0}${r.errors?.length ? ` · ${r.errors.length} error(s)` : ""}`
+          : `Completed at ${new Date(json.ranAt).toLocaleTimeString()}`
+        const followUpRevenue = json.followUp?.revenue
+        const followUpText = followUpRevenue?.posted != null ? ` → Revenue: ${followUpRevenue.posted} posted` : ""
+        setResults((prev) => ({ ...prev, [agent.agentId]: { text: summary + followUpText, ok: true } }))
+      }
+    } catch (e: any) {
+      setResults((prev) => ({ ...prev, [agent.agentId]: { text: e.message ?? "Network error", ok: false } }))
     } finally {
-      setSaving(false)
+      setRunning((prev) => ({ ...prev, [agent.agentId]: false }))
     }
   }
 
-  async function runNow(groupKey: string) {
-    setRunning(groupKey)
-    setRunResult((prev) => ({ ...prev, [groupKey]: "" }))
+  async function runScheduledGroup(group: "daily" | "monthly") {
+    const groupKey = group === "daily" ? "daily" : "monthly"
+    setRunning((prev) => ({ ...prev, [`__group_${group}`]: true }))
     try {
       const res = await fetch("/api/cron/run", {
         method: "POST",
@@ -902,111 +1001,118 @@ function AgentsTab() {
         body: JSON.stringify({ group: groupKey }),
       })
       const json = await res.json()
-      if (res.ok) {
-        const agentResults = json.result as Record<string, Record<string, unknown>> | undefined
-        const agentErrors = agentResults
-          ? Object.entries(agentResults)
-              .filter(([, v]) => v && typeof v === "object" && "error" in v)
-              .map(([k, v]) => `${k}: ${(v as any).error}`)
-          : []
-        const time = new Date(json.ranAt).toLocaleTimeString()
-        const summary = agentErrors.length > 0
-          ? `Completed at ${time} · ${agentErrors.length} agent error(s): ${agentErrors.join("; ")}`
-          : `Completed at ${time}`
-        setRunResult((prev) => ({ ...prev, [groupKey]: summary }))
-      } else {
-        setRunResult((prev) => ({ ...prev, [groupKey]: json.error ?? "Failed" }))
-      }
-    } catch {
-      setRunResult((prev) => ({ ...prev, [groupKey]: "Run failed" }))
+      const time = json.ranAt ? new Date(json.ranAt).toLocaleTimeString() : ""
+      const agentResults = json.result as Record<string, unknown> | undefined
+      const errors = agentResults
+        ? Object.entries(agentResults).filter(([, v]) => v && typeof v === "object" && "error" in (v as any)).map(([k, v]) => `${k}: ${(v as any).error}`)
+        : []
+      const text = errors.length ? `Completed · ${errors.length} error(s): ${errors.join("; ")}` : `All agents completed at ${time}`
+      setResults((prev) => ({ ...prev, [`__group_${group}`]: { text, ok: errors.length === 0 } }))
+    } catch (e: any) {
+      setResults((prev) => ({ ...prev, [`__group_${group}`]: { text: e.message ?? "Failed", ok: false } }))
     } finally {
-      setRunning(null)
+      setRunning((prev) => ({ ...prev, [`__group_${group}`]: false }))
     }
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-      </div>
-    )
+    return <div className="flex items-center justify-center py-12"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
   }
 
   return (
-    <div className="space-y-6">
-      <div className="rounded-xl border bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900 p-4 flex gap-3">
-        <Info className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-        <div className="space-y-1">
-          <p className="text-xs font-medium text-amber-800 dark:text-amber-300">About schedule changes</p>
-          <p className="text-xs text-amber-700 dark:text-amber-400 leading-relaxed">
-            Edited schedules are saved and displayed here. To apply them to Vercel Cron in production, update <code className="font-mono bg-amber-100 dark:bg-amber-900/50 px-1 rounded">vercel.json</code> and redeploy. Use <strong>Run now</strong> to trigger any group immediately without waiting for the schedule.
-          </p>
+    <div className="space-y-8">
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <Zap className="h-4 w-4 text-primary" />
+          <h3 className="text-sm font-semibold">Event-Driven Pipeline</h3>
+        </div>
+        <p className="text-xs text-muted-foreground leading-relaxed">
+          These agents fire automatically when events arrive from connected platforms — no cron schedule needed.
+          The pipeline runs in order: GL Coding assigns account codes first, then Revenue / AP / Commission process in parallel, then Anomaly scans cross-system patterns.
+        </p>
+
+        <div className="flex items-center gap-1 text-xs text-muted-foreground py-1 pl-1">
+          {EVENT_AGENTS.filter((a, i, arr) => arr.findIndex(b => b.pipelineOrder === a.pipelineOrder) === i)
+            .sort((a, b) => (a.pipelineOrder ?? 0) - (b.pipelineOrder ?? 0))
+            .map((stage, idx, arr) => (
+              <React.Fragment key={stage.pipelineOrder}>
+                <span className="bg-muted px-2 py-0.5 rounded text-[10px] font-medium">
+                  {EVENT_AGENTS.filter(a => a.pipelineOrder === stage.pipelineOrder).map(a => a.label).join(" / ")}
+                </span>
+                {idx < arr.length - 1 && <ChevronRight className="h-3 w-3 shrink-0" />}
+              </React.Fragment>
+            ))}
+        </div>
+
+        <div className="rounded-xl border bg-card overflow-hidden">
+          {EVENT_AGENTS.map((agent) => (
+            <AgentRow
+              key={agent.agentId}
+              agent={agent}
+              enabled={isEnabled(agent.key)}
+              onToggle={() => toggle(agent.key)}
+              running={!!running[agent.agentId]}
+              result={results[agent.agentId] ?? null}
+              onRun={() => runAgent(agent)}
+            />
+          ))}
         </div>
       </div>
 
-      {AGENT_GROUPS.map((group) => {
-        const groupKey = CRON_GROUP_KEYS[group.label] ?? "sync"
-        const isRunning = running === groupKey
-        const result = runResult[groupKey]
+      {([
+        { group: "daily" as const, label: "Daily Agents", icon: RefreshCw, agents: DAILY_AGENTS, scheduleKey: "daily", defaultCron: "0 2 * * *", hint: "Runs overnight. Requires time-series data (bank feeds, FX rates, payroll runs)." },
+        { group: "monthly" as const, label: "Month-End Agents", icon: Calendar, agents: MONTHLY_AGENTS, scheduleKey: "monthly", defaultCron: "1 0 1 * *", hint: "Runs on the 1st of each month. Executes the close checklist and generates board reporting." },
+      ] as const).map(({ group, label, icon: Icon, agents, scheduleKey, defaultCron, hint }) => {
+        const groupRunning = !!running[`__group_${group}`]
+        const groupResult = results[`__group_${group}`] ?? null
         return (
-          <div key={group.label} className="rounded-xl border bg-card overflow-hidden">
-            <div className="flex items-start justify-between gap-4 px-5 py-4 border-b bg-muted/20">
-              <div className="flex-1 min-w-0 space-y-2">
-                <p className="text-sm font-semibold">{group.label}</p>
-                <div className="flex items-center gap-2 flex-wrap">
+          <div key={group} className="space-y-3">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div className="flex items-center gap-2">
+                <Icon className="h-4 w-4 text-muted-foreground" />
+                <h3 className="text-sm font-semibold">{label}</h3>
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex items-center gap-1.5">
                   <Clock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                   <input
-                    value={schedules[groupKey] ?? group.schedule}
-                    onChange={(e) => updateSchedule(groupKey, e.target.value)}
-                    className="font-mono text-xs bg-muted/50 border border-border rounded px-2 py-1 w-44 focus:outline-none focus:ring-2 focus:ring-primary/30"
-                    placeholder="cron expression"
+                    value={schedules[scheduleKey] ?? defaultCron}
+                    onChange={(e) => setSchedules((prev) => ({ ...prev, [scheduleKey]: e.target.value }))}
+                    className="font-mono text-xs bg-muted/50 border border-border rounded px-2 py-1 w-36 focus:outline-none focus:ring-2 focus:ring-primary/30"
                     spellCheck={false}
                   />
-                  <span className="text-[10px] text-muted-foreground">cron expression</span>
+                  <span className="text-[10px] text-muted-foreground hidden sm:inline">cron</span>
                 </div>
-                {result && (
-                  <p className={`text-xs flex items-center gap-1 ${result.includes("error") ? "text-amber-600 dark:text-amber-400" : result.startsWith("Completed") ? "text-emerald-600 dark:text-emerald-400" : "text-red-500"}`}>
-                    {result.startsWith("Completed") && !result.includes("error") ? <CheckCircle2 className="h-3 w-3" /> : null}
-                    {result}
-                  </p>
-                )}
+                <button
+                  type="button"
+                  onClick={() => runScheduledGroup(group)}
+                  disabled={groupRunning}
+                  className="flex items-center gap-1.5 text-xs font-medium border border-border rounded-lg px-3 py-1.5 hover:bg-muted transition-colors disabled:opacity-60"
+                >
+                  {groupRunning ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}
+                  {groupRunning ? "Running…" : "Run all"}
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => runNow(groupKey)}
-                disabled={isRunning}
-                className="flex items-center gap-1.5 text-xs font-medium border border-border rounded-lg px-3 py-1.5 hover:bg-muted transition-colors disabled:opacity-60 shrink-0"
-              >
-                {isRunning ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}
-                {isRunning ? "Running..." : "Run now"}
-              </button>
             </div>
-            <div className="divide-y">
-              {group.agents.map((agent) => {
-                const enabled = isEnabled(agent.key)
-                return (
-                  <div key={agent.key} className="flex items-start justify-between gap-4 px-5 py-4">
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-medium">{agent.label}</p>
-                        {!enabled && (
-                          <span className="text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded font-medium">Disabled</span>
-                        )}
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-0.5">{agent.desc}</p>
-                    </div>
-                    <button
-                      type="button"
-                      role="switch"
-                      aria-checked={enabled}
-                      onClick={() => toggle(agent.key)}
-                      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 mt-0.5 focus:outline-none focus:ring-2 focus:ring-primary/40 ${enabled ? "bg-primary" : "bg-muted-foreground/25"}`}
-                    >
-                      <span className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-md ring-0 transition-transform duration-200 ${enabled ? "translate-x-5" : "translate-x-0"}`} />
-                    </button>
-                  </div>
-                )
-              })}
+            <p className="text-xs text-muted-foreground">{hint}</p>
+            {groupResult && (
+              <p className={`text-xs flex items-center gap-1 ${groupResult.ok ? "text-emerald-600" : "text-red-500"}`}>
+                {groupResult.ok ? <CheckCircle2 className="h-3 w-3" /> : <AlertCircle className="h-3 w-3" />}
+                {groupResult.text}
+              </p>
+            )}
+            <div className="rounded-xl border bg-card overflow-hidden">
+              {agents.map((agent) => (
+                <AgentRow
+                  key={agent.agentId}
+                  agent={agent}
+                  enabled={isEnabled(agent.key)}
+                  onToggle={() => toggle(agent.key)}
+                  running={!!running[agent.agentId]}
+                  result={results[agent.agentId] ?? null}
+                  onRun={() => runAgent(agent)}
+                />
+              ))}
             </div>
           </div>
         )
@@ -1019,7 +1125,7 @@ function AgentsTab() {
         className="flex items-center gap-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium px-4 py-2 hover:bg-primary/90 transition-colors disabled:opacity-60"
       >
         {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : saved ? <CheckCircle2 className="h-4 w-4" /> : null}
-        {saved ? "Saved!" : saving ? "Saving..." : "Save Configuration"}
+        {saved ? "Saved!" : saving ? "Saving…" : "Save Configuration"}
       </button>
     </div>
   )
