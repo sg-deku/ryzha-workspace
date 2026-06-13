@@ -336,10 +336,10 @@ export default async function EventDetailPage({
             <Field label="External ID" value={<code className="text-xs bg-muted px-1.5 py-0.5 rounded">{event.externalId}</code>} mono />
             <Field label="Amount"      value={<span className="font-semibold tabular-nums">{event.amount != null ? formatCurrency(event.amount, event.currency) : "—"}</span>} />
             <Field label="Currency"    value={event.currency} />
-            {normalised.customerEmail && <Field label="Customer" value={String(normalised.customerEmail)} />}
-            {normalised.customerId    && <Field label="Customer ID" value={<code className="text-xs bg-muted px-1.5 py-0.5 rounded">{String(normalised.customerId)}</code>} mono />}
-            {normalised.invoiceNumber && <Field label="Invoice #" value={String(normalised.invoiceNumber)} />}
-            {normalised.description   && <Field label="Description" value={String(normalised.description)} />}
+            {normalised.customerEmail != null && <Field label="Customer" value={String(normalised.customerEmail)} />}
+            {normalised.customerId    != null && <Field label="Customer ID" value={<code className="text-xs bg-muted px-1.5 py-0.5 rounded">{String(normalised.customerId)}</code>} mono />}
+            {normalised.invoiceNumber != null && <Field label="Invoice #" value={String(normalised.invoiceNumber)} />}
+            {normalised.description   != null && <Field label="Description" value={String(normalised.description)} />}
             <Field label="Ingested"    value={new Date(event.createdAt).toLocaleString()} />
           </div>
         </div>

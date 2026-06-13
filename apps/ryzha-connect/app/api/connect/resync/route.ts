@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getSession } from "@/lib/session"
-import { runStripeSync } from "@/app/api/connect/stripe/sync/route"
+import { runStripeSync } from "@/lib/stripe-sync"
 
 export async function GET(req: NextRequest) {
   const provider = req.nextUrl.searchParams.get("provider")

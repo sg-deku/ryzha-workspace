@@ -50,9 +50,9 @@ export async function GET() {
     stripeCustomerId: org.stripeCustomerId,
     stripeSubscriptionId: org.stripeSubscriptionId,
     subscriptionStatus: subscription?.status ?? null,
-    currentPeriodEnd: subscription?.current_period_end
-      ? new Date(subscription.current_period_end * 1000).toISOString()
+    currentPeriodEnd: (subscription as any)?.current_period_end
+      ? new Date((subscription as any).current_period_end * 1000).toISOString()
       : null,
-    cancelAtPeriodEnd: subscription?.cancel_at_period_end ?? false,
+    cancelAtPeriodEnd: (subscription as any)?.cancel_at_period_end ?? false,
   })
 }
