@@ -6,7 +6,33 @@ import {
   RefreshCw, Unplug, ExternalLink, Loader2,
 } from "lucide-react"
 import { PROVIDERS } from "@/lib/providers"
+import type { ProviderConfig } from "@/lib/providers"
 import { ConnectModal } from "./connect-modal"
+
+function ProviderLogo({ provider, size = "md" }: { provider: ProviderConfig; size?: "sm" | "md" }) {
+  const [imgError, setImgError] = React.useState(false)
+  const dim = size === "sm" ? "h-8 w-8" : "h-9 w-9"
+  const textSize = size === "sm" ? "text-[10px]" : "text-xs"
+
+  if (provider.logoUrl && !imgError) {
+    return (
+      <div className={`${dim} rounded-lg bg-white dark:bg-zinc-900 border flex items-center justify-center shrink-0 overflow-hidden p-1`}>
+        <img
+          src={provider.logoUrl}
+          alt={provider.name}
+          className="h-full w-full object-contain"
+          onError={() => setImgError(true)}
+        />
+      </div>
+    )
+  }
+
+  return (
+    <div className={`${dim} rounded-lg ${provider.color} flex items-center justify-center shrink-0`}>
+      <span className={`text-white font-bold ${textSize}`}>{provider.logo}</span>
+    </div>
+  )
+}
 
 export type ConnectionStatus = "ACTIVE" | "EXPIRED" | "DISCONNECTED" | "ERROR"
 
@@ -127,9 +153,7 @@ function ConnectionDetailPanel({
       <div className="relative z-10 w-full max-w-md h-full bg-background border-l shadow-2xl flex flex-col overflow-hidden">
         <div className="flex items-center justify-between px-6 py-4 border-b">
           <div className="flex items-center gap-3">
-            <div className={`h-9 w-9 rounded-lg ${provider.color} flex items-center justify-center shrink-0`}>
-              <span className="text-white font-bold text-xs">{provider.logo}</span>
-            </div>
+            <ProviderLogo provider={provider} size="md" />
             <div>
               <h2 className="font-semibold text-sm">{provider.name}</h2>
               <p className="text-xs text-muted-foreground">{provider.category}</p>
@@ -287,9 +311,8 @@ export function ProviderGrid({ connections, qbConfigured }: Props) {
                     className={`relative flex flex-col items-start gap-3 rounded-xl border bg-card p-4 text-left transition-all ${isComingSoon ? "opacity-50 cursor-default" : "hover:border-primary/30 hover:shadow-sm hover:bg-muted/20 cursor-pointer"} ${selected === provider.id ? "border-primary/40 shadow-sm" : ""}`}
                   >
                     <div className="flex items-start justify-between w-full gap-1">
-                      <div className={`h-8 w-8 rounded-lg ${provider.color} flex items-center justify-center shrink-0`}>
-                        <span className="text-white font-bold text-[10px]">{provider.logo}</span>
-                      </div>
+                      <ProviderLogo provider={provider} size="sm" />
+
                       {status !== "NOT_CONNECTED" && (
                         <span className={`h-2 w-2 rounded-full mt-1 ${dot} shrink-0`} />
                       )}

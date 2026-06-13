@@ -14,8 +14,6 @@ import {
   BarChart2,
   Workflow,
   Settings,
-  ChevronLeft,
-  ChevronRight,
   ShieldCheck,
   LineChart,
   CalendarCheck,
@@ -28,6 +26,7 @@ import {
   Building2,
   Clock,
   CreditCard,
+  Database,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -38,34 +37,35 @@ interface NavItem {
 }
 
 interface NavSection {
+  id: string
   label: string
+  icon: React.ElementType
   items: NavItem[]
 }
 
 const navSections: NavSection[] = [
   {
-    label: "",
+    id: "overview",
+    label: "Overview",
+    icon: LayoutDashboard,
     items: [
       { href: "/overview", icon: LayoutDashboard, label: "Overview" },
     ],
   },
   {
+    id: "data",
     label: "Data",
+    icon: Database,
     items: [
-      { href: "/connect",   icon: Plug,       label: "Connections"   },
-      { href: "/staging",   icon: InboxIcon,  label: "Staging Queue" },
-      { href: "/reconcile", icon: GitMerge,   label: "Reconcile"     },
+      { href: "/connect",   icon: Plug,      label: "Connections"   },
+      { href: "/staging",   icon: InboxIcon, label: "Staging Queue" },
+      { href: "/reconcile", icon: GitMerge,  label: "Reconcile"     },
     ],
   },
   {
-    label: "Operations",
-    items: [
-      { href: "/approvals",   icon: CheckSquare, label: "Approvals"   },
-      { href: "/collections", icon: Users,       label: "Collections" },
-    ],
-  },
-  {
+    id: "finance",
     label: "Finance",
+    icon: TrendingUp,
     items: [
       { href: "/metrics",          icon: LineChart,  label: "SaaS Metrics"    },
       { href: "/department-pl",    icon: Building2,  label: "Department P&L"  },
@@ -75,17 +75,30 @@ const navSections: NavSection[] = [
     ],
   },
   {
-    label: "Intelligence",
+    id: "operations",
+    label: "Operations",
+    icon: CheckSquare,
     items: [
-      { href: "/reports",   icon: BarChart2,   label: "Reports"         },
-      { href: "/close",     icon: CalendarCheck, label: "Month-End Close" },
-      { href: "/workflows", icon: Workflow,    label: "Workflows"       },
-      { href: "/audit",     icon: ShieldCheck, label: "Audit Trail"     },
-      { href: "/ai-usage",  icon: Zap,         label: "AI Monitoring"   },
+      { href: "/approvals",   icon: CheckSquare, label: "Approvals"   },
+      { href: "/collections", icon: Users,       label: "Collections" },
     ],
   },
   {
+    id: "intelligence",
+    label: "Intelligence",
+    icon: BarChart2,
+    items: [
+      { href: "/reports",   icon: BarChart2,     label: "Reports"          },
+      { href: "/close",     icon: CalendarCheck, label: "Month-End Close"  },
+      { href: "/workflows", icon: Workflow,      label: "Workflows"        },
+      { href: "/audit",     icon: ShieldCheck,   label: "Audit Trail"      },
+      { href: "/ai-usage",  icon: Zap,           label: "AI Monitoring"    },
+    ],
+  },
+  {
+    id: "settings",
     label: "Settings",
+    icon: Settings,
     items: [
       { href: "/settings/architect", icon: Cpu,        label: "Architecture"       },
       { href: "/settings/policies",  icon: Shield,     label: "Policies"           },
@@ -97,42 +110,25 @@ const navSections: NavSection[] = [
   },
 ]
 
-function NavLink({ item, collapsed }: { item: NavItem; collapsed: boolean }) {
-  const pathname = usePathname()
-  const isActive =
-    pathname === item.href ||
-    (item.href !== "/settings" && pathname.startsWith(item.href + "/"))
-  const Icon = item.icon
-
-  return (
-    <Link
-      href={item.href}
-      title={collapsed ? item.label : undefined}
-      className={cn(
-        "group flex items-center gap-2.5 rounded-lg py-2 text-sm transition-all duration-150",
-        collapsed ? "justify-center px-2" : "px-3",
-        isActive
-          ? "border-l-2 border-primary bg-primary/6 text-foreground font-medium pl-[calc(0.75rem-2px)]"
-          : "text-muted-foreground hover:bg-muted/60 hover:text-foreground font-normal"
-      )}
-    >
-      <Icon
-        className={cn(
-          "shrink-0 transition-colors",
-          collapsed ? "h-4 w-4" : "h-4 w-4",
-          isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground"
-        )}
-      />
-      {!collapsed && <span className="truncate">{item.label}</span>}
-    </Link>
-  )
+function useSectionForPath(pathname: string): string | null {
+  for (const section of navSections) {
+    for (const item of section.items) {
+      if (
+        pathname === item.href ||
+        (item.href !== "/settings" && pathname.startsWith(item.href + "/"))
+      ) {
+        return section.id
+      }
+    }
+  }
+  return null
 }
 
-function AgentStatusFooter({ collapsed }: { collapsed: boolean }) {
+function AgentStatusDot() {
   const [lastSync, setLastSync] = React.useState<string>("just now")
 
   React.useEffect(() => {
-    const updateTime = () => {
+    const update = () => {
       const stored = localStorage.getItem("rc-last-sync")
       if (stored) {
         const diff = Math.floor((Date.now() - parseInt(stored)) / 60000)
@@ -141,102 +137,143 @@ function AgentStatusFooter({ collapsed }: { collapsed: boolean }) {
         else setLastSync(`${Math.floor(diff / 60)}h ago`)
       }
     }
-    updateTime()
-    const iv = setInterval(updateTime, 30000)
+    update()
+    const iv = setInterval(update, 30000)
     return () => clearInterval(iv)
   }, [])
 
-  if (collapsed) {
-    return (
-      <div className="border-t p-3 flex justify-center">
-        <span className="status-dot-green" title={`Agents syncing · ${lastSync}`} />
-      </div>
-    )
-  }
-
   return (
-    <div className="border-t px-3 py-3">
-      <div className="flex items-center gap-2">
-        <span className="status-dot-green" />
-        <span className="text-[11px] text-muted-foreground/60 truncate">
-          Agents syncing · {lastSync}
-        </span>
-      </div>
+    <div className="flex justify-center pb-4">
+      <span className="status-dot-green" title={`Agents syncing · ${lastSync}`} />
     </div>
   )
 }
 
 export function Sidebar() {
-  const [collapsed, setCollapsed] = React.useState(false)
-  const [mounted, setMounted] = React.useState(false)
+  const pathname = usePathname()
+  const activeSection = useSectionForPath(pathname)
+  const [hoveredSection, setHoveredSection] = React.useState<string | null>(null)
+  const [flyoutTop, setFlyoutTop] = React.useState<number>(0)
+  const hoverTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null)
+  const sectionRefs = React.useRef<Record<string, HTMLButtonElement | HTMLAnchorElement | null>>({})
 
-  React.useEffect(() => {
-    const saved = localStorage.getItem("rc-sidebar-collapsed")
-    if (saved !== null) setCollapsed(JSON.parse(saved))
-    setMounted(true)
-  }, [])
-
-  const toggle = () => {
-    const next = !collapsed
-    setCollapsed(next)
-    localStorage.setItem("rc-sidebar-collapsed", JSON.stringify(next))
+  function openSection(id: string) {
+    if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current)
+    const el = sectionRefs.current[id]
+    if (el) {
+      const rect = el.getBoundingClientRect()
+      setFlyoutTop(rect.top)
+    }
+    setHoveredSection(id)
   }
 
-  if (!mounted) return null
+  function closeSection() {
+    hoverTimerRef.current = setTimeout(() => setHoveredSection(null), 80)
+  }
+
+  function keepOpen() {
+    if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current)
+  }
+
+  const activeFlyoutSection = navSections.find((s) => s.id === hoveredSection) ?? null
 
   return (
-    <aside
-      className={cn(
-        "flex h-screen flex-col border-r bg-background transition-all duration-200 shrink-0",
-        collapsed ? "w-14" : "w-[220px]"
-      )}
-    >
-      <div className="flex h-14 items-center border-b px-3 gap-2">
-        <div className="flex items-center gap-2 min-w-0 flex-1">
-          <div className="h-7 w-7 rounded-lg bg-primary flex items-center justify-center shrink-0 shadow-sm shadow-primary/30">
+    <>
+      <aside className="flex h-screen w-14 flex-col border-r bg-background shrink-0 z-30">
+        <div className="flex h-14 items-center justify-center border-b">
+          <Link href="/overview" className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center shadow-sm shadow-primary/30 hover:opacity-90 transition-opacity">
             <span className="font-display font-bold text-primary-foreground text-[13px] tracking-tight">R</span>
-          </div>
-          {!collapsed && (
-            <span className="font-display font-semibold text-[15px] tracking-tight truncate">ryzha</span>
-          )}
+          </Link>
         </div>
-        {!collapsed && (
-          <button
-            onClick={toggle}
-            className="h-6 w-6 rounded-md flex items-center justify-center text-muted-foreground/50 hover:text-foreground hover:bg-muted transition-colors shrink-0"
-          >
-            <ChevronLeft className="h-3.5 w-3.5" />
-          </button>
-        )}
-      </div>
 
-      <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-5">
-        {navSections.map((section, si) => (
-          <div key={si} className="space-y-0.5">
-            {section.label && !collapsed && (
-              <p className="px-3 pb-1 text-[9px] uppercase tracking-[0.15em] font-semibold text-muted-foreground/40 select-none">
-                {section.label}
-              </p>
-            )}
-            {section.items.map((item) => (
-              <NavLink key={item.href} item={item} collapsed={collapsed} />
-            ))}
+        <nav className="flex flex-col items-center gap-1 flex-1 py-3 overflow-y-auto">
+          {navSections.map((section) => {
+            const Icon = section.icon
+            const isActive = activeSection === section.id
+            const isHovered = hoveredSection === section.id
+
+            if (section.items.length === 1) {
+              const item = section.items[0]
+              return (
+                <Link
+                  key={section.id}
+                  href={item.href}
+                  ref={(el) => { sectionRefs.current[section.id] = el }}
+                  onMouseEnter={() => { if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current); setHoveredSection(null) }}
+                  title={section.label}
+                  className={cn(
+                    "h-9 w-9 rounded-lg flex items-center justify-center transition-all",
+                    isActive
+                      ? "bg-primary text-primary-foreground shadow-sm shadow-primary/30"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  )}
+                >
+                  <Icon className="h-4 w-4" />
+                </Link>
+              )
+            }
+
+            return (
+              <button
+                key={section.id}
+                type="button"
+                ref={(el) => { sectionRefs.current[section.id] = el }}
+                onMouseEnter={() => openSection(section.id)}
+                onMouseLeave={closeSection}
+                className={cn(
+                  "h-9 w-9 rounded-lg flex items-center justify-center transition-all",
+                  isActive
+                    ? "bg-primary text-primary-foreground shadow-sm shadow-primary/30"
+                    : isHovered
+                    ? "bg-muted text-foreground"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                )}
+              >
+                <Icon className="h-4 w-4" />
+              </button>
+            )
+          })}
+        </nav>
+
+        <AgentStatusDot />
+      </aside>
+
+      {activeFlyoutSection && (
+        <div
+          className="fixed z-50 pointer-events-auto"
+          style={{ left: 56, top: flyoutTop }}
+          onMouseEnter={keepOpen}
+          onMouseLeave={closeSection}
+        >
+          <div className="ml-1 min-w-[180px] rounded-xl border bg-popover shadow-xl shadow-black/10 py-2 overflow-hidden">
+            <p className="px-3 pt-1 pb-2 text-[9px] font-semibold uppercase tracking-[0.15em] text-muted-foreground/50 select-none">
+              {activeFlyoutSection.label}
+            </p>
+            {activeFlyoutSection.items.map((item) => {
+              const Icon = item.icon
+              const isItemActive =
+                pathname === item.href ||
+                (item.href !== "/settings" && pathname.startsWith(item.href + "/"))
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setHoveredSection(null)}
+                  className={cn(
+                    "flex items-center gap-2.5 px-3 py-2 text-sm transition-colors",
+                    isItemActive
+                      ? "bg-primary/10 text-foreground font-medium"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  )}
+                >
+                  <Icon className={cn("h-3.5 w-3.5 shrink-0", isItemActive ? "text-primary" : "")} />
+                  <span>{item.label}</span>
+                </Link>
+              )
+            })}
           </div>
-        ))}
-      </nav>
-
-      {collapsed && (
-        <div className="border-t p-2">
-          <button
-            onClick={toggle}
-            className="w-full h-8 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </button>
         </div>
       )}
-
-      <AgentStatusFooter collapsed={collapsed} />
-    </aside>
+    </>
   )
 }

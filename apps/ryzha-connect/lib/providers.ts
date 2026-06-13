@@ -14,6 +14,7 @@ export interface ProviderConfig {
   category: string
   description: string
   logo: string
+  logoUrl?: string
   color: string
   docsUrl: string
   authType: AuthType
@@ -29,6 +30,7 @@ export const PROVIDERS: ProviderConfig[] = [
     category: "Accounting",
     description: "System of record. Ryzha pushes journal entries, bills and expenses here.",
     logo: "QB",
+    logoUrl: "https://cdn.simpleicons.org/quickbooks/2CA01C",
     color: "bg-green-500",
     docsUrl: "https://developer.intuit.com/app/developer/qbo/docs/get-started",
     authType: "oauth",
@@ -47,6 +49,7 @@ export const PROVIDERS: ProviderConfig[] = [
     category: "Accounting",
     description: "Accounting platform alternative to QuickBooks.",
     logo: "XE",
+    logoUrl: "https://cdn.simpleicons.org/xero/13B5EA",
     color: "bg-sky-500",
     docsUrl: "https://developer.xero.com/documentation/",
     authType: "coming_soon",
@@ -62,6 +65,7 @@ export const PROVIDERS: ProviderConfig[] = [
     category: "Revenue",
     description: "Pull payment intents, subscriptions and invoice events for revenue recognition.",
     logo: "ST",
+    logoUrl: "https://cdn.simpleicons.org/stripe/635BFF",
     color: "bg-violet-500",
     docsUrl: "https://stripe.com/docs/api",
     authType: "apikey",
@@ -94,6 +98,7 @@ export const PROVIDERS: ProviderConfig[] = [
     category: "Revenue",
     description: "Subscription billing - pull MRR, churn, renewals and upgrades.",
     logo: "CB",
+    logoUrl: "https://cdn.simpleicons.org/chargebee/FF6200",
     color: "bg-orange-500",
     docsUrl: "https://apidocs.chargebee.com/",
     authType: "apikey",
@@ -126,6 +131,7 @@ export const PROVIDERS: ProviderConfig[] = [
     category: "Payroll",
     description: "Pull payroll runs and headcount data for expense categorisation.",
     logo: "GU",
+    logoUrl: "https://cdn.simpleicons.org/gusto/F45D48",
     color: "bg-pink-500",
     docsUrl: "https://docs.gusto.com/",
     authType: "coming_soon",
@@ -156,6 +162,7 @@ export const PROVIDERS: ProviderConfig[] = [
     category: "Spend",
     description: "Pull corporate card transactions and receipts for auto-coding.",
     logo: "RA",
+    logoUrl: "https://logo.clearbit.com/ramp.com",
     color: "bg-slate-600",
     docsUrl: "https://docs.ramp.com/",
     authType: "apikey",
@@ -181,6 +188,7 @@ export const PROVIDERS: ProviderConfig[] = [
     category: "Banking",
     description: "Pull bank transactions and balances for cash position tracking.",
     logo: "ME",
+    logoUrl: "https://logo.clearbit.com/mercury.com",
     color: "bg-teal-500",
     docsUrl: "https://docs.mercury.com/",
     authType: "apikey",
@@ -206,6 +214,7 @@ export const PROVIDERS: ProviderConfig[] = [
     category: "CRM",
     description: "Pull opportunity data for deferred revenue and pipeline reporting.",
     logo: "SF",
+    logoUrl: "https://cdn.simpleicons.org/salesforce/00A1E0",
     color: "bg-blue-500",
     docsUrl: "https://developer.salesforce.com/docs",
     authType: "coming_soon",
@@ -221,6 +230,7 @@ export const PROVIDERS: ProviderConfig[] = [
     category: "CRM",
     description: "Pull deal stages and closed-won for ARR/bookings tracking.",
     logo: "HS",
+    logoUrl: "https://cdn.simpleicons.org/hubspot/FF7A59",
     color: "bg-orange-600",
     docsUrl: "https://developers.hubspot.com/docs/api/overview",
     authType: "apikey",
