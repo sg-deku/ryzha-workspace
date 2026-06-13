@@ -124,46 +124,53 @@ export async function runRevenueAgent(organizationId: string): Promise<RevenueAg
         try {
           const [cashAccount, revenueAccount, deferredRevenueAccount] = await Promise.all([
             findCOAAccount(organizationId, acctConn.connectionId, ["cash", "bank", "checking"]),
-            findCOAAccount(organizationId, acctConn.connectionId, ["saas revenue", "revenue", "income"]),
+            findCOAAccount(organizationId, acctConn.connectionId, ["saas revenue", "revenue", "income", "sales"]),
             findCOAAccount(organizationId, acctConn.connectionId, ["deferred revenue", "unearned"]),
           ])
 
-          const lines = [
-            { externalAccountCode: cashAccount ?? "1000", debit: event.amount, credit: 0, description },
-          ]
-
-          if (deferred > 0) {
-            lines.push({ externalAccountCode: deferredRevenueAccount ?? "2100", debit: 0, credit: deferred, description: "Deferred revenue" })
-            lines.push({ externalAccountCode: revenueAccount ?? "4000", debit: 0, credit: recognised, description: "Recognised revenue (ASC 606)" })
+          if (!cashAccount || !revenueAccount) {
+            result.errors.push({
+              eventId: event.id,
+              error: `ERP push skipped — could not resolve GL accounts from Chart of Accounts. Missing: ${[!cashAccount && "cash/bank account", !revenueAccount && "revenue/income account"].filter(Boolean).join(", ")}. Sync your COA from the Connections page.`,
+            })
           } else {
-            lines.push({ externalAccountCode: revenueAccount ?? "4000", debit: 0, credit: event.amount, description: "Revenue recognised" })
-          }
+            const lines = [
+              { externalAccountCode: cashAccount, debit: event.amount, credit: 0, description },
+            ]
 
-          const pushResult = await dispatchJournalEntry(organizationId, {
-            agentName: "Revenue",
-            financialEventId: event.id,
-            organizationId,
-            date: event.createdAt,
-            description,
-            reference: `RYZ-${event.id.slice(-8).toUpperCase()}`,
-            lines,
-          })
+            if (deferred > 0 && deferredRevenueAccount) {
+              lines.push({ externalAccountCode: deferredRevenueAccount, debit: 0, credit: deferred, description: "Deferred revenue" })
+              lines.push({ externalAccountCode: revenueAccount, debit: 0, credit: recognised, description: "Recognised revenue (ASC 606)" })
+            } else {
+              lines.push({ externalAccountCode: revenueAccount, debit: 0, credit: event.amount, description: "Revenue recognised" })
+            }
 
-          await prisma.externalReference.upsert({
-            where: { financialEventId_provider_entityType: { financialEventId: event.id, provider: acctConn.provider as any, entityType: "JOURNAL_ENTRY" } },
-            create: {
+            const pushResult = await dispatchJournalEntry(organizationId, {
+              agentName: "Revenue",
               financialEventId: event.id,
-              provider: acctConn.provider as any,
-              externalId: pushResult.externalId,
-              entityType: "JOURNAL_ENTRY",
-              externalUrl: pushResult.externalUrl ?? null,
-            },
-            update: { externalId: pushResult.externalId },
-          }).catch(() => {})
+              organizationId,
+              date: event.createdAt,
+              description,
+              reference: `RYZ-${event.id.slice(-8).toUpperCase()}`,
+              lines,
+            })
 
-          result.journalEntriesPosted++
+            await prisma.externalReference.upsert({
+              where: { financialEventId_provider_entityType: { financialEventId: event.id, provider: acctConn.provider as any, entityType: "JOURNAL_ENTRY" } },
+              create: {
+                financialEventId: event.id,
+                provider: acctConn.provider as any,
+                externalId: pushResult.externalId,
+                entityType: "JOURNAL_ENTRY",
+                externalUrl: pushResult.externalUrl ?? null,
+              },
+              update: { externalId: pushResult.externalId },
+            }).catch(() => {})
+
+            result.journalEntriesPosted++
+          }
         } catch (pushErr: any) {
-          result.errors.push({ eventId: event.id, error: `QB push failed: ${pushErr.message}` })
+          result.errors.push({ eventId: event.id, error: `ERP push failed: ${pushErr.message}` })
         }
       }
     } catch (err: any) {

@@ -160,11 +160,19 @@ export default async function EventDetailPage({
     ) ?? null
   }
 
+  const revLog   = decisionLogs.find((l: any) => l.decisionType === "REV_REC")
+  const glLog    = decisionLogs.find((l: any) => l.decisionType === "GL_CODE")
+  const revOutput = (revLog?.output ?? {}) as Record<string, unknown>
+  const glOutput  = (glLog?.output ?? {}) as Record<string, unknown>
+
+  const erpWasAttempted = revOutput.accountingProvider != null
+
   function stageState(stage: typeof PIPELINE_STAGES[number]): "done" | "active" | "skipped" | "pending" {
     if (stage.key === "ingest") return "done"
     if (stage.key === "erp_push") {
       if (qbRef) return "done"
-      if (event.status === "POSTED") return "skipped"
+      if (event.status === "POSTED" && !erpWasAttempted) return "skipped"
+      if (event.status === "POSTED" && erpWasAttempted) return "active"
       return "pending"
     }
     const log = findLog(stage)
@@ -172,12 +180,6 @@ export default async function EventDetailPage({
     if (event.status === "POSTED" || event.status === "FAILED") return "skipped"
     return "pending"
   }
-
-  const revLog   = decisionLogs.find((l: any) => l.decisionType === "REV_REC")
-  const glLog    = decisionLogs.find((l: any) => l.decisionType === "GL_CODE")
-
-  const revOutput = (revLog?.output ?? {}) as Record<string, unknown>
-  const glOutput  = (glLog?.output ?? {}) as Record<string, unknown>
 
   return (
     <div className="space-y-6 max-w-4xl">
@@ -389,20 +391,29 @@ export default async function EventDetailPage({
               </>
             ) : (
               <div className="py-10 flex flex-col items-center justify-center gap-2 text-center">
-                <div className="h-9 w-9 rounded-full bg-muted flex items-center justify-center">
-                  <Clock className="h-4 w-4 text-muted-foreground" />
+                <div className={`h-9 w-9 rounded-full flex items-center justify-center ${erpWasAttempted ? "bg-amber-50 dark:bg-amber-950/30" : "bg-muted"}`}>
+                  {erpWasAttempted
+                    ? <AlertCircle className="h-4 w-4 text-amber-500" />
+                    : <Clock className="h-4 w-4 text-muted-foreground" />
+                  }
                 </div>
-                <p className="text-sm text-muted-foreground font-medium">
-                  {event.status === "POSTED"
-                    ? "Posted without accounting system connected"
+                <p className="text-sm font-medium">
+                  {erpWasAttempted
+                    ? "GL accounts could not be resolved"
+                    : event.status === "POSTED"
+                    ? "No accounting system connected"
                     : event.status === "FAILED"
                     ? "Push to ERP failed"
-                    : "Pending Revenue Agent run"}
+                    : "Pending Revenue Agent run"
+                  }
                 </p>
-                <p className="text-xs text-muted-foreground/60">
-                  {event.status === "INGESTED"
+                <p className="text-xs text-muted-foreground/60 max-w-xs">
+                  {erpWasAttempted
+                    ? "Revenue Agent ran but couldn't match cash/revenue accounts from the Chart of Accounts. Sync your COA from the Connections page, then re-run the Revenue Agent."
+                    : event.status === "INGESTED"
                     ? "Run the Revenue Agent from Settings → Agents"
-                    : "Connect QuickBooks to enable journal entry push"}
+                    : "Connect QuickBooks to enable automatic journal entry push"
+                  }
                 </p>
               </div>
             )}
