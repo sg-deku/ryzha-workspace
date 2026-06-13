@@ -82,6 +82,11 @@ export async function pushQBJournalEntry(
 ): Promise<PushResult> {
   const client = createQBClient(accessToken, realmId)
 
+  const isSandbox = isSandboxToken(accessToken)
+  const webBase = isSandbox
+    ? "https://sandbox.qbo.intuit.com"
+    : "https://app.qbo.intuit.com"
+
   const payload = {
     TxnDate: entry.date.toISOString().split("T")[0],
     PrivateNote: entry.reference,
@@ -102,8 +107,11 @@ export async function pushQBJournalEntry(
     params: { minorversion: 70 },
   })
 
+  const id = data.JournalEntry.Id
+
   return {
-    externalId: data.JournalEntry.Id,
+    externalId: id,
     provider: "QUICKBOOKS",
+    externalUrl: `${webBase}/app/journal?companyId=${realmId}&txnId=${id}`,
   }
 }

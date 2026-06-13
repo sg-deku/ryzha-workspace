@@ -164,7 +164,7 @@ export async function runRevenueAgent(organizationId: string): Promise<RevenueAg
                 entityType: "JOURNAL_ENTRY",
                 externalUrl: pushResult.externalUrl ?? null,
               },
-              update: { externalId: pushResult.externalId },
+              update: { externalId: pushResult.externalId, externalUrl: pushResult.externalUrl ?? null },
             }).catch(() => {})
 
             result.journalEntriesPosted++

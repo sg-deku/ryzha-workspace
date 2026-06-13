@@ -21,23 +21,29 @@ import {
 import { ReprocessButton } from "@/components/events/reprocess-button"
 
 async function getEventDetail(id: string, organizationId: string) {
-  const event = await (prisma.financialEvent as any).findFirst({
-    where: { id, organizationId },
-    include: {
-      aiDecisionLogs: { orderBy: { createdAt: "asc" } },
-      externalRefs: true,
-      syncLogs: {
-        orderBy: { createdAt: "desc" },
-        take: 10,
-        include: { integrationConnection: { select: { provider: true } } },
+  const [event, qbConn] = await Promise.all([
+    (prisma.financialEvent as any).findFirst({
+      where: { id, organizationId },
+      include: {
+        aiDecisionLogs: { orderBy: { createdAt: "asc" } },
+        externalRefs: true,
+        syncLogs: {
+          orderBy: { createdAt: "desc" },
+          take: 10,
+          include: { integrationConnection: { select: { provider: true } } },
+        },
+        approvalRequests: {
+          orderBy: { requestedAt: "desc" },
+          take: 5,
+        },
       },
-      approvalRequests: {
-        orderBy: { requestedAt: "desc" },
-        take: 5,
-      },
-    },
-  })
-  return event
+    }),
+    prisma.integrationConnection.findUnique({
+      where: { organizationId_provider: { organizationId, provider: "QUICKBOOKS" } },
+      select: { realmId: true },
+    }),
+  ])
+  return { event, qbRealmId: qbConn?.realmId ?? null }
 }
 
 const STATUS_META: Record<string, { label: string; color: string; dot: string }> = {
@@ -96,9 +102,10 @@ function getStripeUrl(externalId: string, isSandbox = true): string {
   return `${base}/search?query=${externalId}`
 }
 
-function getQBUrl(externalId: string, isSandbox = true): string {
-  if (isSandbox) return `https://sandbox.qbo.intuit.com/app/journalentry?txnId=${externalId}`
-  return `https://app.qbo.intuit.com/app/journalentry?txnId=${externalId}`
+function getQBUrl(externalId: string, realmId: string | null, isSandbox = true): string {
+  const base = isSandbox ? "https://sandbox.qbo.intuit.com" : "https://app.qbo.intuit.com"
+  const company = realmId ? `&companyId=${realmId}` : ""
+  return `${base}/app/journal?txnId=${externalId}${company}`
 }
 
 function StatusPill({ status }: { status: string }) {
@@ -138,7 +145,7 @@ export default async function EventDetailPage({
   if (!session) redirect("/login")
 
   const { id } = await params
-  const event = await getEventDetail(id, session.user.organizationId)
+  const { event, qbRealmId } = await getEventDetail(id, session.user.organizationId)
   if (!event) notFound()
 
   const normalised = (event.normalisedData ?? {}) as Record<string, unknown>
@@ -355,7 +362,7 @@ export default async function EventDetailPage({
             </div>
             {qbRef && (
               <a
-                href={getQBUrl(qbRef.externalId, isSandbox)}
+                href={qbRef.externalUrl ?? getQBUrl(qbRef.externalId, qbRealmId, isSandbox)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-1 text-xs text-primary hover:underline"
