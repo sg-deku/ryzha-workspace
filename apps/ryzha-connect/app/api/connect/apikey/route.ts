@@ -8,6 +8,7 @@ const APIKEY_PROVIDERS = new Set([
   "RAMP",
   "MERCURY",
   "HUBSPOT",
+  "GUSTO",
 ])
 
 export async function POST(req: NextRequest) {
@@ -30,6 +31,10 @@ export async function POST(req: NextRequest) {
   if (fields.siteName) extraMeta.siteName = fields.siteName
   if (fields.webhookSecret) extraMeta.webhookSecret = fields.webhookSecret
 
+  const realmId = provider === "GUSTO" ? fields.siteName ?? null
+    : provider === "CHARGEBEE" ? fields.siteName ?? null
+    : null
+
   await prisma.integrationConnection.upsert({
     where: {
       organizationId_provider: {
@@ -42,11 +47,13 @@ export async function POST(req: NextRequest) {
       provider: provider as any,
       displayName: provider.replace(/_/g, " ").replace("CONNECT", "").trim(),
       accessToken: fields.apiKey,
+      realmId,
       scope: JSON.stringify(extraMeta),
       status: "ACTIVE",
     },
     update: {
       accessToken: fields.apiKey,
+      realmId,
       scope: JSON.stringify(extraMeta),
       status: "ACTIVE",
       errorMessage: null,

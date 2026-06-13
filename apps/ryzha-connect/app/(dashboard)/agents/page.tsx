@@ -24,6 +24,7 @@ interface AgentDef {
   events?: string[]
   section: string
   color: string
+  requiredPlan?: "FREE" | "PRO" | "SCALE"
 }
 
 const AGENTS: AgentDef[] = [
@@ -36,6 +37,7 @@ const AGENTS: AgentDef[] = [
     events: ["PAYMENT_RECEIVED", "INVOICE_PAID", "EXPENSE_CREATED"],
     section: "Core Pipeline",
     color: "bg-violet-100 text-violet-700 dark:bg-violet-950/30 dark:text-violet-400",
+    requiredPlan: "FREE",
   },
   {
     key: "revenue",
@@ -46,6 +48,7 @@ const AGENTS: AgentDef[] = [
     events: ["PAYMENT_RECEIVED", "INVOICE_PAID"],
     section: "Core Pipeline",
     color: "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400",
+    requiredPlan: "FREE",
   },
   {
     key: "cash",
@@ -55,6 +58,7 @@ const AGENTS: AgentDef[] = [
     triggerLabel: "Daily at 02:00 UTC",
     section: "Reconciliation",
     color: "bg-blue-100 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400",
+    requiredPlan: "FREE",
   },
   {
     key: "ap",
@@ -65,6 +69,7 @@ const AGENTS: AgentDef[] = [
     events: ["BILL_CREATED", "EXPENSE_CREATED"],
     section: "Reconciliation",
     color: "bg-orange-100 text-orange-700 dark:bg-orange-950/30 dark:text-orange-400",
+    requiredPlan: "PRO",
   },
   {
     key: "payroll",
@@ -75,6 +80,7 @@ const AGENTS: AgentDef[] = [
     events: ["PAYROLL_PROCESSED"],
     section: "Reconciliation",
     color: "bg-pink-100 text-pink-700 dark:bg-pink-950/30 dark:text-pink-400",
+    requiredPlan: "PRO",
   },
   {
     key: "headcount",
@@ -84,6 +90,7 @@ const AGENTS: AgentDef[] = [
     triggerLabel: "Daily at 02:00 UTC",
     section: "Reconciliation",
     color: "bg-purple-100 text-purple-700 dark:bg-purple-950/30 dark:text-purple-400",
+    requiredPlan: "PRO",
   },
   {
     key: "pipeline",
@@ -93,6 +100,7 @@ const AGENTS: AgentDef[] = [
     triggerLabel: "Daily at 02:00 UTC",
     section: "Reconciliation",
     color: "bg-indigo-100 text-indigo-700 dark:bg-indigo-950/30 dark:text-indigo-400",
+    requiredPlan: "PRO",
   },
   {
     key: "commission",
@@ -103,6 +111,7 @@ const AGENTS: AgentDef[] = [
     events: ["PAYMENT_RECEIVED", "INVOICE_PAID"],
     section: "Reconciliation",
     color: "bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400",
+    requiredPlan: "PRO",
   },
   {
     key: "fx",
@@ -112,6 +121,7 @@ const AGENTS: AgentDef[] = [
     triggerLabel: "Daily at 02:00 UTC",
     section: "Reconciliation",
     color: "bg-teal-100 text-teal-700 dark:bg-teal-950/30 dark:text-teal-400",
+    requiredPlan: "SCALE",
   },
   {
     key: "anomaly",
@@ -121,6 +131,7 @@ const AGENTS: AgentDef[] = [
     triggerLabel: "On every sync",
     section: "Intelligence",
     color: "bg-red-100 text-red-700 dark:bg-red-950/30 dark:text-red-400",
+    requiredPlan: "PRO",
   },
   {
     key: "collections",
@@ -130,6 +141,7 @@ const AGENTS: AgentDef[] = [
     triggerLabel: "Daily at 02:00 UTC",
     section: "Intelligence",
     color: "bg-rose-100 text-rose-700 dark:bg-rose-950/30 dark:text-rose-400",
+    requiredPlan: "PRO",
   },
   {
     key: "fpna",
@@ -139,6 +151,7 @@ const AGENTS: AgentDef[] = [
     triggerLabel: "Daily at 02:00 UTC",
     section: "Intelligence",
     color: "bg-cyan-100 text-cyan-700 dark:bg-cyan-950/30 dark:text-cyan-400",
+    requiredPlan: "PRO",
   },
   {
     key: "close",
@@ -148,6 +161,7 @@ const AGENTS: AgentDef[] = [
     triggerLabel: "1st of each month at 00:01 UTC",
     section: "Month-End",
     color: "bg-slate-100 text-slate-700 dark:bg-slate-950/30 dark:text-slate-400",
+    requiredPlan: "PRO",
   },
   {
     key: "compliance",
@@ -157,6 +171,7 @@ const AGENTS: AgentDef[] = [
     triggerLabel: "1st of each month at 00:01 UTC",
     section: "Month-End",
     color: "bg-stone-100 text-stone-700 dark:bg-stone-950/30 dark:text-stone-400",
+    requiredPlan: "PRO",
   },
   {
     key: "board-report",
@@ -166,6 +181,7 @@ const AGENTS: AgentDef[] = [
     triggerLabel: "Manual only",
     section: "Month-End",
     color: "bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-950/30 dark:text-fuchsia-400",
+    requiredPlan: "PRO",
   },
 ]
 
@@ -259,6 +275,15 @@ function AgentCard({
         {agent.events && (
           <span className="text-[10px] text-muted-foreground/60 font-mono">
             {agent.events.join(" · ")}
+          </span>
+        )}
+        {agent.requiredPlan && agent.requiredPlan !== "FREE" && (
+          <span className={`inline-flex items-center text-[10px] font-semibold px-1.5 py-0.5 rounded-full border ${
+            agent.requiredPlan === "SCALE"
+              ? "bg-violet-50 border-violet-200 text-violet-700 dark:bg-violet-950/30 dark:border-violet-900 dark:text-violet-400"
+              : "bg-primary/5 border-primary/20 text-primary"
+          }`}>
+            {agent.requiredPlan === "SCALE" ? "Series B+" : "Series A"}
           </span>
         )}
       </div>

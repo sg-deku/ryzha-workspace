@@ -52,7 +52,7 @@ export default async function ConnectPage() {
         </p>
       </div>
 
-      <ProviderGrid connections={connections} qbConfigured={qbConfigured} />
+      <ProviderGrid connections={connections} qbConfigured={qbConfigured} organizationId={session.user.organizationId} />
     </div>
   )
 }

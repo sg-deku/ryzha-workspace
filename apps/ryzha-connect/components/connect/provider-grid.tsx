@@ -3,7 +3,7 @@
 import * as React from "react"
 import {
   CheckCircle2, AlertCircle, Clock, XCircle,
-  RefreshCw, Unplug, ExternalLink, Loader2, X, ChevronRight,
+  RefreshCw, Unplug, ExternalLink, Loader2, X, ChevronRight, Copy, Check,
 } from "lucide-react"
 import { PROVIDERS } from "@/lib/providers"
 import type { ProviderConfig } from "@/lib/providers"
@@ -53,6 +53,14 @@ export interface SerializedConnection {
 interface Props {
   connections: SerializedConnection[]
   qbConfigured: boolean
+  organizationId?: string
+}
+
+const WEBHOOK_PROVIDERS: Record<string, string> = {
+  STRIPE_CONNECT: "stripe",
+  RAMP:           "ramp",
+  MERCURY:        "mercury",
+  GUSTO:          "gusto",
 }
 
 function fmt(d: Date | null | undefined): string {
@@ -95,16 +103,54 @@ function DetailRow({ label, value }: { label: string; value: React.ReactNode }) 
   )
 }
 
+function WebhookUrlRow({ providerId, orgId }: { providerId: string; orgId?: string }) {
+  const [copied, setCopied] = React.useState(false)
+  const webhookPath = WEBHOOK_PROVIDERS[providerId]
+  if (!webhookPath || !orgId) return null
+
+  const appUrl = typeof window !== "undefined"
+    ? window.location.origin
+    : process.env.NEXT_PUBLIC_APP_URL ?? "https://ryzha.vercel.app"
+  const url = `${appUrl}/api/webhooks/${webhookPath}?orgId=${orgId}`
+
+  function copy() {
+    navigator.clipboard.writeText(url)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  return (
+    <div className="py-2.5 border-b last:border-0">
+      <p className="text-xs text-muted-foreground mb-1.5">Webhook URL</p>
+      <div className="flex items-center gap-1.5 rounded-lg bg-muted/60 px-2 py-1.5">
+        <code className="flex-1 text-[10px] font-mono text-muted-foreground truncate">{url}</code>
+        <button
+          onClick={copy}
+          className="shrink-0 p-1 rounded text-muted-foreground hover:text-foreground transition-colors"
+          title="Copy webhook URL"
+        >
+          {copied ? <Check className="h-3 w-3 text-emerald-500" /> : <Copy className="h-3 w-3" />}
+        </button>
+      </div>
+      <p className="text-[10px] text-muted-foreground/60 mt-1">
+        Configure this URL in your {providerId === "STRIPE_CONNECT" ? "Stripe" : providerId.charAt(0) + providerId.slice(1).toLowerCase()} dashboard to receive real-time events.
+      </p>
+    </div>
+  )
+}
+
 function ConnectionDetail({
   provider,
   conn,
   onClose,
   onDisconnected,
+  orgId,
 }: {
   provider: ProviderConfig
   conn: SerializedConnection
   onClose: () => void
   onDisconnected: () => void
+  orgId?: string
 }) {
   const [syncing, setSyncing] = React.useState(false)
   const [syncMsg, setSyncMsg] = React.useState<string | null>(null)
@@ -213,6 +259,12 @@ function ConnectionDetail({
             </div>
           )}
 
+          {WEBHOOK_PROVIDERS[provider.id] && (
+            <div className="rounded-xl border bg-card px-4">
+              <WebhookUrlRow providerId={provider.id} orgId={orgId} />
+            </div>
+          )}
+
           <div className="rounded-xl border bg-card p-4">
             <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50 mb-3">What syncs</p>
             <div className="space-y-2">
@@ -314,7 +366,7 @@ function ProviderCard({
   )
 }
 
-export function ProviderGrid({ connections, qbConfigured }: Props) {
+export function ProviderGrid({ connections, qbConfigured, organizationId }: Props) {
   const [selected, setSelected] = React.useState<string | null>(null)
   const [activeTab, setActiveTab] = React.useState("All")
   const [localConns, setLocalConns] = React.useState(connections)
@@ -399,6 +451,7 @@ export function ProviderGrid({ connections, qbConfigured }: Props) {
               conn={selectedConn}
               onClose={() => setSelected(null)}
               onDisconnected={() => handleDisconnected(selectedProvider.id)}
+              orgId={organizationId}
             />
           ) : (
             <ConnectModal

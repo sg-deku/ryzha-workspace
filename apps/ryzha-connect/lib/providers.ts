@@ -134,11 +134,28 @@ export const PROVIDERS: ProviderConfig[] = [
     logoUrl: "https://cdn.simpleicons.org/gusto/F45D48",
     color: "bg-pink-500",
     docsUrl: "https://docs.gusto.com/",
-    authType: "coming_soon",
+    authType: "apikey",
     syncPoints: [
       "Payroll runs → PAYROLL_PROCESSED events",
       "Headcount changes per department",
       "Benefit deductions for GL coding",
+      "Real-time payroll webhooks",
+    ],
+    fields: [
+      {
+        name: "apiKey",
+        label: "API Token",
+        type: "password",
+        placeholder: "prod_token_...",
+        helpText: "Found in Gusto Developer Portal → API Tokens. Use a Partner Developer Token for production access.",
+      },
+      {
+        name: "siteName",
+        label: "Company ID",
+        type: "text",
+        placeholder: "your-company-uuid",
+        helpText: "Your Gusto company UUID. Found in Gusto under Settings → Company Details.",
+      },
     ],
   },
   {

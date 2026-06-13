@@ -17,6 +17,7 @@ import { runComplianceAgent } from "@/lib/agents/compliance-agent"
 import { runFPnAAgent } from "@/lib/agents/fpna-agent"
 import { runStripeSync } from "@/lib/stripe-sync"
 import { prisma } from "@/lib/prisma"
+import { checkAgentAccess } from "@/lib/gate"
 
 type AgentRunner = (organizationId: string) => Promise<unknown>
 
@@ -85,6 +86,19 @@ export async function POST(req: Request) {
     return NextResponse.json(
       { error: `Unknown agent "${agent}". Valid: connector-sync, ${Object.keys(AGENT_MAP).join(", ")}` },
       { status: 400 }
+    )
+  }
+
+  const access = await checkAgentAccess(organizationId, agent)
+  if (!access.allowed) {
+    return NextResponse.json(
+      {
+        error: `Agent "${agent}" requires the ${access.required} plan. Your current plan: ${access.current}. Upgrade at /settings/billing.`,
+        upgradeRequired: true,
+        required: access.required,
+        current: access.current,
+      },
+      { status: 403 }
     )
   }
 
