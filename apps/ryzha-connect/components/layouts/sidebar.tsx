@@ -189,7 +189,7 @@ export function Sidebar() {
           </Link>
         </div>
 
-        <nav className="flex flex-col items-center gap-0.5 flex-1 py-3 overflow-y-auto">
+        <nav className="flex flex-col items-center gap-1 flex-1 py-3 overflow-y-auto">
           {navSections.map((section) => {
             const Icon = section.icon
             const isActive = activeSection === section.id
@@ -197,13 +197,13 @@ export function Sidebar() {
 
             const sharedInner = (
               <>
-                <Icon className="h-5 w-5" />
-                <span className="text-[9px] font-medium leading-none mt-0.5 tracking-wide">{section.label}</span>
+                <Icon className="h-[22px] w-[22px]" />
+                <span className="text-[9px] font-medium leading-none mt-1 tracking-wide">{section.label}</span>
               </>
             )
 
             const sharedClass = cn(
-              "w-full flex flex-col items-center gap-0.5 rounded-lg py-2 px-1 transition-all",
+              "w-full flex flex-col items-center gap-0.5 rounded-lg py-2.5 px-1 transition-all",
               isActive
                 ? "bg-primary/10 text-primary"
                 : isHovered
