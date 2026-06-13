@@ -100,9 +100,17 @@ export async function GET(req: Request) {
     try {
       const agentConfig = await getAgentConfig(orgId)
 
-      const [connectorSync, glCoding, revenue, cash, ap, anomaly, pipeline, commission] = await Promise.allSettled([
-        agentConfig.connectorsEnabled ? syncConnectors(orgId) : Promise.resolve({ skipped: true }),
-        agentConfig.glCodingEnabled ? runGLCodingAgent(orgId) : Promise.resolve({ skipped: true }),
+      let connectorSyncResult: unknown = { skipped: true }
+      if (agentConfig.connectorsEnabled) {
+        try { connectorSyncResult = await syncConnectors(orgId) } catch (e: any) { connectorSyncResult = { error: e.message } }
+      }
+
+      let glCodingResult: unknown = { skipped: true }
+      if (agentConfig.glCodingEnabled) {
+        try { glCodingResult = await runGLCodingAgent(orgId) } catch (e: any) { glCodingResult = { error: e.message } }
+      }
+
+      const [revenue, cash, ap, anomaly, pipeline, commission] = await Promise.allSettled([
         agentConfig.revenueEnabled ? runRevenueAgent(orgId) : Promise.resolve({ skipped: true }),
         agentConfig.cashEnabled ? runCashAgent(orgId) : Promise.resolve({ skipped: true }),
         agentConfig.apEnabled ? runAPAgent(orgId) : Promise.resolve({ skipped: true }),
@@ -112,8 +120,8 @@ export async function GET(req: Request) {
       ])
 
       results[orgId] = {
-        connectors: connectorSync.status === "fulfilled" ? connectorSync.value : { error: (connectorSync as any).reason?.message },
-        glCoding: glCoding.status === "fulfilled" ? glCoding.value : { error: (glCoding as any).reason?.message },
+        connectors: connectorSyncResult,
+        glCoding: glCodingResult,
         revenue: revenue.status === "fulfilled" ? revenue.value : { error: (revenue as any).reason?.message },
         cash: cash.status === "fulfilled" ? cash.value : { error: (cash as any).reason?.message },
         ap: ap.status === "fulfilled" ? ap.value : { error: (ap as any).reason?.message },

@@ -31,8 +31,16 @@ export async function POST(req: Request) {
       const anomalyModule = await import("@/lib/agents/anomaly-agent")
       const glModule = await import("@/lib/agents/gl-coding-agent")
 
-      const [glCoding, revenue, cash, ap, anomaly] = await Promise.allSettled([
-        config.glCodingEnabled !== false ? glModule.runGLCodingAgent(organizationId) : Promise.resolve({ skipped: true }),
+      let glCodingResult: unknown = { skipped: true }
+      if (config.glCodingEnabled !== false) {
+        try {
+          glCodingResult = await glModule.runGLCodingAgent(organizationId)
+        } catch (e: any) {
+          glCodingResult = { error: e.message }
+        }
+      }
+
+      const [revenue, cash, ap, anomaly] = await Promise.allSettled([
         config.revenueEnabled !== false ? revenueModule.runRevenueAgent(organizationId) : Promise.resolve({ skipped: true }),
         config.cashEnabled !== false ? cashModule.runCashAgent(organizationId) : Promise.resolve({ skipped: true }),
         config.apEnabled !== false ? apModule.runAPAgent(organizationId) : Promise.resolve({ skipped: true }),
@@ -40,7 +48,7 @@ export async function POST(req: Request) {
       ])
 
       result = {
-        glCoding:  glCoding.status === "fulfilled" ? glCoding.value : { error: (glCoding as PromiseRejectedResult).reason?.message },
+        glCoding:  glCodingResult,
         revenue:   revenue.status === "fulfilled" ? revenue.value : { error: (revenue as PromiseRejectedResult).reason?.message },
         cash:      cash.status === "fulfilled" ? cash.value : { error: (cash as PromiseRejectedResult).reason?.message },
         ap:        ap.status === "fulfilled" ? ap.value : { error: (ap as PromiseRejectedResult).reason?.message },

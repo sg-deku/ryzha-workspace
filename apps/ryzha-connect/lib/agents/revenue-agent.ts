@@ -47,11 +47,13 @@ export async function runRevenueAgent(organizationId: string): Promise<RevenueAg
   const contractTermMonths: number =
     (architecture?.revenueRecognition as any)?.defaultTermMonths ?? 12
 
+  const staleThreshold = new Date(Date.now() - 30 * 60 * 1000)
   await prisma.financialEvent.updateMany({
     where: {
       organizationId,
-      status: "FAILED",
+      status: { in: ["FAILED", "PROCESSING"] },
       eventType: { in: ["PAYMENT_RECEIVED", "INVOICE_PAID"] },
+      updatedAt: { lt: staleThreshold },
     },
     data: { status: "INGESTED" },
   })
