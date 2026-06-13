@@ -7,6 +7,17 @@ import { useSession, signOut } from "next-auth/react"
 import Link from "next/link"
 import { useRouter, usePathname } from "next/navigation"
 
+function BrandLogo() {
+  return (
+    <Link href="/overview" className="flex items-center gap-2 shrink-0 hover:opacity-80 transition-opacity mr-4">
+      <div className="h-7 w-7 rounded-lg bg-primary flex items-center justify-center shadow-sm shadow-primary/30">
+        <span className="font-display font-bold text-primary-foreground text-[12px] tracking-tight">R</span>
+      </div>
+      <span className="font-display font-semibold text-[15px] tracking-tight">ryzha</span>
+    </Link>
+  )
+}
+
 const ROUTE_LABELS: Record<string, string> = {
   "/overview":           "Overview",
   "/connect":            "Connections",
@@ -314,6 +325,8 @@ export function Header({ orgName }: { orgName?: string | null }) {
   return (
     <header className="h-14 border-b bg-background/95 backdrop-blur-sm flex items-center justify-between px-5 shrink-0 gap-4">
       <div className="flex items-center gap-3 min-w-0">
+        <BrandLogo />
+        <div className="w-px h-4 bg-border shrink-0" />
         <h1 className="text-sm font-semibold truncate">{pageLabel}</h1>
         {orgName && (
           <span className="hidden lg:block text-xs text-muted-foreground/50 truncate">

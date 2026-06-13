@@ -179,17 +179,8 @@ export function Sidebar() {
 
   return (
     <>
-      <aside className="flex h-screen w-16 flex-col border-r bg-background shrink-0 z-30">
-        <div className="flex h-14 items-center justify-center border-b">
-          <Link href="/overview" className="flex flex-col items-center gap-0.5 hover:opacity-80 transition-opacity">
-            <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center shadow-sm shadow-primary/30">
-              <span className="font-display font-bold text-primary-foreground text-[13px] tracking-tight">R</span>
-            </div>
-            <span className="text-[9px] font-semibold text-muted-foreground/60 tracking-wide">ryzha</span>
-          </Link>
-        </div>
-
-        <nav className="flex flex-col items-center gap-1 flex-1 py-3 overflow-y-auto">
+      <aside className="flex h-full w-[72px] flex-col border-r bg-background shrink-0 z-30">
+        <nav className="flex flex-col items-center gap-1.5 flex-1 py-4 px-1 overflow-y-auto">
           {navSections.map((section) => {
             const Icon = section.icon
             const isActive = activeSection === section.id
@@ -197,13 +188,13 @@ export function Sidebar() {
 
             const sharedInner = (
               <>
-                <Icon className="h-[22px] w-[22px]" />
-                <span className="text-[9px] font-medium leading-none mt-1 tracking-wide">{section.label}</span>
+                <Icon className="h-6 w-6" />
+                <span className="text-[10px] font-medium leading-none mt-1.5 tracking-wide">{section.label}</span>
               </>
             )
 
             const sharedClass = cn(
-              "w-full flex flex-col items-center gap-0.5 rounded-lg py-2.5 px-1 transition-all",
+              "w-full flex flex-col items-center gap-0.5 rounded-xl py-3 px-1 transition-all",
               isActive
                 ? "bg-primary/10 text-primary"
                 : isHovered
@@ -247,7 +238,7 @@ export function Sidebar() {
       {activeFlyoutSection && (
         <div
           className="fixed z-50 pointer-events-auto"
-          style={{ left: 64, top: flyoutTop }}
+          style={{ left: 72, top: flyoutTop }}
           onMouseEnter={keepOpen}
           onMouseLeave={closeSection}
         >

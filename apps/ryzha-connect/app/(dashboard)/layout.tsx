@@ -38,10 +38,10 @@ export default async function DashboardLayout({
   const orgName = await getOrgName(organizationId)
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background">
-      <Sidebar />
-      <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
-        <Header orgName={orgName} />
+    <div className="flex flex-col h-screen overflow-hidden bg-background">
+      <Header orgName={orgName} />
+      <div className="flex flex-1 min-h-0 overflow-hidden">
+        <Sidebar />
         <main className="flex-1 overflow-y-auto p-6">
           {children}
         </main>
