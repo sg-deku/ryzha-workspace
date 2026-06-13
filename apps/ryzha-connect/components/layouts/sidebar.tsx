@@ -179,18 +179,37 @@ export function Sidebar() {
 
   return (
     <>
-      <aside className="flex h-screen w-14 flex-col border-r bg-background shrink-0 z-30">
+      <aside className="flex h-screen w-16 flex-col border-r bg-background shrink-0 z-30">
         <div className="flex h-14 items-center justify-center border-b">
-          <Link href="/overview" className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center shadow-sm shadow-primary/30 hover:opacity-90 transition-opacity">
-            <span className="font-display font-bold text-primary-foreground text-[13px] tracking-tight">R</span>
+          <Link href="/overview" className="flex flex-col items-center gap-0.5 hover:opacity-80 transition-opacity">
+            <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center shadow-sm shadow-primary/30">
+              <span className="font-display font-bold text-primary-foreground text-[13px] tracking-tight">R</span>
+            </div>
+            <span className="text-[9px] font-semibold text-muted-foreground/60 tracking-wide">ryzha</span>
           </Link>
         </div>
 
-        <nav className="flex flex-col items-center gap-1 flex-1 py-3 overflow-y-auto">
+        <nav className="flex flex-col items-center gap-0.5 flex-1 py-3 overflow-y-auto">
           {navSections.map((section) => {
             const Icon = section.icon
             const isActive = activeSection === section.id
             const isHovered = hoveredSection === section.id
+
+            const sharedInner = (
+              <>
+                <Icon className="h-5 w-5" />
+                <span className="text-[9px] font-medium leading-none mt-0.5 tracking-wide">{section.label}</span>
+              </>
+            )
+
+            const sharedClass = cn(
+              "w-full flex flex-col items-center gap-0.5 rounded-lg py-2 px-1 transition-all",
+              isActive
+                ? "bg-primary/10 text-primary"
+                : isHovered
+                ? "bg-muted text-foreground"
+                : "text-muted-foreground hover:bg-muted/70 hover:text-foreground"
+            )
 
             if (section.items.length === 1) {
               const item = section.items[0]
@@ -200,15 +219,9 @@ export function Sidebar() {
                   href={item.href}
                   ref={(el) => { sectionRefs.current[section.id] = el }}
                   onMouseEnter={() => { if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current); setHoveredSection(null) }}
-                  title={section.label}
-                  className={cn(
-                    "h-9 w-9 rounded-lg flex items-center justify-center transition-all",
-                    isActive
-                      ? "bg-primary text-primary-foreground shadow-sm shadow-primary/30"
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                  )}
+                  className={sharedClass}
                 >
-                  <Icon className="h-4 w-4" />
+                  {sharedInner}
                 </Link>
               )
             }
@@ -220,16 +233,9 @@ export function Sidebar() {
                 ref={(el) => { sectionRefs.current[section.id] = el }}
                 onMouseEnter={() => openSection(section.id)}
                 onMouseLeave={closeSection}
-                className={cn(
-                  "h-9 w-9 rounded-lg flex items-center justify-center transition-all",
-                  isActive
-                    ? "bg-primary text-primary-foreground shadow-sm shadow-primary/30"
-                    : isHovered
-                    ? "bg-muted text-foreground"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                )}
+                className={sharedClass}
               >
-                <Icon className="h-4 w-4" />
+                {sharedInner}
               </button>
             )
           })}
@@ -241,7 +247,7 @@ export function Sidebar() {
       {activeFlyoutSection && (
         <div
           className="fixed z-50 pointer-events-auto"
-          style={{ left: 56, top: flyoutTop }}
+          style={{ left: 64, top: flyoutTop }}
           onMouseEnter={keepOpen}
           onMouseLeave={closeSection}
         >
