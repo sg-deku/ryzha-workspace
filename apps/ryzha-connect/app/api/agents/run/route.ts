@@ -1,40 +1,41 @@
 import { NextResponse } from "next/server"
 import { getSession } from "@/lib/session"
+import { runGLCodingAgent } from "@/lib/agents/gl-coding-agent"
+import { runRevenueAgent } from "@/lib/agents/revenue-agent"
+import { runCashAgent } from "@/lib/agents/cash-agent"
+import { runAPAgent } from "@/lib/agents/ap-agent"
+import { runAnomalyAgent } from "@/lib/agents/anomaly-agent"
+import { runPayrollAgent } from "@/lib/agents/payroll-agent"
+import { runFXAgent } from "@/lib/agents/fx-agent"
+import { runHeadcountAgent } from "@/lib/agents/headcount-agent"
+import { runCollectionsAgent } from "@/lib/agents/collections-agent"
+import { runPipelineAgent } from "@/lib/agents/pipeline-agent"
+import { runCommissionAgent } from "@/lib/agents/commission-agent"
+import { runCloseAgent } from "@/lib/agents/close-agent"
+import { runBoardReportAgent } from "@/lib/agents/board-report-agent"
+import { runComplianceAgent } from "@/lib/agents/compliance-agent"
+import { runFPnAAgent } from "@/lib/agents/fpna-agent"
+import { runStripeSync } from "@/lib/stripe-sync"
+import { prisma } from "@/lib/prisma"
 
-const AGENT_RUNNERS: Record<string, string> = {
-  "gl-coding":   "@/lib/agents/gl-coding-agent",
-  revenue:       "@/lib/agents/revenue-agent",
-  cash:          "@/lib/agents/cash-agent",
-  ap:            "@/lib/agents/ap-agent",
-  anomaly:       "@/lib/agents/anomaly-agent",
-  payroll:       "@/lib/agents/payroll-agent",
-  fx:            "@/lib/agents/fx-agent",
-  headcount:     "@/lib/agents/headcount-agent",
-  collections:   "@/lib/agents/collections-agent",
-  pipeline:      "@/lib/agents/pipeline-agent",
-  commission:    "@/lib/agents/commission-agent",
-  close:         "@/lib/agents/close-agent",
-  "board-report": "@/lib/agents/board-report-agent",
-  compliance:    "@/lib/agents/compliance-agent",
-  fpna:          "@/lib/agents/fpna-agent",
-}
+type AgentRunner = (organizationId: string) => Promise<unknown>
 
-const RUNNER_FNAMES: Record<string, string> = {
-  "gl-coding":   "runGLCodingAgent",
-  revenue:       "runRevenueAgent",
-  cash:          "runCashAgent",
-  ap:            "runAPAgent",
-  anomaly:       "runAnomalyAgent",
-  payroll:       "runPayrollAgent",
-  fx:            "runFXAgent",
-  headcount:     "runHeadcountAgent",
-  collections:   "runCollectionsAgent",
-  pipeline:      "runPipelineAgent",
-  commission:    "runCommissionAgent",
-  close:         "runCloseAgent",
-  "board-report": "runBoardReportAgent",
-  compliance:    "runComplianceAgent",
-  fpna:          "runFPnAAgent",
+const AGENT_MAP: Record<string, AgentRunner> = {
+  "gl-coding":    runGLCodingAgent,
+  revenue:        runRevenueAgent,
+  cash:           runCashAgent,
+  ap:             runAPAgent,
+  anomaly:        runAnomalyAgent,
+  payroll:        runPayrollAgent,
+  fx:             runFXAgent,
+  headcount:      runHeadcountAgent,
+  collections:    runCollectionsAgent,
+  pipeline:       runPipelineAgent,
+  commission:     runCommissionAgent,
+  close:          runCloseAgent,
+  "board-report": runBoardReportAgent,
+  compliance:     runComplianceAgent,
+  fpna:           runFPnAAgent,
 }
 
 export async function POST(req: Request) {
@@ -43,13 +44,10 @@ export async function POST(req: Request) {
 
   const body = await req.json().catch(() => ({}))
   const { agent } = body
-
   const organizationId = session.user.organizationId
 
   if (agent === "connector-sync") {
     try {
-      const { prisma } = await import("@/lib/prisma")
-      const { runStripeSync } = await import("@/lib/stripe-sync")
       const connections = await prisma.integrationConnection.findMany({
         where: { organizationId, status: "ACTIVE" },
         select: { id: true, provider: true, accessToken: true, realmId: true },
@@ -82,26 +80,22 @@ export async function POST(req: Request) {
     }
   }
 
-  if (!AGENT_RUNNERS[agent]) {
+  const runner = AGENT_MAP[agent]
+  if (!runner) {
     return NextResponse.json(
-      { error: `Unknown agent "${agent}". Valid: connector-sync, ${Object.keys(AGENT_RUNNERS).join(", ")}` },
+      { error: `Unknown agent "${agent}". Valid: connector-sync, ${Object.keys(AGENT_MAP).join(", ")}` },
       { status: 400 }
     )
   }
 
   try {
-    const mod = await import(AGENT_RUNNERS[agent] as any)
-    const fn = mod[RUNNER_FNAMES[agent]]
-    if (typeof fn !== "function") throw new Error(`Runner function not found in module`)
-
     if (agent === "gl-coding") {
-      const result = await fn(organizationId)
-      const revenueModule = await import("@/lib/agents/revenue-agent")
-      const revenueResult = await revenueModule.runRevenueAgent(organizationId)
+      const result = await runGLCodingAgent(organizationId)
+      const revenueResult = await runRevenueAgent(organizationId)
       return NextResponse.json({ ok: true, agent, ranAt: new Date().toISOString(), result, followUp: { revenue: revenueResult } })
     }
 
-    const result = await fn(organizationId)
+    const result = await runner(organizationId)
     return NextResponse.json({ ok: true, agent, ranAt: new Date().toISOString(), result })
   } catch (err: any) {
     return NextResponse.json({ error: err.message ?? "Agent run failed" }, { status: 500 })
