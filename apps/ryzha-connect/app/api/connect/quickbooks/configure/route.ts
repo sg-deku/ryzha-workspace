@@ -13,7 +13,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Client ID and Client Secret are required" }, { status: 400 })
   }
 
-  const redirectUri = `${process.env.NEXTAUTH_URL ?? "http://localhost:3001"}/api/connect/quickbooks/callback`
+  const base = (process.env.NEXTAUTH_URL ?? "http://localhost:3001").replace(/\/+$/, "")
+  const redirectUri = `${base}/api/connect/quickbooks/callback`
 
   await prisma.integrationConnection.upsert({
     where: { organizationId_provider: { organizationId, provider: "QUICKBOOKS" } },
