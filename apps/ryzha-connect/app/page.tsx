@@ -46,7 +46,7 @@ function LogoChip({ name, logoUrl, abbr, bg, color, faded }: {
 }) {
   return (
     <div
-      className={`flex items-center gap-3 rounded-xl border border-gray-100 bg-white px-4 py-3 shadow-sm whitespace-nowrap shrink-0 transition-opacity ${faded ? "opacity-40 grayscale" : "opacity-90 hover:opacity-100"}`}
+      className={`flex items-center gap-3.5 rounded-xl border border-gray-100 bg-white px-5 py-3.5 shadow-sm whitespace-nowrap shrink-0 transition-opacity ${faded ? "opacity-40 grayscale" : "opacity-90 hover:opacity-100"}`}
     >
       <div
         className="h-8 w-8 rounded-lg flex items-center justify-center shrink-0 overflow-hidden"
@@ -195,14 +195,14 @@ export default async function RootPage() {
           <div className="absolute left-0 top-0 bottom-0 w-24 bg-gradient-to-r from-gray-50/80 to-transparent z-10 pointer-events-none" />
           <div className="absolute right-0 top-0 bottom-0 w-24 bg-gradient-to-l from-gray-50/80 to-transparent z-10 pointer-events-none" />
 
-          <div className="flex animate-marquee gap-4 mb-3" style={{ width: "max-content" }}>
+          <div className="flex animate-marquee gap-8 mb-4" style={{ width: "max-content" }}>
             {liveDouble.map((app, i) => (
               <LogoChip key={i} {...app} />
             ))}
           </div>
 
-          <div className="flex gap-4" style={{ width: "max-content" }}>
-            <div className="animate-marquee-reverse flex gap-4" style={{ width: "max-content" }}>
+          <div className="flex gap-8" style={{ width: "max-content" }}>
+            <div className="animate-marquee-reverse flex gap-8" style={{ width: "max-content" }}>
               {soonDouble.map((app, i) => (
                 <LogoChip key={i} {...app} faded />
               ))}
