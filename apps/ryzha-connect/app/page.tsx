@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 import { getSession } from "@/lib/session"
 import { redirect } from "next/navigation"
 import Link from "next/link"
@@ -11,11 +12,63 @@ import {
   AlertCircle,
   Clock,
   TrendingUp,
+  Sparkles,
+  Zap,
 } from "lucide-react"
+
+const LIVE_INTEGRATIONS = [
+  { name: "Stripe", logoUrl: "https://cdn.simpleicons.org/stripe/635BFF", bg: "#f5f3ff" },
+  { name: "QuickBooks", logoUrl: "https://cdn.simpleicons.org/quickbooks/2CA01C", bg: "#f0fdf4" },
+  { name: "Mercury", logoUrl: "https://logo.clearbit.com/mercury.com", bg: "#f0fdfa" },
+  { name: "Ramp", logoUrl: "https://logo.clearbit.com/ramp.com", bg: "#f8fafc" },
+  { name: "Gusto", logoUrl: "https://cdn.simpleicons.org/gusto/F45D48", bg: "#fff1f2" },
+  { name: "Chargebee", logoUrl: "https://cdn.simpleicons.org/chargebee/FF6200", bg: "#fff7ed" },
+  { name: "HubSpot", logoUrl: "https://cdn.simpleicons.org/hubspot/FF7A59", bg: "#fff7ed" },
+]
+
+const COMING_SOON = [
+  { name: "Xero", logoUrl: "https://cdn.simpleicons.org/xero/13B5EA", bg: "#eff6ff" },
+  { name: "Salesforce", logoUrl: "https://cdn.simpleicons.org/salesforce/00A1E0", bg: "#eff6ff" },
+  { name: "Rippling", abbr: "RP", bg: "#fefce8", color: "#854d0e" },
+  { name: "NetSuite", abbr: "NS", bg: "#fef2f2", color: "#991b1b" },
+  { name: "Paddle", logoUrl: "https://cdn.simpleicons.org/paddle/000000", bg: "#f8fafc" },
+  { name: "Deel", abbr: "DE", bg: "#f0fdf4", color: "#166534" },
+  { name: "Zuora", abbr: "ZU", bg: "#faf5ff", color: "#6b21a8" },
+]
+
+function LogoChip({ name, logoUrl, abbr, bg, color, faded }: {
+  name: string
+  logoUrl?: string
+  abbr?: string
+  bg: string
+  color?: string
+  faded?: boolean
+}) {
+  return (
+    <div
+      className={`flex items-center gap-3 rounded-xl border border-gray-100 bg-white px-4 py-3 shadow-sm whitespace-nowrap shrink-0 transition-opacity ${faded ? "opacity-40 grayscale" : "opacity-90 hover:opacity-100"}`}
+    >
+      <div
+        className="h-8 w-8 rounded-lg flex items-center justify-center shrink-0 overflow-hidden"
+        style={{ background: bg }}
+      >
+        {logoUrl ? (
+          <img src={logoUrl} alt={name} className="h-5 w-5 object-contain" />
+        ) : (
+          <span className="text-[11px] font-extrabold" style={{ color }}>{abbr}</span>
+        )}
+      </div>
+      <span className="text-sm font-semibold text-gray-700">{name}</span>
+    </div>
+  )
+}
 
 export default async function RootPage() {
   const session = await getSession()
   if (session) redirect("/overview")
+
+  const liveDouble = [...LIVE_INTEGRATIONS, ...LIVE_INTEGRATIONS]
+  const soonDouble = [...COMING_SOON, ...COMING_SOON]
 
   return (
     <div className="min-h-screen bg-white text-gray-900">
@@ -30,7 +83,7 @@ export default async function RootPage() {
           <div className="hidden md:flex items-center gap-8 text-sm text-gray-500">
             <a href="#product" className="hover:text-gray-900 transition-colors">Product</a>
             <a href="#how-it-works" className="hover:text-gray-900 transition-colors">How it works</a>
-            <a href="#pricing" className="hover:text-gray-900 transition-colors">Pricing</a>
+            <a href="#founders" className="hover:text-gray-900 transition-colors">About</a>
           </div>
           <div className="flex items-center gap-3">
             <Link href="/login" className="text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors">
@@ -46,6 +99,7 @@ export default async function RootPage() {
         </div>
       </nav>
 
+      {/* ── Hero ── */}
       <section className="pt-28 pb-20 px-6">
         <div className="mx-auto max-w-6xl grid lg:grid-cols-2 gap-12 items-center">
           <div>
@@ -122,92 +176,128 @@ export default async function RootPage() {
         </div>
       </section>
 
-      <section className="py-10 px-6 border-y border-gray-100 bg-gray-50">
-        <div className="mx-auto max-w-5xl">
-          <p className="text-center text-[11px] font-semibold uppercase tracking-[0.15em] text-gray-400 mb-8">
-            Built for companies running
-          </p>
-          <div className="flex flex-wrap items-center justify-center gap-6 md:gap-10">
-            {[
-              { name: "Stripe", abbr: "S", bg: "bg-violet-500" },
-              { name: "QuickBooks", abbr: "QB", bg: "bg-green-600" },
-              { name: "Mercury", abbr: "M", bg: "bg-teal-600" },
-              { name: "Ramp", abbr: "R", bg: "bg-gray-800" },
-              { name: "Gusto", abbr: "G", bg: "bg-pink-500" },
-              { name: "Chargebee", abbr: "CB", bg: "bg-orange-500" },
-              { name: "Rippling", abbr: "RP", bg: "bg-amber-600" },
-              { name: "Salesforce", abbr: "SF", bg: "bg-blue-600" },
-            ].map((tool) => (
-              <div key={tool.name} className="flex items-center gap-2.5 opacity-60 hover:opacity-100 transition-opacity">
-                <div className={`h-7 w-7 rounded-md ${tool.bg} flex items-center justify-center`}>
-                  <span className="text-white font-bold text-[10px]">{tool.abbr}</span>
-                </div>
-                <span className="text-sm text-gray-600 font-medium">{tool.name}</span>
-              </div>
+      {/* ── Integrations marquee ── */}
+      <section className="py-14 border-y border-gray-100 bg-gray-50/60 overflow-hidden">
+        <div className="mx-auto max-w-6xl px-6 mb-7">
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-gray-400">Already integrated</p>
+              <p className="text-lg font-bold text-gray-900 mt-0.5">Connect your stack in minutes</p>
+            </div>
+            <div className="flex items-center gap-2 text-xs text-gray-400 border border-gray-200 bg-white rounded-full px-4 py-1.5">
+              <Zap className="h-3 w-3 text-amber-500" />
+              50+ connectors in roadmap
+            </div>
+          </div>
+        </div>
+
+        <div className="relative">
+          <div className="absolute left-0 top-0 bottom-0 w-24 bg-gradient-to-r from-gray-50/80 to-transparent z-10 pointer-events-none" />
+          <div className="absolute right-0 top-0 bottom-0 w-24 bg-gradient-to-l from-gray-50/80 to-transparent z-10 pointer-events-none" />
+
+          <div className="flex animate-marquee gap-4 mb-3" style={{ width: "max-content" }}>
+            {liveDouble.map((app, i) => (
+              <LogoChip key={i} {...app} />
             ))}
           </div>
+
+          <div className="flex gap-4" style={{ width: "max-content" }}>
+            <div className="animate-marquee-reverse flex gap-4" style={{ width: "max-content" }}>
+              {soonDouble.map((app, i) => (
+                <LogoChip key={i} {...app} faded />
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="mx-auto max-w-6xl px-6 mt-6 flex items-center gap-6 text-xs text-gray-400">
+          <span className="flex items-center gap-2">
+            <span className="h-2.5 w-2.5 rounded-full bg-emerald-400" />
+            Live integrations
+          </span>
+          <span className="flex items-center gap-2">
+            <span className="h-2.5 w-2.5 rounded-full bg-gray-300" />
+            Coming soon
+          </span>
         </div>
       </section>
 
+      {/* ── Problem: drowning in CSVs ── */}
       <section className="py-24 px-6">
         <div className="mx-auto max-w-6xl">
-          <div className="grid md:grid-cols-2 gap-8 mb-16">
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-gray-400 mb-3">The Problem</p>
-              <h2 className="font-display text-3xl md:text-4xl font-bold text-gray-900 leading-tight">
-                Your finance team is drowning in CSVs
-              </h2>
-            </div>
-            <div className="flex items-end">
-              <p className="text-gray-500 leading-relaxed">
-                A Series A startup runs 15–25 disconnected financial tools. None of them share a data model. Every month is a manual reconciliation war fought in spreadsheets.
-              </p>
-            </div>
+          <div className="max-w-2xl mb-16">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-gray-400 mb-3">The Problem</p>
+            <h2 className="font-display text-3xl md:text-4xl font-bold text-gray-900 leading-tight mb-4">
+              Your finance team&apos;s month.<br />Every month.
+            </h2>
+            <p className="text-gray-500 leading-relaxed">
+              A Series A startup runs 15–25 disconnected financial tools. None share a data model. Every month-end is a manual war fought in spreadsheets — while the business moves at startup speed.
+            </p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-5">
-            <div className="rounded-2xl border border-red-100 bg-red-50/40 p-8">
-              <p className="text-sm font-semibold text-red-600 mb-5 flex items-center gap-2">
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className="rounded-2xl border border-red-100 bg-white p-8 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-red-50 rounded-bl-[6rem]" />
+              <p className="text-sm font-semibold text-red-500 mb-6 flex items-center gap-2 relative">
                 <AlertCircle className="h-4 w-4" />
                 Without Ryzha — every month
               </p>
-              <ul className="space-y-3">
+              <div className="space-y-0 relative">
                 {[
-                  "Week 1: Download 15 CSVs and import into Excel",
-                  "Week 2: Manual reconciliation, chase missing data",
-                  "Week 3: Fix errors, post journal entries by hand",
-                  "Week 4: Present 30-day-old numbers to the board",
-                ].map((item) => (
-                  <li key={item} className="flex items-start gap-2.5 text-sm text-red-700">
-                    <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-red-400 shrink-0" />
-                    {item}
-                  </li>
+                  { week: "Week 1", task: "Download 15 CSVs, paste into Excel" },
+                  { week: "Week 2", task: "Manual reconciliation, chase missing data" },
+                  { week: "Week 3", task: "Fix errors, post journal entries by hand" },
+                  { week: "Week 4", task: "Present 30-day-old numbers to the board" },
+                ].map(({ week, task }, i) => (
+                  <div key={i} className="flex gap-4 pb-5 last:pb-0 relative">
+                    <div className="flex flex-col items-center shrink-0">
+                      <div className="h-7 w-7 rounded-full bg-red-100 border-2 border-red-200 flex items-center justify-center z-10">
+                        <span className="text-[9px] font-bold text-red-500">{i + 1}</span>
+                      </div>
+                      {i < 3 && <div className="w-px flex-1 bg-red-100 mt-1" />}
+                    </div>
+                    <div className="pt-0.5">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-red-400 mb-0.5">{week}</p>
+                      <p className="text-sm text-gray-700">{task}</p>
+                    </div>
+                  </div>
                 ))}
-              </ul>
-              <div className="mt-6 rounded-xl bg-red-100/60 px-4 py-2.5 text-xs text-red-600 font-medium">
+              </div>
+              <div className="mt-6 rounded-xl bg-red-50 px-4 py-3 text-xs text-red-600 font-semibold flex items-center gap-2">
+                <AlertCircle className="h-3.5 w-3.5 shrink-0" />
                 3-week close · stale board data · finance team burnout
               </div>
             </div>
 
-            <div className="rounded-2xl border border-emerald-100 bg-emerald-50/40 p-8">
-              <p className="text-sm font-semibold text-emerald-700 mb-5 flex items-center gap-2">
+            <div className="rounded-2xl border border-emerald-100 bg-white p-8 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-50 rounded-bl-[6rem]" />
+              <p className="text-sm font-semibold text-emerald-600 mb-6 flex items-center gap-2 relative">
                 <CheckCircle2 className="h-4 w-4" />
                 With Ryzha — every month
               </p>
-              <ul className="space-y-3">
+              <div className="space-y-0 relative">
                 {[
-                  "Continuous reconciliation runs every 15 minutes",
-                  "Revenue, cash, payroll reconciled automatically",
-                  "Month-end close takes 2 hours, not 3 weeks",
-                  "Board gets real-time numbers, not last month's",
-                ].map((item) => (
-                  <li key={item} className="flex items-start gap-2.5 text-sm text-emerald-700">
-                    <CheckCircle2 className="h-3.5 w-3.5 mt-0.5 text-emerald-500 shrink-0" />
-                    {item}
-                  </li>
+                  { moment: "Always on", task: "Agents reconcile every 15 minutes, continuously" },
+                  { moment: "Event-driven", task: "Revenue, cash, payroll reconciled the moment they happen" },
+                  { moment: "Day 1 of close", task: "90% of checklist already done — agents ran it live" },
+                  { moment: "Board day", task: "Real-time numbers, not last month's — ready in 2 hours" },
+                ].map(({ moment, task }, i) => (
+                  <div key={i} className="flex gap-4 pb-5 last:pb-0 relative">
+                    <div className="flex flex-col items-center shrink-0">
+                      <div className="h-7 w-7 rounded-full bg-emerald-100 border-2 border-emerald-200 flex items-center justify-center z-10">
+                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                      </div>
+                      {i < 3 && <div className="w-px flex-1 bg-emerald-100 mt-1" />}
+                    </div>
+                    <div className="pt-0.5">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-500 mb-0.5">{moment}</p>
+                      <p className="text-sm text-gray-700">{task}</p>
+                    </div>
+                  </div>
                 ))}
-              </ul>
-              <div className="mt-6 rounded-xl bg-emerald-100/60 px-4 py-2.5 text-xs text-emerald-700 font-medium">
+              </div>
+              <div className="mt-6 rounded-xl bg-emerald-50 px-4 py-3 text-xs text-emerald-700 font-semibold flex items-center gap-2">
+                <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
                 2-hour close · real-time board data · finance team on strategy
               </div>
             </div>
@@ -215,6 +305,7 @@ export default async function RootPage() {
         </div>
       </section>
 
+      {/* ── Product pillars ── */}
       <section id="product" className="py-24 px-6 bg-gray-50 border-y border-gray-100">
         <div className="mx-auto max-w-6xl">
           <div className="text-center mb-12">
@@ -230,6 +321,7 @@ export default async function RootPage() {
         </div>
       </section>
 
+      {/* ── How it works ── */}
       <section id="how-it-works" className="py-24 px-6">
         <div className="mx-auto max-w-4xl">
           <div className="text-center mb-14">
@@ -300,6 +392,7 @@ export default async function RootPage() {
         </div>
       </section>
 
+      {/* ── Stats ── */}
       <section className="py-14 px-6 border-y border-gray-100">
         <div className="mx-auto max-w-5xl grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
           {[
@@ -310,138 +403,86 @@ export default async function RootPage() {
           ].map(({ stat, label, sub }) => (
             <div key={label} className="space-y-1">
               <p className="font-display text-3xl font-bold text-primary">{stat}</p>
-              <p className="text-sm font-semibold text-gray-800">{label}</p>
+              <p className="text-sm font-semibold text-gray-700">{label}</p>
               <p className="text-xs text-gray-400">{sub}</p>
             </div>
           ))}
         </div>
       </section>
 
-      <section id="pricing" className="py-24 px-6">
+      {/* ── Founders ── */}
+      <section id="founders" className="py-24 px-6 bg-gray-50 border-t border-gray-100">
         <div className="mx-auto max-w-5xl">
           <div className="text-center mb-14">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-gray-400 mb-3">Pricing</p>
+            <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-sm font-medium text-primary mb-4">
+              <Sparkles className="h-3.5 w-3.5" />
+              The founders
+            </div>
             <h2 className="font-display text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              Grows with your company, not your headcount
+              Built by founders,<br />for founders.
             </h2>
             <p className="text-gray-500 max-w-xl mx-auto">
-              Stage-based pricing tied to company complexity — not per seat.
+              Ryzha was born from a simple frustration — founders spending too many hours on accounting instead of building their companies. A two-person team with a clear belief: financial intelligence should be accessible to every founder.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-5">
+          <div className="grid md:grid-cols-2 gap-8 max-w-3xl mx-auto mb-14">
             {[
               {
-                tier: "Seed",
-                stage: "Pre-seed · Seed",
-                price: "$299",
-                description: "The right financial architecture from day one. Avoid building financial tech debt before it starts.",
-                highlight: false,
-                features: [
-                  "Connect up to 5 sources",
-                  "Revenue + Cash reconciliation",
-                  "Real-time P&L dashboard",
-                  "Basic SaaS metrics (MRR, ARR, churn)",
-                  "Architect Agent onboarding",
-                  "ASC 606 revenue recognition",
-                ],
-                cta: "Start with Seed",
+                name: "Karina Rocha",
+                role: "CEO & Founder",
+                initials: "KR",
+                gradientFrom: "#7c3aed",
+                gradientTo: "#3b82f6",
+                bio: "The visionary behind Ryzha. Karina combines deep industry knowledge with a clear vision for the future of financial intelligence for startups. She drives the product strategy, customer insight, and the core belief that founders deserve better financial tooling.",
               },
               {
-                tier: "Series A",
-                stage: "Series A",
-                price: "$999",
-                description: "Real-time reporting, automated close, clean reconciled books for a fast-moving company.",
-                highlight: true,
-                features: [
-                  "Connect up to 15 sources",
-                  "Full reconciliation suite — Revenue, Cash, AP, Payroll, Pipeline",
-                  "All SaaS metrics + cohort analysis",
-                  "Close automation — hours not weeks",
-                  "Board report drafts",
-                  "Anomaly detection",
-                  "Approval workflows",
-                ],
-                cta: "Start with Series A",
+                name: "Sushmit Ghosh",
+                role: "CTO & Lead Engineer",
+                initials: "SG",
+                gradientFrom: "#3b82f6",
+                gradientTo: "#0ea5e9",
+                bio: "The technical powerhouse making Ryzha a reality. Sushmit architects and builds the AI-driven systems, workflow orchestrators, and integrations that give Ryzha its capabilities. He turns Karina's vision into production-grade software.",
               },
-              {
-                tier: "Series B",
-                stage: "Series B+",
-                price: "$2,999",
-                description: "Full cross-platform reconciliation, multi-entity, departmental P&L, and audit-grade data.",
-                highlight: false,
-                features: [
-                  "Unlimited connectors",
-                  "Multi-entity + FX reconciliation",
-                  "Department-level P&L",
-                  "Intercompany eliminations",
-                  "Audit trail with AI rationale",
-                  "Full Architect Agent",
-                  "SOC 2 Type II",
-                  "Budget vs actuals tracking",
-                ],
-                cta: "Start with Series B",
-              },
-            ].map(({ tier, stage, price, description, highlight, features, cta }) => (
-              <div
-                key={tier}
-                className={`relative rounded-2xl flex flex-col ${
-                  highlight
-                    ? "bg-primary text-white shadow-2xl shadow-primary/20 border border-primary"
-                    : "bg-white border border-gray-200"
-                }`}
-              >
-                {highlight && (
-                  <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-white text-primary text-[11px] font-bold px-4 py-1.5 rounded-full border border-primary/20 shadow-sm whitespace-nowrap">
-                    Most Popular
-                  </div>
-                )}
-                <div className="p-8 flex-1 flex flex-col">
-                  <p className={`text-[11px] font-semibold uppercase tracking-widest mb-1 ${highlight ? "text-blue-200" : "text-gray-400"}`}>
-                    {stage}
-                  </p>
-                  <p className={`font-display text-xl font-bold mb-1 ${highlight ? "text-white" : "text-gray-900"}`}>{tier}</p>
-                  <div className="flex items-baseline gap-1 mb-3">
-                    <span className={`font-display text-4xl font-bold ${highlight ? "text-white" : "text-gray-900"}`}>{price}</span>
-                    <span className={`text-sm ${highlight ? "text-blue-200" : "text-gray-400"}`}>/month</span>
-                  </div>
-                  <p className={`text-sm leading-relaxed mb-6 ${highlight ? "text-blue-100" : "text-gray-500"}`}>
-                    {description}
-                  </p>
-                  <ul className="space-y-2.5 flex-1 mb-8">
-                    {features.map((f) => (
-                      <li key={f} className={`flex items-start gap-2.5 text-xs ${highlight ? "text-blue-100" : "text-gray-600"}`}>
-                        <CheckCircle2 className={`h-3.5 w-3.5 shrink-0 mt-0.5 ${highlight ? "text-blue-300" : "text-emerald-500"}`} />
-                        {f}
-                      </li>
-                    ))}
-                  </ul>
-                  <Link
-                    href="/onboarding"
-                    className={`flex items-center justify-center gap-2 w-full py-3 rounded-xl font-semibold text-sm transition-all ${
-                      highlight
-                        ? "bg-white text-primary hover:bg-blue-50"
-                        : "bg-primary text-white hover:bg-primary/90 shadow-sm shadow-primary/20"
-                    }`}
+            ].map(({ name, role, initials, gradientFrom, gradientTo, bio }) => (
+              <div key={name} className="flex flex-col gap-6 p-8 rounded-2xl border border-gray-200 bg-white hover:border-primary/30 hover:shadow-xl transition-all duration-200">
+                <div className="flex items-center gap-5">
+                  <div
+                    className="w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg shrink-0"
+                    style={{ background: `linear-gradient(135deg, ${gradientFrom}, ${gradientTo})` }}
                   >
-                    {cta}
-                    <ArrowRight className="h-4 w-4" />
-                  </Link>
+                    <span className="text-white text-xl font-black">{initials}</span>
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-900">{name}</h3>
+                    <span className="inline-flex items-center text-xs font-semibold text-primary bg-primary/10 px-2.5 py-1 rounded-full mt-1">
+                      {role}
+                    </span>
+                  </div>
                 </div>
+                <p className="text-sm text-gray-500 leading-relaxed">{bio}</p>
               </div>
             ))}
           </div>
 
-          <p className="mt-8 text-center text-sm text-gray-400">
-            Pre-IPO or public company?{" "}
-            <a href="mailto:founders@ryzha.com" className="text-primary font-medium hover:underline">
-              Talk to us about Scale →
+          {/* ── Get in touch ── */}
+          <div className="max-w-2xl mx-auto rounded-2xl border border-gray-200 bg-white p-10 text-center shadow-sm">
+            <h3 className="text-2xl font-bold text-gray-900 mb-3">Want to talk to us directly?</h3>
+            <p className="text-gray-500 mb-6 leading-relaxed">
+              We read every message. If you have questions, feedback, or just want to say hello — reach out. We&apos;re building Ryzha in the open and love talking to founders.
+            </p>
+            <a
+              href="mailto:founders@ryzha.com"
+              className="inline-flex items-center gap-2 bg-primary text-white font-semibold px-6 py-3 rounded-xl hover:bg-primary/90 transition-all shadow-sm shadow-primary/20 text-sm"
+            >
+              Get in touch →
             </a>
-          </p>
+          </div>
         </div>
       </section>
 
-      <section className="py-24 px-6 bg-gray-50 border-t border-gray-100">
+      {/* ── CTA ── */}
+      <section className="py-24 px-6 bg-white border-t border-gray-100">
         <div className="mx-auto max-w-4xl text-center">
           <div className="rounded-3xl bg-primary px-10 py-16 shadow-2xl shadow-primary/20">
             <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-1.5 text-xs font-medium text-blue-100 mb-8">
@@ -481,6 +522,8 @@ export default async function RootPage() {
             <span className="font-display font-semibold text-[15px] tracking-tight">ryzha</span>
           </div>
           <div className="flex items-center gap-8 text-xs text-gray-400">
+            <a href="#product" className="hover:text-gray-700 transition-colors">Product</a>
+            <a href="#founders" className="hover:text-gray-700 transition-colors">About</a>
             <a href="mailto:founders@ryzha.com" className="hover:text-gray-700 transition-colors">Contact</a>
             <a href="/login" className="hover:text-gray-700 transition-colors">Sign in</a>
           </div>
