@@ -156,7 +156,7 @@ export async function runComplianceAgent(organizationId: string): Promise<Compli
   if (result.violations > 0) {
     const criticalCount = result.findings.filter((f) => f.severity === "CRITICAL" || f.severity === "HIGH").length
     if (criticalCount > 0) {
-      await (prisma.notification as any).create({
+      await prisma.notification.create({
         data: {
           organizationId,
           type: "ERROR",

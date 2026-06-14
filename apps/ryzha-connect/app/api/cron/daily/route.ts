@@ -36,7 +36,7 @@ async function refreshCashForecast(organizationId: string) {
   const runwayWeeks = weeklyOut > weeklyIn ? Math.floor((await getCurrentBalance(organizationId)) / (weeklyOut - weeklyIn)) : null
 
   if (runwayWeeks !== null && runwayWeeks < 12) {
-    await (prisma.notification as any).create({
+    await prisma.notification.create({
       data: {
         organizationId,
         type: runwayWeeks < 6 ? "ERROR" : "WARNING",
@@ -86,7 +86,7 @@ async function runBudgetCheck(organizationId: string) {
 
   if (monthlyBudget && actualAmount > monthlyBudget * 0.9) {
     const pct = Math.round((actualAmount / monthlyBudget) * 100)
-    await (prisma.notification as any).create({
+    await prisma.notification.create({
       data: {
         organizationId,
         type: actualAmount > monthlyBudget ? "ERROR" : "WARNING",
@@ -98,7 +98,7 @@ async function runBudgetCheck(organizationId: string) {
   }
 
   if (pendingApprovals > 0) {
-    await (prisma.notification as any).create({
+    await prisma.notification.create({
       data: {
         organizationId,
         type: "INFO",

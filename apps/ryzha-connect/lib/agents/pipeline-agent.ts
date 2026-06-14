@@ -184,7 +184,7 @@ export async function runPipelineAgent(organizationId: string): Promise<Pipeline
     }
 
     if (highCount > 0) {
-      await (prisma.notification as any).create({
+      await prisma.notification.create({
         data: {
           organizationId,
           type: "WARNING",

@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Bell, Moon, Sun, Settings, LogOut, CheckCheck, Info, AlertTriangle, XCircle, CheckCircle2, Search } from "lucide-react"
+import { Bell, Moon, Sun, Settings, LogOut, CheckCheck, Info, AlertTriangle, XCircle, CheckCircle2, Search, X, Trash2 } from "lucide-react"
 import { useTheme } from "next-themes"
 import { useSession, signOut } from "next-auth/react"
 import Link from "next/link"
@@ -339,6 +339,20 @@ function NotificationBell() {
     setUnreadCount((prev) => Math.max(0, prev - 1))
   }
 
+  async function dismissOne(e: React.MouseEvent, id: string, wasRead: boolean) {
+    e.stopPropagation()
+    await fetch(`/api/notifications?id=${id}`, { method: "DELETE" })
+    setNotifications((prev) => prev.filter((n) => n.id !== id))
+    if (!wasRead) setUnreadCount((prev) => Math.max(0, prev - 1))
+  }
+
+  async function clearRead() {
+    await fetch("/api/notifications?clearAll=true", { method: "DELETE" })
+    setNotifications((prev) => prev.filter((n) => !n.read))
+  }
+
+  const readCount = notifications.filter((n) => n.read).length
+
   return (
     <div className="relative" ref={ref}>
       <button
@@ -362,15 +376,19 @@ function NotificationBell() {
                 <p className="text-xs text-muted-foreground">{unreadCount} unread</p>
               )}
             </div>
-            {unreadCount > 0 && (
-              <button
-                onClick={markAllRead}
-                className="btn-ghost text-xs py-1 px-2"
-              >
-                <CheckCheck className="h-3.5 w-3.5" />
-                Mark all read
-              </button>
-            )}
+            <div className="flex items-center gap-1">
+              {unreadCount > 0 && (
+                <button onClick={markAllRead} className="btn-ghost text-xs py-1 px-2">
+                  <CheckCheck className="h-3.5 w-3.5" />
+                  Mark all read
+                </button>
+              )}
+              {readCount > 0 && (
+                <button onClick={clearRead} className="btn-ghost text-xs py-1 px-2 text-muted-foreground hover:text-destructive" title="Clear read notifications">
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="max-h-96 overflow-y-auto">
@@ -386,29 +404,41 @@ function NotificationBell() {
                   const Icon = typeIcon(n.type)
                   const color = typeColor(n.type)
                   return (
-                    <button
+                    <div
                       key={n.id}
-                      onClick={async () => {
-                        if (!n.read) await markRead(n.id)
-                        setOpen(false)
-                        if (n.link) router.push(n.link)
-                      }}
-                      className={`w-full text-left px-4 py-3 hover:bg-muted/40 transition-colors flex items-start gap-3 ${!n.read ? "bg-primary/3" : ""}`}
+                      className={`group relative flex items-start gap-3 px-4 py-3 transition-colors hover:bg-muted/40 ${!n.read ? "bg-primary/[0.03]" : ""}`}
                     >
-                      <div className={`h-7 w-7 rounded-lg bg-muted flex items-center justify-center shrink-0 mt-0.5`}>
-                        <Icon className={`h-3.5 w-3.5 ${color}`} />
+                      <button
+                        onClick={async () => {
+                          if (!n.read) await markRead(n.id)
+                          setOpen(false)
+                          if (n.link) router.push(n.link)
+                        }}
+                        className="flex items-start gap-3 flex-1 min-w-0 text-left"
+                      >
+                        <div className="h-7 w-7 rounded-lg bg-muted flex items-center justify-center shrink-0 mt-0.5">
+                          <Icon className={`h-3.5 w-3.5 ${color}`} />
+                        </div>
+                        <div className="flex-1 min-w-0 pr-5">
+                          <p className={`text-sm font-medium truncate ${!n.read ? "text-foreground" : "text-muted-foreground"}`}>
+                            {n.title}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2 leading-relaxed">{n.message}</p>
+                          <p className="text-[10px] text-muted-foreground/50 mt-1.5">{timeAgo(n.createdAt)}</p>
+                        </div>
+                      </button>
+
+                      <div className="absolute right-3 top-3 flex items-center gap-1">
+                        {!n.read && <span className="h-1.5 w-1.5 rounded-full bg-primary" />}
+                        <button
+                          onClick={(e) => dismissOne(e, n.id, n.read)}
+                          className="opacity-0 group-hover:opacity-100 transition-opacity h-5 w-5 rounded flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted"
+                          title="Dismiss"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className={`text-sm font-medium truncate ${!n.read ? "text-foreground" : "text-muted-foreground"}`}>
-                          {n.title}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2 leading-relaxed">{n.message}</p>
-                        <p className="text-[10px] text-muted-foreground/50 mt-1.5">{timeAgo(n.createdAt)}</p>
-                      </div>
-                      {!n.read && (
-                        <span className="h-1.5 w-1.5 rounded-full bg-primary shrink-0 mt-2" />
-                      )}
-                    </button>
+                    </div>
                   )
                 })}
               </div>

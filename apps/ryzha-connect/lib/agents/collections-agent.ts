@@ -159,7 +159,7 @@ Keep body under 150 words. No markdown in the body.`,
   }
 
   if (result.escalated > 0) {
-    await (prisma.notification as any).create({
+    await prisma.notification.create({
       data: {
         organizationId,
         type: "WARNING",

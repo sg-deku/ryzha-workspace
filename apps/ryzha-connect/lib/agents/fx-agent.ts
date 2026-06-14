@@ -148,7 +148,7 @@ export async function runFXAgent(organizationId: string): Promise<FXAgentResult>
 
 async function createFXNotification(organizationId: string, gainLoss: number, currency: string) {
   const isGain = gainLoss > 0
-  await (prisma.notification as any).create({
+  await prisma.notification.create({
     data: {
       organizationId,
       type: isGain ? "INFO" : "WARNING",

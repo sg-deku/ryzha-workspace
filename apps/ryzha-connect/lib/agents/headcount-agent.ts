@@ -137,7 +137,7 @@ export async function runHeadcountAgent(organizationId: string): Promise<Headcou
 }
 
 async function createHeadcountNotification(organizationId: string, alert: HeadcountAlert) {
-  await (prisma.notification as any).create({
+  await prisma.notification.create({
     data: {
       organizationId,
       type: alert.severity === "HIGH" ? "ERROR" : "WARNING",

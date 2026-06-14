@@ -212,7 +212,7 @@ export async function runFPnAAgent(organizationId: string): Promise<FPnAAgentRes
   } catch { }
 
   if (runwayMonths !== null && runwayMonths < 9) {
-    await (prisma.notification as any).create({
+    await prisma.notification.create({
       data: {
         organizationId,
         type: runwayMonths < 6 ? "ERROR" : "WARNING",

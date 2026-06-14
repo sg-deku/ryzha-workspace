@@ -39,7 +39,7 @@ export async function GET(req: Request) {
 
       const closedOk = close.status === "fulfilled"
       if (closedOk) {
-        await (prisma.notification as any).create({
+        await prisma.notification.create({
           data: {
             organizationId: orgId,
             type: "SUCCESS",
