@@ -9,10 +9,8 @@ import { useRouter } from "next/navigation"
 
 function BrandLogo({ orgName }: { orgName?: string | null }) {
   return (
-    <Link href="/overview" className="flex items-center gap-2 shrink-0 hover:opacity-80 transition-opacity">
-      <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center shadow-sm shadow-primary/30">
-        <span className="font-display font-bold text-primary-foreground text-[13px] tracking-tight">R</span>
-      </div>
+    <Link href="/overview" className="flex items-center gap-2.5 shrink-0 hover:opacity-80 transition-opacity">
+      <img src="/logo.png" alt="Ryzha" className="h-8 w-8 object-contain" />
       <span className="font-display font-bold text-[17px] tracking-tight">ryzha</span>
       {orgName && (
         <>

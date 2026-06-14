@@ -37,9 +37,7 @@ export default function LoginPage() {
       <div className="w-full max-w-sm space-y-8">
         <div className="text-center space-y-2">
           <div className="flex justify-center">
-            <div className="h-10 w-10 rounded-xl bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-lg">R</span>
-            </div>
+            <img src="/logo.png" alt="Ryzha" className="h-12 w-12 object-contain" />
           </div>
           <h1 className="text-2xl font-bold tracking-tight">Ryzha</h1>
           <p className="text-sm text-muted-foreground">Financial architecture for startups</p>

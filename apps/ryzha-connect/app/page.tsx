@@ -74,10 +74,8 @@ export default async function RootPage() {
     <div className="min-h-screen bg-white text-gray-900">
       <nav className="fixed top-0 inset-x-0 z-50 border-b border-gray-100 bg-white/90 backdrop-blur-md">
         <div className="mx-auto max-w-6xl px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="h-7 w-7 rounded-lg bg-primary flex items-center justify-center shrink-0 shadow-sm shadow-primary/30">
-              <span className="font-display font-bold text-primary-foreground text-[12px] tracking-tight">R</span>
-            </div>
+          <div className="flex items-center gap-2.5">
+            <img src="/logo.png" alt="Ryzha" className="h-8 w-8 object-contain" />
             <span className="font-display font-semibold text-[16px] tracking-tight">ryzha</span>
           </div>
           <div className="hidden md:flex items-center gap-8 text-sm text-gray-500">
@@ -515,10 +513,8 @@ export default async function RootPage() {
 
       <footer className="border-t border-gray-100 py-12 px-6 bg-white">
         <div className="mx-auto max-w-6xl flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-2">
-            <div className="h-7 w-7 rounded-lg bg-primary flex items-center justify-center shrink-0">
-              <span className="font-display font-bold text-primary-foreground text-[11px]">R</span>
-            </div>
+          <div className="flex items-center gap-2.5">
+            <img src="/logo.png" alt="Ryzha" className="h-7 w-7 object-contain" />
             <span className="font-display font-semibold text-[15px] tracking-tight">ryzha</span>
           </div>
           <div className="flex items-center gap-8 text-xs text-gray-400">
