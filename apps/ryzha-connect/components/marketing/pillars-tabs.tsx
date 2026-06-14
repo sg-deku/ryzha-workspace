@@ -214,8 +214,8 @@ export function PillarsTabs() {
             </ul>
           </div>
 
-          <div className="hidden md:block shrink-0 w-[220px]">
-            <div className="rounded-xl border border-gray-100 bg-gray-950 text-gray-300 p-4 font-mono text-[11px] leading-relaxed whitespace-pre">
+          <div className="hidden md:block shrink-0 w-[220px] min-w-0">
+            <div className="rounded-xl border border-gray-100 bg-gray-950 text-gray-300 p-4 font-mono text-[11px] leading-relaxed whitespace-pre-wrap break-words overflow-hidden">
               {pillar.snippet}
             </div>
           </div>
