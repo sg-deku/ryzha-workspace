@@ -109,6 +109,11 @@
   .num { @apply tabular-nums font-medium; }
   .num-pos { @apply tabular-nums font-medium text-emerald-600 dark:text-emerald-400; }
   .num-neg { @apply tabular-nums font-medium text-red-500 dark:text-red-400; }
+
+  /* ── Code block — never use whitespace-pre alone in a fixed container ── */
+  .code-block {
+    @apply font-mono text-[11px] leading-relaxed whitespace-pre-wrap break-words overflow-hidden;
+  }
 }
 
 @layer utilities {
